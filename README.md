@@ -1,6 +1,8 @@
 # editor-dinamico
 
-Edição de vídeo dinâmica com IA, **100% grátis e local**, feita para ser dirigida pelo **Claude Code**.
+**Edição de vídeos dinamicamente para posts de qualquer tipo**: Reels, TikTok, YouTube Shorts, vídeos de YouTube, cortes de podcast, aulas, vlogs, reviews, montagens de viagem, treino ou esporte no ritmo da música.
+
+Você grava, a IA edita: corta pausas e erros, dá zoom no ritmo da fala, reenquadra para vertical seguindo o rosto, coloca legenda animada, efeitos sonoros e música. Tudo **100% grátis e local**, sem assinatura e sem API paga, e feito para ser dirigido pelo **Claude Code**.
 
 O Claude lê a transcrição do vídeo e decide o que cortar, onde dar zoom, quais palavras destacar e qual o gancho. A ferramenta `edin` executa tudo com ferramentas open source:
 
