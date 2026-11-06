@@ -1,0 +1,13 @@
+__pycache__/
+*.egg-info/
+*_edin_tmp/
+*.mp4
+*.mov
+*.mkv
+*.mp3
+*.wav
+*.m4a
+*.words.json
+*.plan.json
+*_quadros.jpg
+.venv/
