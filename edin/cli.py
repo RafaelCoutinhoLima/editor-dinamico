@@ -4,6 +4,7 @@ Fluxo típico (vídeo falado):
   edin transcribe video.mp4                 -> video.words.json
   edin text video.words.json                -> transcrição com tempos e índices (para o Claude ler)
   edin plan video.mp4 --preset reels        -> video.plan.json (o Claude refina)
+  edin hunt video.words.json                -> video.candidates.json (melhores trechos para shorts)
   edin timeline video.plan.json             -> como vai ficar o vídeo final
   edin render video.plan.json -o final.mp4  -> vídeo editado
   edin sheet final.mp4                      -> folha de quadros para conferir
@@ -76,8 +77,18 @@ def cmd_plan(a):
         sys.exit(f"[edin] {words} não existe. Rode antes: edin transcribe {a.video}")
     plan = build_talking_plan(a.video, words, a.preset, a.range, not a.keep_fillers, a.format, a.speed,
                               not a.no_snap, not a.no_clean_voice)
+    if a.cold_open:
+        from .hunt import apply_cold_open
+
+        apply_cold_open(plan, a.cold_open, a.range)
     out = a.out or _stem(a.video) + (f".{a.name}" if a.name else "") + ".plan.json"
     save_plan(plan, out)
+
+
+def cmd_hunt(a):
+    from .hunt import hunt
+
+    hunt(a.words, a.video, a.top, a.min, a.max, a.out)
 
 
 def cmd_montage(a):
@@ -261,8 +272,19 @@ def main(argv=None):
     s.add_argument("--speed", type=float, default=1.0, help="acelera a fala depois do corte (1.05-1.10 soa natural)")
     s.add_argument("--no-snap", action="store_true", help="não ajustar cortes pela energia do áudio")
     s.add_argument("--no-clean-voice", action="store_true", help="não limpar a voz (ruído + cadeia broadcast)")
+    s.add_argument("--cold-open", nargs="?", const="auto", metavar="A-B",
+                   help="repete a frase mais forte do trecho (1 a 3 s) no início; ou índices de palavra A-B")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_plan)
+
+    s = sp.add_parser("hunt", help="acha os melhores trechos de um vídeo longo para shorts (-> .candidates.json)")
+    s.add_argument("words", help="video.words.json")
+    s.add_argument("--video", help="vídeo/áudio para energia e tom (padrão: o da transcrição)")
+    s.add_argument("--top", type=int, default=5)
+    s.add_argument("--min", type=float, default=20, help="duração mínima em s (padrão 20)")
+    s.add_argument("--max", type=float, default=60, help="duração máxima em s (padrão 60)")
+    s.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_hunt)
 
     s = sp.add_parser("montage", help="plano de montagem cortada no ritmo da música")
     s.add_argument("clips", nargs="+")

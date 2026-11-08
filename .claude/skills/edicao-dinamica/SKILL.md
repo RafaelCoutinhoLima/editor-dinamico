@@ -69,9 +69,9 @@ Referência dos campos: `docs/PLANO.md`.
 ## B. Cortes de vídeo longo em shorts
 
 1. `edin transcribe` do vídeo inteiro.
-2. Delegue a escolha ao agente **`cacador-de-cortes`** (passe o `.words.json`, quantos cortes e a duração alvo). Se o agente não estiver disponível, faça você: leia tudo e escolha de 3 a 6 trechos de 20 a 60 s que funcionem sozinhos, com gancho forte, ideia completa e final de efeito.
-3. Apresente a lista para Rafael (tempo, título, por que funciona) e siga com os aprovados.
-4. Para cada um: `edin plan video.mp4 --range INICIO-FIM --name short1` e refine como no fluxo A (gancho e título obrigatórios).
+2. Delegue a escolha ao agente **`cacador-de-cortes`** (passe o `.words.json`, quantos cortes e a duração alvo). Ele parte do `edin hunt video.words.json` (candidatos com sinais objetivos e `nota_objetiva` em `video.candidates.json`), lê tudo e dá a rubrica Hook, Flow, Value, Trend (0 a 25 cada). Sem o agente, faça você o mesmo: `hunt`, leitura completa e de 3 a 6 trechos de 20 a 60 s que funcionem sozinhos.
+3. Apresente a lista para Rafael (tempo, título, rubrica, cold open) e siga com os aprovados.
+4. Para cada um: `edin plan video.mp4 --range INICIO-FIM --name short1 --cold-open [A-B]` (frase mais forte de 1 a 3 s repetida no início; sem valor escolhe sozinha, `A-B` são índices do `edin text`; omita se o começo já é o gancho). Refine como no fluxo A (título obrigatório) e corte do trecho o que depende de contexto ("como o fulano falou").
 5. Renderize e revise cada um (seção 2). Os cortes são independentes: pode renderizar em paralelo.
 
 ## C. Montagem no ritmo da música

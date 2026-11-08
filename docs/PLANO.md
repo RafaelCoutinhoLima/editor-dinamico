@@ -82,6 +82,30 @@ O plano é a "linha do tempo" do vídeo. A ordem de `segments` é a ordem do ví
 - `duck: true` abaixa a música automaticamente quando há fala (sidechain).
 - Use músicas livres de direitos (Biblioteca de Áudio do YouTube, Pixabay Music, ou as do próprio Instagram/TikTok adicionadas no app).
 
+## Cortes de vídeo longo: `edin hunt` e cold open
+
+`edin hunt video.words.json [--top 5] [--min 20 --max 60] [--video video.mp4]` acha trechos que começam e terminam em frase inteira e grava `video.candidates.json`:
+
+```json
+{"start": 348.11, "end": 381.23, "duracao": 33.1, "range": "348.11-381.24",
+ "texto": "...", "gancho_texto": "Um dos discursos sobre a tecnologia...",
+ "sinais": {"inicio": "limpo", "fim": "pontuação", "palavras_por_s": 2.3, "silencio_morto_s": 0,
+            "perguntas": 0, "numeros": 0, "ganchos": [], "ganchos_no_inicio": [], "tensao": 1,
+            "depende_de_contexto": ["como o sérgio já colocou"], "energia_z": 0.1, "energia_inicio_z": 0.3,
+            "tom_var_st": 3.0, "picos": 2,
+            "pontos": {"gancho": 4, "completude": 12, "ritmo": 14, "voz": 12, "conteudo": 2}},
+ "nota_objetiva": 44.0,
+ "frase_forte": {"i0": 598, "i1": 602, "texto": "a tecnologia como território neutro,", "nota": 40},
+ "rubrica": {"hook": null, "flow": null, "value": null, "trend": null, "total": null},
+ "comando": "edin plan video.mp4 --range 348.11-381.24 --name short1 --cold-open 598-602"}
+```
+
+- `nota_objetiva` (0 a 100) = gancho nos 3 primeiros s (0 a 30) + bordas completas e sem depender de contexto (0 a 20) + ritmo de fala (0 a 15) + energia e variação de tom da voz em relação ao resto do vídeo (0 a 20, librosa) + densidade de perguntas, números e ganchos (0 a 15). Só ordena o que vale ler.
+- `rubrica` (Hook, Flow, Value, Trend, 0 a 25 cada) é preenchida pelo agente `cacador-de-cortes`, que lê a transcrição inteira e reordena o arquivo pelo total.
+- Palavras de gancho, conectivos e expressões que dependem de contexto ficam em listas no topo de `edin/hunt.py`.
+
+**Cold open:** `edin plan video.mp4 --range A-B --cold-open` põe no início um segmento de 1 a 3 s com a frase mais forte do trecho (pela nota da frase: gancho, pergunta, número, frase inteira, energia e tom; ignora os 4 primeiros s, que já abrem o vídeo). `--cold-open 598-602` usa os índices de palavra do `edin text`. A frase continua no lugar dela depois (é repetida). O segmento fica marcado com `"cold_open": true`, com punch-in (`zoom` 1.25) para o contexto voltar visivelmente a 1.0, e o plano ganha `"cold_open": {"words": [598, 602], "texto": "..."}`. As bordas seguem a energia do áudio sem pegar a palavra vizinha. As legendas não se misturam porque o segmento fora de ordem abre um bloco novo em `remap_words`. Para trocar a frase à mão num plano pronto, edite `start`/`end` do primeiro segmento (ou rode o `plan` de novo com outros índices).
+
 ## Como os cortes são feitos
 
 1. As palavras do Whisper decidem **o que** fica (pausas maiores que o limite do preset e fillers como "ahn" viram corte).
