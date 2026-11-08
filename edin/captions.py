@@ -53,6 +53,37 @@ def group_words(words: list, per_group: int, max_chars: int) -> list:
     return groups
 
 
+def ass_color(c: str | None, default: str = WHITE) -> str:
+    """'#RRGGBB' ou '&H00BBGGRR&' -> cor ASS."""
+    if not c:
+        return default
+    if c.startswith("#") and len(c) == 7:
+        return f"&H00{c[5:7]}{c[3:5]}{c[1:3]}&".upper()
+    return c
+
+
+def _title_event(t: dict, out_w: int, out_h: int, base: int) -> str:
+    """Título com opções: font, size (fração do lado menor), color, accent (palavras entre *asteriscos*),
+    y (0 topo, 1 base), box (caixa escura atrás), uppercase."""
+    upper = t.get("uppercase", "font" not in t)
+    raw = t["text"].upper() if upper else t["text"]
+    color, accent = ass_color(t.get("color")), ass_color(t.get("accent"), YELLOW)
+    parts = re.split(r"(\*[^*]+\*)", raw)
+    txt = "".join(f"{{\\c{accent}}}{_clean(p[1:-1])}{{\\c{color}}}" if p.startswith("*") and p.endswith("*")
+                  else _clean(p) for p in parts)
+    txt = txt.replace("\n", "\\N")
+    tags = "\\fad(120,150)\\fscx80\\fscy80\\t(0,160,\\fscx100\\fscy100)"
+    if "font" in t or "size" in t or "y" in t or "color" in t:
+        fs = int(base * float(t.get("size", 0.10)))
+        y = int(out_h * float(t.get("y", 0.15)))
+        tags = (f"\\an5\\pos({out_w // 2},{y})\\fn{t.get('font', 'Anton')}\\fs{fs}\\c{color}"
+                f"\\bord{max(2, fs // 14)}\\3c&H00101010&\\shad0\\b{1 if t.get('bold', True) else 0}") + tags
+        style = "Title" if t.get("box", False) else "Cap"
+    else:
+        style = "Title"
+    return f"Dialogue: 1,{_t(t.get('start', 0))},{_t(t.get('end', 2.5))},{style},,0,0,0,,{{{tags}}}{txt}"
+
+
 def build_ass(words: list, cfg: dict, out_w: int, out_h: int, titles: list | None = None,
               total: float | None = None) -> str:
     st = STYLES.get(cfg.get("style", "hormozi"), STYLES["hormozi"])
@@ -119,7 +150,5 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,{{{pos}{intro}}}" + " ".join(parts))
 
     for t in titles or []:
-        txt = _clean(t["text"].upper() if t.get("uppercase", True) else t["text"])
-        fx = "\\fad(120,150)\\fscx80\\fscy80\\t(0,160,\\fscx100\\fscy100)"
-        ev.append(f"Dialogue: 1,{_t(t.get('start', 0))},{_t(t.get('end', 2.5))},Title,,0,0,0,,{{{fx}}}{txt}")
+        ev.append(_title_event(t, out_w, out_h, base))
     return head + "\n".join(ev) + "\n"

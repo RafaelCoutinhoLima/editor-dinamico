@@ -21,12 +21,14 @@ from __future__ import annotations
 import random
 import re
 
+from .audio import snap_segments
 from .utils import fmt_time, load_json, parse_range, probe, save_json
 
 PRESETS = {
-    # Reels/TikTok/Shorts: cortes secos, punch-ins frequentes, legenda grande palavra a palavra
+    # Reels/TikTok/Shorts: cortes secos, punch-ins frequentes, legenda grande palavra a palavra.
+    # Som: clique suave na troca de zoom (whoosh em todo corte soa amador; use whoosh só em transições grandes)
     "reels": dict(format="9:16", max_gap=0.30, pad=0.06, zooms=[1.0, 1.18], zoom_every=3.2, drift=0.035,
-                  captions="hormozi", words_per_group=3, position=0.68, auto_sfx={"on_zoom": "whoosh"}),
+                  captions="hormozi", words_per_group=3, position=0.68, auto_sfx={"on_zoom": "softclick"}),
     # YouTube horizontal: ritmo mais calmo, zoom sutil, legenda discreta
     "youtube": dict(format="16:9", max_gap=0.50, pad=0.12, zooms=[1.0, 1.10], zoom_every=7.0, drift=0.0,
                     captions="minimal", words_per_group=8, position=0.88, auto_sfx={}),
@@ -38,7 +40,8 @@ PRESETS = {
                  captions="minimal", words_per_group=8, position=0.88, auto_sfx={}),
 }
 
-FILLER_RE = re.compile(r"^(a+h+n*|h+m+|h+u+m+|e+h+|é{2,}|ã+|a{3,}|uh+|um+)[.,!?…]*$", re.IGNORECASE)
+# "um" sozinho é artigo em português ("tem um viés"): só conta como filler esticado ("umm")
+FILLER_RE = re.compile(r"^(a+h+n*|h+m+|h+u+m+|e+h+|é{2,}|ã+|a{3,}|uh+|um{2,})[.,!?…]*$", re.IGNORECASE)
 
 
 def _is_filler(word: str) -> bool:
@@ -46,10 +49,16 @@ def _is_filler(word: str) -> bool:
 
 
 def build_talking_plan(src: str, words_json: str, preset: str = "reels", rng: str | None = None,
-                       remove_fillers: bool = True, fmt: str | None = None) -> dict:
+                       remove_fillers: bool = True, fmt: str | None = None, speed: float = 1.0,
+                       snap: bool = True) -> dict:
     cfg = PRESETS[preset]
     info = probe(src)
-    words = load_json(words_json)["words"]
+    all_words = load_json(words_json)["words"]
+    if any(w["s"] >= info["duration"] for w in all_words):  # transcrição de outro vídeo (ou de outra versão)
+        raise SystemExit(f"[edin] {words_json} tem palavras depois do fim de {src} ({info['duration']:.1f}s). "
+                         "A transcrição não é deste vídeo: rode edin transcribe de novo.")
+    words = all_words
+    by_i = {w["i"]: w for w in all_words}
     r = parse_range(rng)
     if r:
         words = [w for w in words if w["s"] >= r[0] - 0.05 and w["e"] <= r[1] + 0.05]
@@ -70,13 +79,31 @@ def build_talking_plan(src: str, words_json: str, preset: str = "reels", rng: st
     pad = cfg["pad"]
     segs = []
     for b in blocks:
+        # vizinhos no original (inclusive fillers removidos): o ajuste por energia não pode engoli-los
+        prv, nxt = by_i.get(b[0]["i"] - 1), by_i.get(b[-1]["i"] + 1)
+        lo = prv["e"] if prv else 0.0
+        hi = nxt["s"] if nxt else info["duration"]
+        # filler removido costuma vir grudado na palavra (sem silêncio) e o Whisper marca o fim dele cedo:
+        # o limite fica no meio do caminho, senão o ajuste por energia traz o "ahn" de volta
+        if prv and remove_fillers and _is_filler(prv["w"]):
+            lo = (prv["e"] + b[0]["s"]) / 2
+        if nxt and remove_fillers and _is_filler(nxt["w"]):
+            hi = (b[-1]["e"] + nxt["s"]) / 2
         segs.append({"start": max(0.0, b[0]["s"] - pad), "end": min(info["duration"], b[-1]["e"] + pad),
-                     "_words": b})
+                     "_words": b, "_lo": lo, "_hi": hi})
+    if r:  # nunca sair do trecho pedido
+        for s in segs:
+            s["_lo"], s["_hi"] = max(s["_lo"], r[0] - 0.05), min(s["_hi"], r[1] + 0.05)
     # evita sobreposição entre blocos vizinhos
     for a, b in zip(segs, segs[1:]):
         if b["start"] < a["end"]:
             mid = (a["_words"][-1]["e"] + b["_words"][0]["s"]) / 2
             a["end"], b["start"] = mid, mid
+    # 1b) corta pela energia do áudio, não só pelos tempos do Whisper (não come o fim das palavras)
+    if snap and info["has_audio"]:
+        n = snap_segments(segs, src, info["duration"])
+        if n:
+            print(f"[edin] {n} bordas de corte ajustadas pela energia do áudio")
 
     # 2) divide blocos longos para criar punch-ins (sem remover tempo)
     out = []
@@ -101,6 +128,8 @@ def build_talking_plan(src: str, words_json: str, preset: str = "reels", rng: st
         z = zooms[i % len(zooms)]
         s["start"], s["end"] = round(s["start"], 3), round(s["end"], 3)
         s["zoom"] = z
+        if speed and abs(speed - 1.0) > 1e-3:
+            s["speed"] = round(speed, 3)
         if cfg["drift"]:
             s["zoom_to"] = round(z + cfg["drift"], 3)
         s["focus"] = "face"
@@ -157,7 +186,9 @@ def build_montage_plan(clips: list, music: str, duration: float = 30.0, music_st
         k += step
         if k < len(beats):
             cuts.append(beats[k])
-    cuts = [c for c in cuts if c <= duration] + ([duration] if cuts[-1] < duration else [])
+    cuts = [c for c in cuts if c <= duration]
+    if duration - cuts[-1] >= 0.15:  # fecha na duração pedida (as batidas vão até duration+2)
+        cuts.append(duration)
     infos = {c: probe(c) for c in clips}
     pos = {c: rnd.uniform(0, max(0.0, infos[c]["duration"] * 0.3)) if not infos[c]["duration"] == 0 else 0
            for c in clips}

@@ -7,7 +7,8 @@ from pathlib import Path
 from .captions import build_ass
 from .plan import load_plan, remap_words, seg_out_dur, seg_src
 from .reframe import crop_box, face_track, focus_for
-from .sfx import sfx_file
+from .sfx import VOLUME as SFX_VOLUME
+from .sfx import sfx_file, sync_start
 from .utils import FONTS_DIR, ffmpeg_filter_path, is_image, load_json, probe, run, workdir_for
 
 FORMATS = {"9:16": (1080, 1920), "16:9": (1920, 1080), "1:1": (1080, 1080), "4:5": (1080, 1350)}
@@ -48,6 +49,7 @@ class Renderer:
         self.cache = self.wd / "cache"
         self.cache.mkdir(exist_ok=True)
         self._probe, self._tracks = {}, {}
+        self._pad = None
         main = self.info(plan["source"])
         self.W, self.H = out_size(plan, main, draft)
         self.fps = float(plan.get("fps", 30))
@@ -66,8 +68,39 @@ class Renderer:
         return self._tracks[src]
 
     # ------------------------------------------------------------ vídeo de um segmento
-    def _vchain(self, src: str, t0: float, t1: float, zoom: float, zoom_to: float, focus, d_out: float) -> str:
+    def _blur_fill(self, zoom: float = 1.0, drift: float = 1.0, d_out: float = 1.0, pad_color: str | None = None) -> str:
+        """Fonte inteira no centro + cópia desfocada preenchendo as laterais (não corta cabeça nem testa).
+        drift > 1 aproxima o quadro todo devagar ao longo do segmento (zoom_to / zoom)."""
+        W, H = self.W, self.H
+        fw, fh = _even(W * zoom), _even(H * zoom)
+        if pad_color:  # fundo de cor sólida no lugar do desfoque
+            chain = (f"scale={fw}:{fh}:force_original_aspect_ratio=decrease:flags=lanczos,"
+                     f"pad=w='max(iw,{W})':h='max(ih,{H})':x=(ow-iw)/2:y=(oh-ih)/2:color={pad_color},"
+                     f"crop={W}:{H}")
+        else:
+            chain = (f"split=2[bf_bg][bf_fg];[bf_bg]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
+                     f"boxblur=40:3,eq=brightness=-0.22:saturation=1.15[bf_b];[bf_fg]scale={fw}:{fh}"
+                     f":force_original_aspect_ratio=decrease:flags=lanczos[bf_f];[bf_b][bf_f]overlay=(W-w)/2:(H-h)/2")
+        if abs(drift - 1.0) > 1e-3:
+            n = max(1, int(round(d_out * self.fps)) - 1)
+            up = 1.0 if self.draft else 1.5
+            a, b = (1.0, drift) if drift > 1 else (1 / drift, 1.0)
+            chain += (f",scale={_even(W * up)}:{_even(H * up)}:flags=bicubic,zoompan=z='{a:.4f}+({b - a:.4f})*on/{n}'"
+                      f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={self.fps}")
+        return chain + f",fps={self.fps},setsar=1,format=yuv420p"
+
+    def _vchain(self, src: str, t0: float, t1: float, zoom: float, zoom_to: float, focus, d_out: float,
+                fit: str | None = None) -> str:
         info = self.info(src)
+        # "blur": mostra o quadro inteiro com fundo desfocado. Automático quando a fonte é vertical e a saída
+        # horizontal (o crop cortaria a testa e o queixo).
+        src_ar, out_ar = info["w"] / info["h"], self.W / self.H
+        if fit in ("blur", "pad") or (fit is None and src_ar < out_ar * 0.75):
+            z = max(1.0, zoom)
+            color = None
+            if fit == "pad":
+                color = "0x" + str(self._pad or self.plan.get("pad_color", "#000000")).lstrip("#")
+            return self._blur_fill(z, max(1.0, zoom_to) / z, d_out, color)
         if focus == "center" or focus is None:
             (fx, fy), has_face = (0.5, 0.5), False
         elif isinstance(focus, (list, tuple)):
@@ -91,11 +124,16 @@ class Renderer:
         return ",".join(chain)
 
     def render_segment(self, i: int, seg: dict) -> Path:
-        out = self.wd / f"seg_{i:04d}.mp4"
+        # .mov com áudio PCM: o concat junta amostra por amostra. Com AAC em .mp4 cada segmento trazia áudio
+        # mais longo que o vídeo (quadros de 1024 amostras + priming), o concat empilhava timestamps para trás
+        # e o mux final abria saltos de segundos no áudio (fala comida e boca fora de sincronia).
+        out = self.wd / f"seg_{i:04d}.mov"
+        self._pad = seg.get("pad_color")  # cor de fundo do fit "pad" só deste segmento
         src = seg_src(self.plan, seg)
         speed = float(seg.get("speed", 1.0) or 1.0)
         d_src = seg["end"] - seg["start"]
-        d_out = d_src / speed
+        # duração quantizada em quadros: áudio e vídeo do segmento com exatamente o mesmo tamanho
+        d_out = max(1, round(d_src / speed * self.fps)) / self.fps
         zoom = float(seg.get("zoom", 1.0))
         zoom_to = float(seg.get("zoom_to", zoom))
         cmd = ["ffmpeg", "-y", "-v", "error"]
@@ -113,7 +151,8 @@ class Renderer:
                 cmd += ["-stream_loop", "-1", "-ss", f"{b0:.3f}", "-t", f"{d_out:.3f}", "-i", bsrc]
                 bz = float(broll.get("zoom", 1.0))
                 bz2 = float(broll.get("zoom_to", bz + 0.04))
-            vchain = "setpts=PTS-STARTPTS," + self._vchain(bsrc, b0, b1, bz, bz2, broll.get("focus", "face"), d_out)
+            vchain = "setpts=PTS-STARTPTS," + self._vchain(bsrc, b0, b1, bz, bz2, broll.get("focus", "face"), d_out,
+                                                                broll.get("fit"))
             a_idx = 1
             cmd += ["-ss", f"{seg['start']:.3f}", "-t", f"{d_src:.3f}", "-i", src]
         else:
@@ -123,8 +162,9 @@ class Renderer:
                 cmd += ["-ss", f"{seg['start']:.3f}", "-t", f"{d_src:.3f}", "-i", src]
             pts = f"setpts=(PTS-STARTPTS)/{speed}" if speed != 1.0 else "setpts=PTS-STARTPTS"
             vchain = pts + "," + self._vchain(src, seg["start"], seg["end"], zoom, zoom_to, seg.get("focus", "face"),
-                                              d_out)
+                                              d_out, seg.get("fit"))
             a_idx = 0
+        vchain += ",tpad=stop_mode=clone:stop_duration=0.2"  # cobre o meio quadro do arredondamento
         use_src_audio = self.plan.get("audio", "source") == "source" and not is_image(src) \
             and self.info(src)["has_audio"]
         if use_src_audio:
@@ -136,38 +176,44 @@ class Renderer:
                       f"afade=t=out:st={fo:.3f}:d=0.015,apad"
             fc = f"[0:v]{vchain}[v];[{a_idx}:a]{achain}[a]"
         else:
-            cmd += ["-f", "lavfi", "-t", f"{d_out:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
+            cmd += ["-f", "lavfi", "-t", f"{d_out:.6f}", "-i", "anullsrc=r=48000:cl=stereo"]
             n_in = 2 if broll else 1
             fc = f"[0:v]{vchain}[v];[{n_in}:a]anull[a]"
-        cmd += ["-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-t", f"{d_out:.3f}",
+        cmd += ["-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-t", f"{d_out:.6f}",
                 "-c:v", "libx264", "-preset", self.preset, "-crf", str(self.crf), "-r", str(self.fps),
-                "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", str(out)]
+                "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", str(out)]
         run(cmd, verbose=self.verbose)
         return out
 
     # ------------------------------------------------------------ efeitos sonoros
     def sfx_events(self, words_out: list) -> list:
+        """Lista de efeitos com `at` = momento do evento no vídeo final (o ponto de sincronia cai ali)."""
         ev = [dict(e) for e in self.plan.get("sfx") or []]
         auto = self.plan.get("auto_sfx") or {}
         if auto.get("on_zoom"):
             t, prev = 0.0, None
-            for n, seg in enumerate(self.plan["segments"]):
+            for seg in self.plan["segments"]:
                 z = seg.get("zoom", 1.0)
                 if prev is not None and z != prev:
-                    ev.append({"at": max(0.0, t - 0.12), "type": auto["on_zoom"], "volume": 0.35})
+                    ev.append({"at": t, "type": auto["on_zoom"], "auto": True})
                 prev = z
                 t += seg_out_dur(seg)
         if auto.get("on_emphasis"):
             emph = set((self.plan.get("captions") or {}).get("emphasis") or [])
             for w in words_out:
                 if w["i"] in emph:
-                    ev.append({"at": w["s"], "type": auto["on_emphasis"], "volume": 0.5})
+                    ev.append({"at": w["s"], "type": auto["on_emphasis"], "auto": True})
         if auto.get("on_cut"):
             t = 0.0
             for seg in self.plan["segments"][:-1]:
                 t += seg_out_dur(seg)
-                ev.append({"at": max(0.0, t - 0.05), "type": auto["on_cut"], "volume": 0.3})
-        return ev
+                ev.append({"at": t, "type": auto["on_cut"], "auto": True})
+        # automáticos não empilham: no máximo um efeito a cada 0,12 s (o manual tem prioridade)
+        out = [e for e in ev if not e.get("auto")]  # manual nunca é descartado
+        for e in sorted((e for e in ev if e.get("auto")), key=lambda e: float(e["at"])):
+            if all(abs(float(e["at"]) - float(k["at"])) >= 0.12 for k in out):
+                out.append(e)
+        return sorted(out, key=lambda e: float(e["at"]))
 
     # ------------------------------------------------------------ pipeline
     def run(self) -> str:
@@ -181,7 +227,7 @@ class Renderer:
         print()
         lst = self.wd / "concat.txt"
         lst.write_text("".join(f"file '{f.name}'\n" for f in files))
-        joined = self.wd / "joined.mp4"
+        joined = self.wd / "joined.mov"
         run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst.name, "-c", "copy", joined.name],
             cwd=str(self.wd))
         total = sum(seg_out_dur(s) for s in segs)
@@ -194,20 +240,18 @@ class Renderer:
             ass = build_ass(words_out if cap else [], cap or {}, self.W, self.H, titles, total)
             (self.wd / "captions.ass").write_text(ass, encoding="utf-8")
 
+        # 1ª passada, só áudio: voz + SFX + música + loudnorm -> mix.wav. Num filtergraph único com vídeo e
+        # áudio, o ffmpeg 8 com encoder AAC abria saltos no áudio (3 s = lookahead do loudnorm): fala sumia.
         inputs = ["-i", joined.name]
-        fc = []
-        if has_subs:
-            fc.append(f"[0:v]subtitles=captions.ass:fontsdir='{ffmpeg_filter_path(str(FONTS_DIR))}'[v]")
-        else:
-            fc.append("[0:v]null[v]")
-        fc.append("[0:a]asplit=2[voice][sc]")
+        fc = ["[0:a]asplit=2[voice][sc]"]
         mix = ["[voice]"]
         n = 1
         for k, e in enumerate(self.sfx_events(words_out)):
             f = sfx_file(e["type"], self.cache)
             inputs += ["-i", str(f)]
-            ms = int(float(e["at"]) * 1000)
-            fc.append(f"[{n}:a]adelay={ms}|{ms},volume={float(e.get('volume', 0.5))}[s{k}]")
+            ms = int(sync_start(e["type"], float(e["at"])) * 1000)
+            vol = float(e.get("volume", SFX_VOLUME.get(e["type"], 0.4)))
+            fc.append(f"[{n}:a]adelay={ms}|{ms},volume={vol}[s{k}]")
             mix.append(f"[s{k}]")
             n += 1
         music = self.plan.get("music")
@@ -230,8 +274,13 @@ class Renderer:
         fc.append(f"{''.join(mix)}amix=inputs={len(mix)}:normalize=0:duration=first,"
                   f"loudnorm=I={lufs}:TP=-1.5:LRA=11,aresample=48000[a]")
         out_abs = str(Path(self.output).resolve())
-        cmd = ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]",
-               "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", self.preset, "-crf", str(self.crf + 2),
+        run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(fc), "-map", "[a]",
+             "-c:a", "pcm_s16le", "mix.wav"], cwd=str(self.wd), verbose=self.verbose)
+        # 2ª passada: legenda no vídeo e junta o áudio já mixado
+        vf = f"subtitles=captions.ass:fontsdir='{ffmpeg_filter_path(str(FONTS_DIR))}'" if has_subs else "null"
+        cmd = ["ffmpeg", "-y", "-v", "error", "-i", joined.name, "-i", "mix.wav", "-filter_complex", f"[0:v]{vf}[v]",
+               "-map", "[v]", "-map", "1:a", "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", self.preset,
+               "-crf", str(self.crf + 2),
                "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out_abs]
         run(cmd, cwd=str(self.wd), verbose=self.verbose)
         print(f"[edin] Pronto: {out_abs} ({total:.1f}s)")
@@ -245,9 +294,9 @@ def render(plan_path: str, output: str, draft: bool = False, keep: bool = False,
         return r.run()
     finally:
         if not keep:
-            for f in r.wd.glob("seg_*.mp4"):
+            for f in r.wd.glob("seg_*.mov"):
                 f.unlink()
-            for name in ("joined.mp4",):
+            for name in ("joined.mov", "mix.wav"):
                 p = r.wd / name
                 if p.exists():
                     p.unlink()
@@ -258,7 +307,8 @@ def contact_sheet(video: str, out: str, n: int = 12, cols: int = 4) -> str:
     rows = (n + cols - 1) // cols
     fps = n / max(info["duration"], 0.1)
     run(["ffmpeg", "-y", "-v", "error", "-i", video, "-vf",
-         f"fps={fps:.5f},scale=360:-2,drawtext=text='%{{pts\\:hms}}':x=8:y=8:fontsize=22:fontcolor=white:"
+         f"fps={fps:.5f},scale=360:-2,drawtext=fontfile='{ffmpeg_filter_path(str(FONTS_DIR / 'Montserrat-ExtraBold.ttf'))}'"
+         f":text='%{{pts\\:hms}}':x=8:y=8:fontsize=22:fontcolor=white:"
          f"box=1:boxcolor=black@0.6,tile={cols}x{rows}:padding=6:color=0x222222", "-frames:v", "1", out])
     return out
 

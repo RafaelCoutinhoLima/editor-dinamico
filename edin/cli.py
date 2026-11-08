@@ -69,7 +69,8 @@ def cmd_plan(a):
     words = a.words or _stem(a.video) + ".words.json"
     if not Path(words).exists():
         sys.exit(f"[edin] {words} não existe. Rode antes: edin transcribe {a.video}")
-    plan = build_talking_plan(a.video, words, a.preset, a.range, not a.keep_fillers, a.format)
+    plan = build_talking_plan(a.video, words, a.preset, a.range, not a.keep_fillers, a.format, a.speed,
+                              not a.no_snap)
     out = a.out or _stem(a.video) + (f".{a.name}" if a.name else "") + ".plan.json"
     save_plan(plan, out)
 
@@ -103,11 +104,26 @@ def cmd_auto(a):
 
     words = _stem(a.video) + ".words.json"
     if not Path(words).exists():
-        transcribe(a.video, words, a.model, a.lang, "auto")
-    plan = build_talking_plan(a.video, words, a.preset, a.range)
+        transcribe(a.video, words, a.model, None if a.lang == "auto" else a.lang, "auto")
+    plan = build_talking_plan(a.video, words, a.preset, a.range, speed=a.speed)
     pp = _stem(a.video) + ".plan.json"
     save_plan(plan, pp)
-    render(pp, a.out or _stem(a.video) + "_editado.mp4", a.draft)
+    render(pp, a.out or _stem(a.video) + ("_rascunho" if a.draft else "_editado") + ".mp4", a.draft)
+
+
+def cmd_check(a):
+    from .check import audit_plan, audit_video, print_report
+
+    warn = audit_plan(a.plan)
+    if a.video:
+        warn += audit_video(a.plan, a.video)
+    sys.exit(print_report(warn))
+
+
+def cmd_verify(a):
+    from .check import print_report, verify_render
+
+    sys.exit(print_report(verify_render(a.plan, a.video, a.model, None if a.lang == "auto" else a.lang)))
 
 
 def cmd_sheet(a):
@@ -128,6 +144,29 @@ def cmd_clean(a):
     from .render import clean
 
     clean(a.out)
+
+
+# ---- motion (Remotion) -------------------------------------------------------------- ver docs/MOTION.md
+def cmd_motion(a):
+    from .remotion_bridge import motion
+
+    out = a.out or _stem(a.video) + "_motion.mp4"
+    motion(a.plan, a.video, out, a.matte, a.props_only, a.guides, a.concurrency, a.verbose)
+
+
+def _add_motion_parser(sp):
+    s = sp.add_parser("motion", help="motion design com Remotion por cima do vídeo editado (chave \"motion\" do plano)")
+    s.add_argument("plan")
+    s.add_argument("video", help="vídeo já renderizado pelo edin (edin render)")
+    s.add_argument("-o", "--out")
+    s.add_argument("--matte", choices=["auto", "on", "off"], default="auto",
+                   help="recorte da pessoa para a palavra atrás da cabeça (auto: só se houver behind-head-word)")
+    s.add_argument("--props-only", action="store_true", help="só gera as props e a mídia (para o Remotion Studio)")
+    s.add_argument("--guides", action="store_true", help="desenha zonas seguras, rosto e caixas (conferência)")
+    s.add_argument("--concurrency", type=int)
+    s.add_argument("-v", "--verbose", action="store_true")
+    s.set_defaults(fn=cmd_motion)
+# ---- fim motion
 
 
 def main(argv=None):
@@ -157,6 +196,8 @@ def main(argv=None):
     s.add_argument("--range", help="trecho do original, ex: 90-150 ou 1:30-2:30 (para cortes/shorts)")
     s.add_argument("--name", help="sufixo do arquivo, ex: short1")
     s.add_argument("--keep-fillers", action="store_true", help="não remover ahn/hum/éé")
+    s.add_argument("--speed", type=float, default=1.0, help="acelera a fala depois do corte (1.05-1.10 soa natural)")
+    s.add_argument("--no-snap", action="store_true", help="não ajustar cortes pela energia do áudio")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_plan)
 
@@ -189,9 +230,22 @@ def main(argv=None):
     s.add_argument("--range")
     s.add_argument("--model", default="small")
     s.add_argument("--lang", default="pt")
+    s.add_argument("--speed", type=float, default=1.0)
     s.add_argument("--draft", action="store_true")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_auto)
+
+    s = sp.add_parser("check", help="crítico automático: ritmo, gancho, legendas, som (e o vídeo final, se passar)")
+    s.add_argument("plan")
+    s.add_argument("video", nargs="?", help="vídeo renderizado (mede duração e loudness)")
+    s.set_defaults(fn=cmd_check)
+
+    s = sp.add_parser("verify", help="retranscreve o vídeo final e acha palavras comidas nos cortes")
+    s.add_argument("plan")
+    s.add_argument("video")
+    s.add_argument("--model", default="small")
+    s.add_argument("--lang", default="pt")
+    s.set_defaults(fn=cmd_verify)
 
     s = sp.add_parser("sheet", help="folha de quadros (contact sheet) para revisar o vídeo")
     s.add_argument("video")
@@ -206,8 +260,10 @@ def main(argv=None):
     s.add_argument("out")
     s.set_defaults(fn=cmd_clean)
 
+    _add_motion_parser(sp)
+
     a = p.parse_args(argv)
-    if a.cmd not in ("doctor", "sfx", "text", "timeline"):
+    if a.cmd not in ("doctor", "sfx", "text"):
         check_tools()
     a.fn(a)
 

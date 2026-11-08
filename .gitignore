@@ -11,3 +11,9 @@ __pycache__/
 *.plan.json
 *_quadros.jpg
 .venv/
+
+# Remotion (edin motion)
+remotion/node_modules/
+remotion/out/
+remotion/public/*
+!remotion/public/.gitkeep

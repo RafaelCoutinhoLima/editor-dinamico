@@ -1,0 +1,23 @@
+{
+  "name": "edin-remotion",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Camada de motion design (Remotion) por cima do vídeo cortado pelo edin",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render EdinOverlay out/final.mp4",
+    "still": "remotion still EdinOverlay out/still.png",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "@remotion/fonts": "4.0.536",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
