@@ -5,7 +5,7 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
 ## Já no edin
 
 - ✅ Corte por silêncio com ajuste por energia + verificação por retranscrição (`edin verify`).
-- ✅ Reenquadramento por rosto (YuNet), `pan` (manual ou `"auto"`), `extend`, `blur`, `hide` para 16:9 → 9:16 em tela cheia.
+- ✅ Reenquadramento por rosto (YuNet) com câmera virtual por plano, `pan` (manual ou `"auto"`), `extend`, `blur`, `hide` para 16:9 → 9:16 em tela cheia.
 - ✅ Crítico automático (`edin check`): ritmo, gancho, legenda, som, loudness e varredura de faixas a 4 quadros/s.
 
 ## Próximos passos (por impacto/esforço)
@@ -15,8 +15,8 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
    - Melhor qualidade: [DeepFilterNet 3](https://github.com/Rikorose/DeepFilterNet) (MIT/Apache), binário `deep-filter` de 36 MB, 5 s de áudio em 1,3 s de CPU, WAV 48 kHz.
    - No plano: `"voice": {"clean": "dfn|rnn", "strength": 24, "chain": "broadcast"}`. Medido num vídeo de celular: ruído de fundo -25 → -40 dBFS, fala/ruído 15 → 28 dB, 231/231 palavras preservadas, atraso 0 ms.
 2. **Mais QA no `edin check`**, tudo com o ffmpeg que já existe: `blackdetect` (quadro preto fora do fim), `freezedetect`, `silencedetect` no final, `ebur128` com pico real e LRA, ffprobe (1080x1920, yuv420p, fps constante, AAC 48 kHz, `+faststart`, áudio e vídeo com a mesma duração), cortes por minuto com `scdet`, contraste e altura mínima da legenda.
-3. **Câmera virtual suavizada** (o que o Premiere Auto Reframe acerta): mapa de atividade com compensação de movimento global (ORB + RANSAC do OpenCV), zona morta de ~15%, filtro One Euro, velocidade máxima e modo "parado" por plano. Campo: `reframe: {"mode": "static|track|auto", "deadzone": 0.15}`.
-4. **Detecção de cenas** com [PySceneDetect](https://scenedetect.com) (`AdaptiveDetector`, BSD-3, 1 MB): `edin scenes video.mp4` → `scenes.json`, para recomeçar o rastreio a cada plano e não deixar `pan` atravessar corte.
+3. ✅ **Câmera virtual suavizada** (feito: `focus: "face"`/`"auto"` + `reframe` no plano). O que o Premiere Auto Reframe acerta: por plano, zona morta de 15%, One Euro de ida e volta, mola com velocidade máxima e modo parado quando o alvo varia pouco; sem rosto confiável, mapa de atividade com compensação de movimento global (ORB + RANSAC do OpenCV) e saliência por resíduo espectral. Campo: `reframe: {"mode": "static|track|auto", "deadzone": 0.15, "smooth": 1.0, "max_speed": 1.0}`. Medido numa palestra 16:9 → 9:16: rosto no quadro 78,6% → 99,9%, tremor (dp da derivada de x) 24,6 → 6,2 px/quadro contra o rastreio cru.
+4. ✅ **Detecção de cenas** (feito: `edin scenes`) com [PySceneDetect](https://scenedetect.com) (`AdaptiveDetector`, BSD-3): `edin scenes video.mp4` → `video.scenes.json`. Cada corte tem nota (troca de plano de verdade x conteúdo mudando no mesmo enquadramento). Rastreio e `pan` recomeçam a cada plano, `edin montage` não deixa pedaço atravessar corte (7 de 10 → 0 de 10 num teste) e `--segments` gera um segmento por cena para o reenquadrador.
 5. **Rubrica de cortes estilo OpusClip** no agente `cacador-de-cortes`: Hook, Flow, Value e Trend de 0 a 25 cada, mais sinais objetivos (pico de energia, palavras por segundo, frase completa, 20 a 60 s) e **cold open** (a frase mais forte repetida no início).
 6. **Upscale de fontes 720p do WhatsApp.**
    - Rápido: `nlmeans` ou `hqdn3d` + `scale` lanczos + `cas=0.5`, todos no ffmpeg.

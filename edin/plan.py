@@ -23,7 +23,8 @@ import re
 
 from .audio import snap_segments
 from .voice import DEFAULT as VOICE_DEFAULT
-from .utils import fmt_time, load_json, parse_range, probe, save_json
+from .scenes import detect_scenes, fit_in_shot
+from .utils import fmt_time, is_image, load_json, parse_range, probe, save_json
 
 PRESETS = {
     # Reels/TikTok/Shorts: cortes secos, punch-ins frequentes, legenda grande palavra a palavra.
@@ -193,6 +194,13 @@ def build_montage_plan(clips: list, music: str, duration: float = 30.0, music_st
     if duration - cuts[-1] >= 0.15:  # fecha na duração pedida (as batidas vão até duration+2)
         cuts.append(duration)
     infos = {c: probe(c) for c in clips}
+    cuts_of = {}
+    for c in clips:  # trocas de plano de cada clipe (PySceneDetect, com cache)
+        try:
+            cuts_of[c] = [] if is_image(c) else detect_scenes(c).get("hard_cuts", [])
+        except (SystemExit, Exception) as e:
+            print(f"[edin] Aviso: sem detecção de cenas em {c} ({e})")
+            cuts_of[c] = []
     pos = {c: rnd.uniform(0, max(0.0, infos[c]["duration"] * 0.3)) if not infos[c]["duration"] == 0 else 0
            for c in clips}
     segs = []
@@ -208,10 +216,12 @@ def build_montage_plan(clips: list, music: str, duration: float = 30.0, music_st
         st = pos[c]
         if st + d > cd:
             st = max(0.0, rnd.uniform(0, max(0.0, cd - d)))
+        if cuts_of[c]:  # encaixa o pedaço num plano só: sem 2-3 quadros do plano vizinho no começo ou no fim
+            st = fit_in_shot(cuts_of[c], st, d, cd)
         pos[c] = st + d + rnd.uniform(0.2, 1.5)
         z = rnd.choice([1.0, 1.05, 1.12])
         segs.append({"src": c, "start": round(st, 3), "end": round(st + d, 3), "zoom": z,
-                     "zoom_to": round(z + rnd.choice([0.04, 0.06, -0.03]), 3), "focus": "face"})
+                     "zoom_to": round(z + rnd.choice([0.04, 0.06, -0.03]), 3), "focus": "auto"})
     return {
         "source": clips[0], "words": None, "format": fmt, "fps": 30, "preset": "montagem",
         "audio": "music", "segments": segs,

@@ -6,7 +6,11 @@ from pathlib import Path
 
 from .captions import build_ass
 from .plan import load_plan, remap_words, seg_out_dur, seg_src
-from .reframe import activity_pan, crop_box, face_track, focus_for
+import numpy as np
+
+from .reframe import (CAM_FPS, activity_pan, activity_window, camera_path, crop_box, face_track, face_window, focus_for,
+                      piecewise_expr, reframe_cfg, simplify_keys)
+from .scenes import shots
 from .sfx import VOLUME as SFX_VOLUME
 from .sfx import sfx_file, sync_start
 from .utils import FONTS_DIR, ffmpeg_filter_path, is_image, load_json, probe, run, workdir_for
@@ -53,6 +57,7 @@ class Renderer:
         self._pan = None
         self._hide = None
         self._dim = 0.22
+        self.camera_log = []  # trajetórias da câmera virtual (para medir tremor e conferir)
         main = self.info(plan["source"])
         self.W, self.H = out_size(plan, main, draft)
         self.fps = float(plan.get("fps", 30))
@@ -135,8 +140,123 @@ class Renderer:
                       f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={self.fps}")
         return chain + f",fps={self.fps},setsar=1,format=yuv420p"
 
+    # ------------------------------------------------------------ câmera virtual e pan, por plano
+    def _shots(self, src: str, t0: float, t1: float) -> list:
+        """Planos do trecho [t0, t1] da fonte (cortes do PySceneDetect). A câmera recomeça em cada um."""
+        if is_image(src):
+            return [(t0, t1)]
+        try:
+            return shots(src, t0, t1)
+        except Exception as e:  # sem PySceneDetect ou vídeo ilegível: trecho inteiro como um plano só
+            print(f"\n[edin] Aviso: detecção de cenas falhou ({e}); câmera sem divisão por plano.")
+            return [(t0, t1)]
+
+    def _shot_targets(self, src: str, a: float, b: float, focus: str, view: tuple, cfg: dict):
+        """Alvo da câmera num plano: (amostras, tem_rosto, parado_rápido).
+        `parado_rápido` = (fx, fy) quando o rastreio de 2 fps já mostra que o rosto quase não sai do lugar
+        (mesmo resultado do enquadramento parado de antes, sem custo extra)."""
+        dzx, dzy = cfg["deadzone"] * view[0], cfg["deadzone"] * view[1]
+        if cfg["mode"] != "track":
+            g = [f for f in self.track(src) if a <= f["t"] <= b]
+            if len(g) >= 2 and max(f["x"] for f in g) - min(f["x"] for f in g) <= 2 * dzx \
+                    and max(f["y"] for f in g) - min(f["y"] for f in g) <= 2 * dzy:
+                return None, True, focus_for(self.track(src), a, b)[0]
+        faces = face_window(src, a, b, self.cache)
+        if len(faces) >= 0.25 * (b - a) * CAM_FPS:
+            return faces, True, None
+        # rosto em menos de 25% das amostras (de perfil, no escuro, longe): não é confiável para guiar a câmera
+        # (detecções falsas viram a semente). Segue o que se mexe de verdade, com compensação do movimento da câmera.
+        act = activity_window(src, a, b, self.cache)
+        motion = [s for s in act if s["kind"] == "motion"]
+        if len(motion) >= 0.3 * max(1, len(act)):
+            return motion, False, None
+        if focus == "face" or not act:
+            return None, True, focus_for(self.track(src), a, b)[0]
+        return act, False, None  # "auto" sem rosto e sem movimento: saliência
+
+    def _camera(self, src: str, t0: float, t1: float, focus: str, zmin: float, speed: float, cfg: dict):
+        """Expressões (x, y) do recorte com a câmera virtual, ou None quando o resultado é um enquadramento parado
+        num plano só (aí vale o crop fixo de sempre, idêntico ao de antes)."""
+        info = self.info(src)
+        sw, sh = info["w"], info["h"]
+        _, _, cw, ch = crop_box(sw, sh, self.W, self.H, zmin, 0.5, 0.5, False)
+        view = (cw / sw, ch / sh)
+        pieces = self._shots(src, t0, t1)
+        keys_x, keys_y, moving = [], [], False
+        for k, (a, b) in enumerate(pieces):
+            samples, has_face, still = self._shot_targets(src, a, b, focus, view, cfg)
+            if still is None:
+                sx, px = camera_path(samples, a, b, view[0], cfg, "x")
+                sy, py = camera_path(samples, a, b, view[1], cfg, "y")
+                if sx and sy:
+                    still = (0.5 if px is None else px, 0.5 if py is None else py)
+            ta, tb = (a - t0) / speed, (b - t0) / speed
+            if still is not None:
+                fx, fy = still
+                cx, cy, *_ = crop_box(sw, sh, self.W, self.H, zmin, fx, fy, has_face)
+                xs, ys, ts = [cx, cx], [cy, cy], [ta, tb]
+                mode = "parado"
+            else:
+                moving = True
+                grid = px[0] if not sx else py[0]
+                gx = np.full(len(grid), px) if sx else px[1]
+                gy = np.full(len(grid), py) if sy else py[1]
+                boxes = [crop_box(sw, sh, self.W, self.H, zmin, float(x), float(y), has_face) for x, y in zip(gx, gy)]
+                ts = [(t - t0) / speed for t in grid]
+                xs, ys = [bx[0] for bx in boxes], [bx[1] for bx in boxes]
+                mode = "segue"
+            if self.verbose:
+                print(f"\n[edin] câmera plano {k + 1}/{len(pieces)} [{a:.2f}-{b:.2f}] "
+                      f"{'rosto' if has_face else 'atividade'} {mode}")
+            if k:  # corte: a câmera salta junto com a imagem (nunca desliza de um plano para o outro)
+                ta_cut = ta - 0.01
+                keys_x += [(ta_cut, keys_x[-1][1]), (ta_cut + 0.005, xs[0])]
+                keys_y += [(ta_cut, keys_y[-1][1]), (ta_cut + 0.005, ys[0])]
+            keys_x += simplify_keys(ts, xs)
+            keys_y += simplify_keys(ts, ys)
+        if len(pieces) == 1 and not moving:
+            return None
+        self.camera_log.append({"src": src, "t0": t0, "t1": t1, "x": keys_x})
+        return piecewise_expr(keys_x), piecewise_expr(keys_y)
+
+    def _pan_expr(self, src: str, t0: float, t1: float, zmin: float, fy: float, has_face: bool, d_out: float,
+                  speed: float) -> str:
+        """x(t) do `pan`. Num plano só: easing de pan[0] a pan[1] no segmento inteiro (como sempre foi).
+        Com corte no meio: recomeça em cada plano. `"auto"` mede cada plano; manual faz o movimento no plano mais
+        longo e fica parado nos outros (antes: pan[0]; depois: pan[1])."""
+        info = self.info(src)
+        _, _, cw, _ = crop_box(info["w"], info["h"], self.W, self.H, zmin, 0.5, fy, has_face)
+        view = cw / info["w"]
+        pieces = self._shots(src, t0, t1)
+        if len(pieces) == 1:
+            pans = [self._pan]
+            if self._pan == "auto":  # câmera segue a atividade da tela (cursor, digitação, elementos entrando)
+                pans = [activity_pan(src, t0, t1, view, self.cache)]
+                print(f"\r[edin] pan automático {pans[0][0]:.2f} -> {pans[0][1]:.2f}", end="")
+        elif self._pan == "auto":
+            pans = [activity_pan(src, a, b, view, self.cache) for a, b in pieces]
+            print(f"\r[edin] pan automático por plano: {' | '.join(f'{p[0]:.2f}->{p[1]:.2f}' for p in pans)}", end="")
+        else:
+            big = max(range(len(pieces)), key=lambda i: pieces[i][1] - pieces[i][0])
+            x0, x1 = self._pan
+            pans = [[x0, x0] if i < big else [x0, x1] if i == big else [x1, x1] for i in range(len(pieces))]
+
+        def px(x):
+            return crop_box(info["w"], info["h"], self.W, self.H, zmin, float(x), fy, has_face)[0]
+
+        if len(pieces) == 1:
+            x0, x1 = px(pans[0][0]), px(pans[0][1])
+            return f"{x0}+({x1 - x0})*(0.5-0.5*cos(PI*min(t/{d_out:.3f},1)))"
+        expr = None
+        for (a, b), p in reversed(list(zip(pieces, pans))):
+            x0, x1 = px(p[0]), px(p[1])
+            ta, da = (a - t0) / speed, (b - a) / speed
+            e = f"{x0}+({x1 - x0})*(0.5-0.5*cos(PI*min(max(t-{ta:.3f},0)/{da:.3f},1)))"
+            expr = e if expr is None else f"if(lt(t,{(b - t0) / speed - 0.01:.3f}),{e},{expr})"
+        return expr
+
     def _vchain(self, src: str, t0: float, t1: float, zoom: float, zoom_to: float, focus, d_out: float,
-                fit: str | None = None) -> str:
+                fit: str | None = None, speed: float = 1.0, reframe=None) -> str:
         info = self.info(src)
         # "blur": mostra o quadro inteiro com fundo desfocado. Automático quando a fonte é vertical e a saída
         # horizontal (o crop cortaria a testa e o queixo).
@@ -160,14 +280,12 @@ class Renderer:
         zmin = min(zoom, zoom_to)
         cx, cy, cw, ch = crop_box(info["w"], info["h"], self.W, self.H, zmin, fx, fy, has_face)
         chain = [f"crop={cw}:{ch}:{cx}:{cy}"]
-        if self._pan == "auto":  # câmera segue a atividade da tela (cursor, digitação, elementos entrando)
-            self._pan = activity_pan(src, t0, t1, cw / info["w"], self.cache)
-            print(f"\r[edin] pan automático {self._pan[0]:.2f} -> {self._pan[1]:.2f}", end="")
+        if focus in ("face", "auto") and not self._pan and not is_image(src):
+            cam = self._camera(src, t0, t1, focus, zmin, speed, reframe_cfg(reframe))
+            if cam:  # câmera virtual: x(t)/y(t) por expressão; exact=1 anda de 1 em 1 px (sem degrau de 2 px)
+                chain = [f"crop={cw}:{ch}:'{cam[0]}':'{cam[1]}':exact=1"]
         if self._pan:  # câmera lateral: o recorte anda de pan[0] até pan[1] (x normalizado) com easing suave
-            x0, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[0]), fy, has_face)
-            x1, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[1]), fy, has_face)
-            prog = f"(0.5-0.5*cos(PI*min(t/{d_out:.3f},1)))"
-            chain = [f"crop={cw}:{ch}:'{x0}+({x1 - x0})*{prog}':{cy}"]
+            chain = [f"crop={cw}:{ch}:'{self._pan_expr(src, t0, t1, zmin, fy, has_face, d_out, speed)}':{cy}"]
         if self._hide:  # esconde regiões da fonte (legenda/rótulo gravado) com uma cópia desfocada e escurecida
             pre = []
             for k, (x0, y0, x1, y1) in enumerate(self._hide):
@@ -223,7 +341,7 @@ class Renderer:
                 bz = float(broll.get("zoom", 1.0))
                 bz2 = float(broll.get("zoom_to", bz + 0.04))
             vchain = "setpts=PTS-STARTPTS," + self._vchain(bsrc, b0, b1, bz, bz2, broll.get("focus", "face"), d_out,
-                                                                broll.get("fit"))
+                                                                broll.get("fit"), 1.0, broll.get("reframe"))
             a_idx = 1
             cmd += ["-ss", f"{seg['start']:.3f}", "-t", f"{d_src:.3f}", "-i", src]
         else:
@@ -233,7 +351,7 @@ class Renderer:
                 cmd += ["-ss", f"{seg['start']:.3f}", "-t", f"{d_src:.3f}", "-i", src]
             pts = f"setpts=(PTS-STARTPTS)/{speed}" if speed != 1.0 else "setpts=PTS-STARTPTS"
             vchain = pts + "," + self._vchain(src, seg["start"], seg["end"], zoom, zoom_to, seg.get("focus", "face"),
-                                              d_out, seg.get("fit"))
+                                              d_out, seg.get("fit"), speed, seg.get("reframe"))
             a_idx = 0
         vchain += ",tpad=stop_mode=clone:stop_duration=0.2"  # cobre o meio quadro do arredondamento
         use_src_audio = self.plan.get("audio", "source") == "source" and not is_image(src) \
