@@ -43,7 +43,7 @@ Você recebe: o plano (`*.plan.json`), o vídeo renderizado e, se houver, o pedi
 
 ## Padrão profissional (Reels/TikTok)
 
-Leia `docs/REFERENCIA_PRO.md` (como os talking heads de Hormozi, Ali Abdaal, Iman Gadzhi e dos grandes criadores são editados). Compare o vídeo com esse padrão, não só com as regras técnicas: **se o vídeo parece amador ao lado de um Reels profissional, o veredito é MAIS UMA PASSADA, mesmo que esteja tecnicamente correto** (check sem erros, nenhuma palavra comida). Meça cada item nos quadros em 1080x1920 e diga o valor medido na resposta:
+Leia os criadores medidos em `docs/referencias/` (Alfredo Soares/G4, Luka Choi; olhe as folhas .jpg e compare o vídeo com elas lado a lado) e `docs/REFERENCIA_PRO.md` (como os talking heads de Hormozi, Ali Abdaal, Iman Gadzhi e dos grandes criadores são editados). Compare o vídeo com esse padrão, não só com as regras técnicas: **se o vídeo parece amador ao lado de um Reels profissional, o veredito é MAIS UMA PASSADA, mesmo que esteja tecnicamente correto** (check sem erros, nenhuma palavra comida). Meça cada item nos quadros em 1080x1920 e diga o valor medido na resposta:
 
 1. **Olhos no terço superior:** linha dos olhos entre 30% e 38% da altura (y ≈ 580 a 730 px), também no zoom máximo; headroom de 5% a 12% (≈ 100 a 230 px), cabeça nunca cortada.
 2. **Legenda no tamanho certo:** letra maiúscula com 65 a 90 px de altura (nunca abaixo de 55 px), bold/black, com contorno ou sombra forte, 1 a 4 palavras por tela e no máximo 2 linhas.

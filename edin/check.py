@@ -72,18 +72,19 @@ def _contrast(a, b) -> float:
 def _text_items(plan: dict, W: int, H: int) -> list:
     """Textos que o render desenha (legenda e títulos), com corpo da fonte em px, borda, caixa e cores.
     Segue as mesmas contas de captions.build_ass."""
-    from .captions import BLACK, STYLES, WHITE
+    from .captions import BLACK, WHITE, caption_params
 
     base = min(W, H)
     items = []
     cap = plan.get("captions")
     if cap and plan.get("words"):
-        st = STYLES.get(cap.get("style", "hormozi"), STYLES["hormozi"])
-        colors = [WHITE] + [c for c in (cap.get("active_color", st["active"]), cap.get("emphasis_color", st["emph"]))
-                            if c]
+        # mesmas contas do render (captions.caption_params): corpo da fonte a partir da altura de letra pedida
+        cp = caption_params(cap, W, H)
+        st = cp["st"]
+        colors = [WHITE] + [c for c in (cp["active"], cp["emph"]) if c]
         items.append({"kind": "legenda", "name": f"legenda ({cap.get('style', 'hormozi')})",
-                      "size": int(base * st["size"] * float(cap.get("scale", 1.0))),
-                      "border": max(1, int(base * st["outline"])), "edge": BLACK, "box": None,
+                      "size": int(cp["size"]),
+                      "border": cp["outline"], "edge": BLACK, "box": None,
                       "colors": colors, "y": float(cap.get("position", 0.7)), "times": None})
     for t in plan.get("titles") or []:
         custom = any(k in t for k in ("font", "size", "y", "color"))
@@ -254,6 +255,16 @@ def audit_plan(plan_path: str) -> list:
             w("aviso", "Música alta para vídeo falado: volume entre 0.08 e 0.15 (≈17 dB abaixo da voz).")
         if not Path(mus["file"]).exists():
             w("erro", f"Música não encontrada: {mus['file']}")
+
+    # ------------------------------------------------ legenda pro e emoji (mesmas regras do `edin captions`)
+    if cap and words:
+        from .captions import caption_warnings
+        from .emoji import plan_warnings
+        from .render import FORMATS
+
+        Wc, Hc = FORMATS.get(fmt, (1080, 1920))
+        for msg in caption_warnings(cap, Wc, Hc) + plan_warnings(cap, words):
+            w("aviso", msg[0].upper() + msg[1:] + ".")
 
     # ------------------------------------------------ voz
     if plan.get("words") and plan.get("audio", "source") == "source" and Path(plan["source"]).exists():

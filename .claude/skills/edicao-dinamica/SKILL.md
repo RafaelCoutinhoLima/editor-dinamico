@@ -25,6 +25,7 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
    O `edin render` sem `-o` já salva assim (rascunho em `rascunhos/AAAA-MM-DD_formato_rascunho.mp4`).
 4. Leia `docs/REGRAS.md` do repositório (o que nunca fazer). O `edin check` confere boa parte.
    Leia também `docs/REFERENCIA_PRO.md` antes de editar (o padrão dos talking heads profissionais: olhos, legenda, gráficos, ritmo, som e o que parece amador).
+   Para conteúdo de negócios/educação em português, use como modelo os criadores medidos em `docs/referencias/` (Alfredo Soares/G4 e Luka Choi): olhos a 33 a 48% da altura com a cabeça inteira e espaço acima dela, legenda sóbria (~40 a 50 px, sem contorno pesado, sem karaokê) e gráficos no espaço acima da cabeça.
 5. **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, use o fluxo **E. Refazer a edição de um vídeo já editado**. Nunca resolva encolhendo o vídeo.
 
 ## 1. Escolha o fluxo

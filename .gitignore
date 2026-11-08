@@ -18,3 +18,4 @@ remotion/node_modules/
 remotion/out/
 remotion/public/*
 !remotion/public/.gitkeep
+.claude/worktrees/
