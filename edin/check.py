@@ -24,7 +24,8 @@ def _shots(plan: dict) -> list:
     for seg in plan["segments"]:
         d = seg_out_dur(seg)
         key = (seg.get("src"), (seg.get("broll") or {}).get("src"), seg.get("zoom", 1.0))
-        moving = abs(float(seg.get("zoom_to", seg.get("zoom", 1.0))) - float(seg.get("zoom", 1.0))) > 0.02
+        moving = (abs(float(seg.get("zoom_to", seg.get("zoom", 1.0))) - float(seg.get("zoom", 1.0))) > 0.02
+                  or bool(seg.get("pan")))
         # zoom lento recomeçando no segmento seguinte também é uma mudança visível
         cont = (prev is not None and abs(seg["start"] - prev["end"]) < 0.02 and key == prev["_key"]
                 and not moving and not prev["_moving"])
@@ -80,13 +81,31 @@ def audit_plan(plan_path: str) -> list:
     if tiny:
         w("aviso", f"Segmentos muito curtos (< 0,25s) piscam na tela: {', '.join(f'seg {n:02d}' for n in tiny[:8])}. "
                    "Junte com o vizinho.")
-    zooms = [float(s.get("zoom", 1.0)) for s in segs]
+    # zoom alto só preocupa onde há rosto (em texto/logo ampliado é intencional)
+    zooms = [float(s.get("zoom", 1.0)) for s in segs if s.get("focus", "face") == "face" or isinstance(s.get("focus"), list)]
     if max(zooms + [1.0]) > 1.45:
         w("aviso", "Zoom acima de 1.45 perde nitidez e pode cortar a cabeça. Use até 1.3 nos momentos de impacto.")
     broll = sum(seg_out_dur(s) for s in segs if s.get("broll"))
     if total and broll / total > 0.30 and plan.get("words"):
         w("aviso", f"B-roll em {broll / total:.0%} do vídeo. Em vídeo de pessoa falando, o rosto deve aparecer em "
                    "pelo menos 60-70% do tempo.")
+
+    # ------------------------------------------------ vertical sem letterbox
+    if fmt in ("9:16", "4:5"):
+        info_cache = {}
+        boxed = 0.0
+        for seg in segs:
+            src = seg.get("src") or plan["source"]
+            if not Path(src).exists() or seg.get("fit") not in ("blur", "pad") or seg.get("pan"):
+                continue
+            if src not in info_cache:
+                info_cache[src] = probe(src)
+            inf = info_cache[src]
+            if inf["w"] / inf["h"] > 1.3 and float(seg.get("zoom", 1.0)) < 1.15:
+                boxed += seg_out_dur(seg)
+        if total and boxed / total > 0.15:
+            w("aviso", f"{boxed / total:.0%} do vídeo é quadro horizontal encaixado na vertical quase sem ampliar "
+                       "(fica pequeno com faixas). Use `pan` em telas largas e `fit: extend` com zoom em texto/logo.")
 
     # ------------------------------------------------ legendas
     cap = plan.get("captions")

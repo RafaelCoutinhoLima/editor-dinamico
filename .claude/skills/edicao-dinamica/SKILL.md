@@ -20,6 +20,7 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
    - Legenda: `hormozi`. Som: clique suave nas trocas de zoom, sem música.
 3. Trabalhe numa pasta ao lado do vídeo. Nunca sobrescreva o original.
 4. Leia `docs/REGRAS.md` do repositório (o que nunca fazer). O `edin check` confere boa parte.
+5. **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, mantenha a tela cheia e esconda só as zonas dos elementos antigos com uma cópia desfocada e escurecida do próprio vídeo, com borda suave; os elementos novos entram por cima. Nunca resolva encolhendo o vídeo.
 
 ## 1. Escolha o fluxo
 
@@ -30,6 +31,7 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
 | Sem fala (viagem, treino, esporte, produto) + música | **C. Montagem no beat** |
 | Tela/tutorial | Fluxo A com `--preset aula` e `--format original` |
 | Quer efeitos de motion (palavra atrás da cabeça, cards, checklist, título cinético) | Fluxo A + **D. Motion** |
+| Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **E. Horizontal para vertical** |
 | Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` |
 
 ## A. Vídeo falado
@@ -78,6 +80,23 @@ Detecta o BPM e corta nas batidas (a cada batida nas partes mais fortes). Revise
 Para efeitos que o ffmpeg não faz bem (palavra gigante atrás da cabeça, cards, checklist, lower-third, título cinético): primeiro edite e renderize com o edin (fluxo A), depois adicione a chave `"motion"` no plano e rode `edin motion plano.json video_editado.mp4 -o final.mp4`. Campos e exemplos em `docs/MOTION.md`. Para direção de arte, regras de movimento e receitas de cena, consulte a skill `cinematic-motion-director` (referências `talking-head-effects.md`, `motion-principles.md`, `never-do.md`). Remotion é grátis para pessoa física e empresas de até 3 pessoas.
 
 Use motion com parcimônia: um efeito assinatura a cada 5 a 10 s, sempre ilustrando exatamente o que está sendo dito naquele momento, nunca cobrindo o rosto.
+
+**O vídeo da pessoa ocupa a tela inteira o tempo todo.** Nunca encolha a filmagem numa janela, moldura, split ou letterbox com faixas sólidas fixas em cima ou embaixo para abrir espaço para cards e legenda. Cards, títulos, gráficos e legenda flutuam por cima do vídeo: entram quando a fala os nomeia e saem depois. Nada de painel permanente; deixe o vídeo respirar entre um card e outro. Tela cheia de texto só por poucos segundos num momento de impacto.
+
+## E. Horizontal para vertical (tela cheia)
+
+**A vertical usa a tela inteira.** Nunca encaixe o quadro 16:9 no meio com faixas em cima e embaixo (letterbox), nem disfarçado com a cor do fundo: no celular isso vira "vídeo pequeno com fundo preto". Decida cena por cena (um segmento por troca de cena; ache as trocas com `ffmpeg -vf "select='gt(scene,0.25)',showinfo"`):
+
+| Tipo de cena | Como fazer | Campos |
+|---|---|---|
+| Pessoa / ação | recorte 9:16 seguindo o rosto | `fit` padrão, `focus: "face"` |
+| Tela de app, site, planilha (conteúdo largo) | altura cheia e a câmera percorre a tela de um lado ao outro | `"pan": [0.34, 0.66]`, `zoom: 1.0` |
+| Texto, logo, motion em fundo liso ou degradê | conteúdo ampliado até ~80% da largura (meça a largura do conteúdo) e as bordas da própria cena esticadas até o topo e a base | `"fit": "extend"`, `zoom` calculado |
+| Texto em fundo branco liso | igual, estendendo a cor exata | `"fit": "pad"`, `pad_color` amostrado no canto |
+
+- **Rótulo ou legenda gravados na fonte** que ficariam cortados ou duplicados: esconda com `"hide": [[x0, y0, x1, y1]]` (normalizado na fonte; cópia desfocada e escurecida do próprio vídeo) e ponha o texto novo por cima, grande, com `titles` (`font`, `accent`, `box: true`).
+- `fit: "blur"` (desfoque da cena atrás) só serve para fonte com fundo de foto/vídeo; em tela branca vira cinza e em degradê mostra a emenda.
+- Confira a folha de quadros procurando: faixa ou retângulo visível, texto cortado nas laterais, texto antigo aparecendo atrás do novo.
 
 ## 2. Revisar e entregar
 

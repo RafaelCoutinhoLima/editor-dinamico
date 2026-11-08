@@ -17,6 +17,9 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 - **Nunca corte a cabeça.** Confira na folha de quadros. Rosto de lado ou escuro: use `focus: [x, y]`.
 - **Rosto na tela pelo menos 60 a 70% do tempo** em vídeo de pessoa falando. B-roll no máximo 30%.
 - **Nunca segmentos menores que 0,25 s** (piscam).
+- **O vídeo da pessoa ocupa a tela inteira o tempo todo.** Nunca encolha a filmagem numa janela, moldura, split ou letterbox com faixas sólidas fixas em cima ou embaixo para abrir espaço para cards e legenda.
+- **Vertical usa a tela inteira, inclusive ao converter vídeo horizontal.** Nada de quadro 16:9 no meio com faixas (nem da cor do fundo). Tela de app: altura cheia + `pan`. Texto/logo: ampliar e `fit: "extend"`. Pessoa: recorte pelo rosto.
+- **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, mantenha a tela cheia e esconda só as zonas dos elementos antigos com uma cópia desfocada e escurecida do próprio vídeo, com borda suave. Os elementos novos entram por cima dessas zonas. Nunca resolva encolhendo o vídeo.
 
 ## Texto na tela
 
@@ -25,6 +28,8 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 - **Título no gancho:** até 6 palavras, na tela por pelo menos 0,4 s + 0,3 s por palavra.
 - **Uma ênfase só:** cor de destaque OU escala, nunca as duas em tudo. No máximo uma palavra de ênfase a cada 2 ou 3 s.
 - **Uma cor de destaque por identidade.** Se Rafael tem uma cor de marca, use só ela.
+- **Cards, títulos, gráficos e legenda flutuam por cima do vídeo.** Entram quando a fala os nomeia e saem depois. Nada de painel permanente: deixe o vídeo respirar entre um card e outro.
+- **Tela cheia de texto é exceção:** só por poucos segundos, num momento de impacto.
 
 ## Som
 

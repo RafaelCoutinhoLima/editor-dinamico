@@ -50,6 +50,9 @@ class Renderer:
         self.cache.mkdir(exist_ok=True)
         self._probe, self._tracks = {}, {}
         self._pad = None
+        self._pan = None
+        self._hide = None
+        self._dim = 0.22
         main = self.info(plan["source"])
         self.W, self.H = out_size(plan, main, draft)
         self.fps = float(plan.get("fps", 30))
@@ -79,7 +82,7 @@ class Renderer:
                      f"crop={W}:{H}")
         else:
             chain = (f"split=2[bf_bg][bf_fg];[bf_bg]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
-                     f"boxblur=40:3,eq=brightness=-0.22:saturation=1.15[bf_b];[bf_fg]scale={fw}:{fh}"
+                     f"boxblur=40:3,eq=brightness={-self._dim:.3f}:saturation=1.15[bf_b];[bf_fg]scale={fw}:{fh}"
                      f":force_original_aspect_ratio=decrease:flags=lanczos[bf_f];[bf_b][bf_f]overlay=(W-w)/2:(H-h)/2")
         if abs(drift - 1.0) > 1e-3:
             n = max(1, int(round(d_out * self.fps)) - 1)
@@ -89,12 +92,35 @@ class Renderer:
                       f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={self.fps}")
         return chain + f",fps={self.fps},setsar=1,format=yuv420p"
 
+    def _extend_fill(self, src_ar: float, zoom: float, drift: float, d_out: float) -> str:
+        """Quadro inteiro no centro e as bordas da própria cena esticadas até o topo/base/laterais e suavizadas.
+        Emenda sem faixa em fundos lisos ou com degradê (cenas de texto, logos, motion)."""
+        W, H = self.W, self.H
+        bw, bh = W * zoom, H * zoom
+        fw, fh = (bw, bw / src_ar) if src_ar > bw / bh else (bh * src_ar, bh)
+        fw, fh = _even(fw), _even(fh)
+        pw, ph = max(fw, W), max(fh, H)
+        l, t = (pw - fw) // 2, (ph - fh) // 2
+        chain = (f"scale={fw}:{fh}:flags=lanczos,split[ex_a][ex_b];"
+                 f"[ex_b]pad={pw}:{ph}:{l}:{t},fillborders=left={l}:right={pw - fw - l}:top={t}"
+                 f":bottom={ph - fh - t}:mode=smear,boxblur=30:2,crop={W}:{H}[ex_bg];"
+                 f"[ex_a]crop='min(iw,{W})':'min(ih,{H})'[ex_fg];[ex_bg][ex_fg]overlay=(W-w)/2:(H-h)/2")
+        if abs(drift - 1.0) > 1e-3:
+            n = max(1, int(round(d_out * self.fps)) - 1)
+            up = 1.0 if self.draft else 1.5
+            chain += (f",scale={_even(W * up)}:{_even(H * up)}:flags=bicubic,zoompan=z='1+({drift - 1:.4f})*on/{n}'"
+                      f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={self.fps}")
+        return chain + f",fps={self.fps},setsar=1,format=yuv420p"
+
     def _vchain(self, src: str, t0: float, t1: float, zoom: float, zoom_to: float, focus, d_out: float,
                 fit: str | None = None) -> str:
         info = self.info(src)
         # "blur": mostra o quadro inteiro com fundo desfocado. Automático quando a fonte é vertical e a saída
         # horizontal (o crop cortaria a testa e o queixo).
         src_ar, out_ar = info["w"] / info["h"], self.W / self.H
+        if fit == "extend":
+            z = max(1.0, zoom)
+            return self._extend_fill(src_ar, z, max(1.0, zoom_to) / z, d_out)
         if fit in ("blur", "pad") or (fit is None and src_ar < out_ar * 0.75):
             z = max(1.0, zoom)
             color = None
@@ -111,6 +137,19 @@ class Renderer:
         zmin = min(zoom, zoom_to)
         cx, cy, cw, ch = crop_box(info["w"], info["h"], self.W, self.H, zmin, fx, fy, has_face)
         chain = [f"crop={cw}:{ch}:{cx}:{cy}"]
+        if self._pan:  # câmera lateral: o recorte anda de pan[0] até pan[1] (x normalizado) com easing suave
+            x0, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[0]), fy, has_face)
+            x1, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[1]), fy, has_face)
+            prog = f"(0.5-0.5*cos(PI*min(t/{d_out:.3f},1)))"
+            chain = [f"crop={cw}:{ch}:'{x0}+({x1 - x0})*{prog}':{cy}"]
+        if self._hide:  # esconde regiões da fonte (legenda/rótulo gravado) com uma cópia desfocada e escurecida
+            pre = []
+            for k, (x0, y0, x1, y1) in enumerate(self._hide):
+                rx, ry = _even(x0 * info["w"]), _even(y0 * info["h"])
+                rw, rh = _even((x1 - x0) * info["w"]), _even((y1 - y0) * info["h"])
+                pre.append(f"split[hd{k}a][hd{k}b];[hd{k}b]crop={rw}:{rh}:{rx}:{ry},boxblur=24:3,"
+                           f"eq=brightness=-0.25[hd{k}c];[hd{k}a][hd{k}c]overlay={rx}:{ry}")
+            chain = pre + chain
         if abs(zoom_to - zoom) > 1e-3:
             a, b = zoom / zmin, zoom_to / zmin
             n = max(1, int(round(d_out * self.fps)) - 1)
@@ -129,6 +168,9 @@ class Renderer:
         # e o mux final abria saltos de segundos no áudio (fala comida e boca fora de sincronia).
         out = self.wd / f"seg_{i:04d}.mov"
         self._pad = seg.get("pad_color")  # cor de fundo do fit "pad" só deste segmento
+        self._pan = seg.get("pan")  # [x_inicio, x_fim] normalizados: câmera lateral dentro do segmento
+        self._dim = float(seg.get("blur_dim", 0.22))  # quanto escurecer o fundo do fit "blur" (0 = nada)
+        self._hide = seg.get("hide")  # [[x0, y0, x1, y1], ...] normalizados na fonte: regiões a esconder
         src = seg_src(self.plan, seg)
         speed = float(seg.get("speed", 1.0) or 1.0)
         d_src = seg["end"] - seg["start"]
