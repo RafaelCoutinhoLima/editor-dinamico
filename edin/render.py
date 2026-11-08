@@ -530,6 +530,10 @@ def render(plan_path: str, output: str, draft: bool = False, keep: bool = False,
         from .broll import resolve_plan  # "broll": {"query": ...} -> baixa o melhor clipe do Pexels
 
         resolve_plan(plan, Path(plan_path).resolve().parent)
+    if plan.get("enhance") and not draft:  # troca a fonte pela versão melhorada (cache); rascunho usa a original
+        from .enhance import apply_to_plan
+
+        apply_to_plan(plan, verbose)
     r = Renderer(plan, output, draft, verbose)
     try:
         return r.run()

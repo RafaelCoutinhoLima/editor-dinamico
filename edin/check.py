@@ -188,6 +188,13 @@ def audit_plan(plan_path: str) -> list:
             w("aviso", f"{boxed / total:.0%} do vídeo é quadro horizontal encaixado na vertical quase sem ampliar "
                        "(fica pequeno com faixas). Use `pan` em telas largas e `fit: extend` com zoom em texto/logo.")
 
+    # ------------------------------------------------ fonte em baixa (720p do WhatsApp) numa saída 1080
+    if fmt != "original" and not plan.get("enhance") and Path(plan["source"]).exists():
+        si = probe(plan["source"])
+        if min(si["w"], si["h"]) < 1080:
+            w("dica", f"Fonte em {si['w']}x{si['h']} numa saída 1080: vai ser ampliada e fica mole. Ponha "
+                      "`\"enhance\": {\"mode\": \"fast\"}` no plano (ou \"esrgan\" para tela/texto; ver `edin enhance`).")
+
     # ------------------------------------------------ legendas
     cap = plan.get("captions")
     if cap and words:

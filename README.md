@@ -12,6 +12,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 - **Legendas animadas** palavra a palavra no padrão Submagic (estilos `hormozi`, `clean`, `karaoke`, `minimal`), segunda cor para números e negações, **emojis animados** acima da legenda e títulos com qualquer fonte.
 - **B-roll automático grátis** do Pexels (`edin broll "consulta"` ou `"broll": {"query": ...}` no plano), com créditos em `broll/CREDITOS.txt`.
 - **Limpeza de voz** de gravação de celular (o que o Descript Studio Sound faz): DeepFilterNet ou RNNoise + cadeia broadcast (EQ, de-esser, compressor). Ligada por padrão; `edin voice` para um arquivo avulso.
+- **Melhora fonte ruim** (`edin enhance`): upscale e nitidez de 720p do WhatsApp ou tela comprimida, rápido no ffmpeg ou com Real-ESRGAN na GPU.
 - **B-roll, efeitos sonoros e música** com ducking automático e áudio final em -14 LUFS.
 - **Cortes de vídeo longo em vários shorts** e **montagem no ritmo da música** (detecção de BPM).
 - **Crítico automático** (`edin check`) que aponta problemas de ritmo, gancho, legenda e som, e **verificação** (`edin verify`) que retranscreve o vídeo final para achar palavras perdidas.
@@ -27,6 +28,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 | **OpenCV** | detecta o rosto para reenquadrar (modelo YuNet de 230 KB já incluso) | automático |
 | **PySceneDetect** | detecta trocas de plano (`edin scenes`; a câmera e o `pan` recomeçam por plano) | automático |
 | **DeepFilterNet / RNNoise** | limpeza de voz (ruído de fundo, chiado, ventilador) | automático (baixados uma vez para `~/.local/share/edin`) |
+| **Real-ESRGAN ncnn/Vulkan** | opcional: upscale de fonte ruim (720p do WhatsApp, tela comprimida) com `edin enhance --mode esrgan` ou `"enhance"` no plano; sem ele o modo `fast` usa só o ffmpeg | baixado no 1º uso (47 MB, BSD-3) para `~/.local/share/edin/bin`; precisa de GPU com Vulkan |
 | **librosa** | detecta as batidas da música nas montagens | automático |
 | **numpy** | cálculos de áudio e imagem | automático |
 | **CUDA (cuBLAS/cuDNN)** | opcional: transcrição até ~13x mais rápida em GPU NVIDIA | automático se houver GPU |
@@ -86,6 +88,7 @@ edin render video.plan.json --draft        # rascunho rápido -> rascunhos/
 edin render video.plan.json                # vídeo final -> videos/2026-11-06_vertical.mp4
 
 edin auto video.mp4 --preset reels         # tudo de uma vez, sem refinar
+edin enhance video.mp4 --mode fast         # fonte 720p mole -> 2x com denoise e nitidez (ou --mode esrgan)
 ```
 
 Presets: `reels`, `podcast`, `youtube` e `aula`. Veja todos os comandos com `edin --help`.
