@@ -105,7 +105,8 @@ def ffmpeg_filter_path(path: str) -> str:
 
 
 def workdir_for(output: str) -> Path:
-    wd = Path(output).resolve().parent / (Path(output).stem + "_edin_tmp")
+    # pasta oculta ao lado da saída: não suja videos/ (cache de rosto, efeitos e segmentos)
+    wd = Path(output).resolve().parent / ".edin_tmp" / Path(output).stem
     wd.mkdir(parents=True, exist_ok=True)
     return wd
 

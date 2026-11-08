@@ -91,9 +91,47 @@ def cmd_timeline(a):
 def cmd_render(a):
     from .render import render
 
-    out = a.out or str(Path(a.plan).with_suffix("")).replace(".plan", "") + ("_rascunho" if a.draft else "_editado") \
-        + ".mp4"
+    out = a.out or default_output(a.plan, a.draft)
     render(a.plan, out, a.draft, a.keep, a.verbose)
+
+
+FORMAT_NAMES = {"9:16": "vertical", "16:9": "horizontal", "1:1": "quadrado", "4:5": "retrato", "original": "original"}
+
+
+def _video_date(src: str) -> str:
+    """Data do vídeo original: AAAA-MM-DD no nome do arquivo, senão creation_time dos metadados, senão modificação."""
+    import re
+    import subprocess
+    from datetime import date
+
+    m = re.search(r"(20\d\d)[-_.]?(\d\d)[-_.]?(\d\d)", Path(src).name)
+    if m:
+        return "-".join(m.groups())
+    try:
+        tag = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags=creation_time", "-of",
+                              "csv=p=0", src], capture_output=True, text=True).stdout.strip()
+        if re.match(r"\d{4}-\d\d-\d\d", tag) and not tag.startswith("1970"):
+            return tag[:10]
+        return date.fromtimestamp(Path(src).stat().st_mtime).isoformat()
+    except OSError:
+        return date.today().isoformat()
+
+
+def default_output(plan_path: str, draft: bool) -> str:
+    """Padrão de saída: <pasta do plano>/videos/AAAA-MM-DD_<formato>.mp4 (rascunhos em rascunhos/).
+    Não sobrescreve: se o nome existir, acrescenta _2, _3..."""
+    from .plan import load_plan
+
+    plan = load_plan(plan_path)
+    base = Path(plan_path).resolve().parent / ("rascunhos" if draft else "videos")
+    name = f"{_video_date(plan['source'])}_{FORMAT_NAMES.get(plan.get('format', '9:16'), 'video')}"
+    if draft:
+        name += "_rascunho"
+    base.mkdir(parents=True, exist_ok=True)
+    out, k = base / f"{name}.mp4", 2
+    while out.exists() and not draft:  # rascunho pode ser sobrescrito; final nunca
+        out, k = base / f"{name}_{k}.mp4", k + 1
+    return str(out)
 
 
 def cmd_auto(a):
@@ -108,7 +146,7 @@ def cmd_auto(a):
     plan = build_talking_plan(a.video, words, a.preset, a.range, speed=a.speed)
     pp = _stem(a.video) + ".plan.json"
     save_plan(plan, pp)
-    render(pp, a.out or _stem(a.video) + ("_rascunho" if a.draft else "_editado") + ".mp4", a.draft)
+    render(pp, a.out or default_output(pp, a.draft), a.draft)
 
 
 def cmd_check(a):

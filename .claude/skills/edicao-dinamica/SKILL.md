@@ -18,9 +18,13 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
    - Plataforma: Reels/TikTok/Shorts (9:16), preset `reels`.
    - Duração: a do conteúdo útil, sem enrolação.
    - Legenda: `hormozi`. Som: clique suave nas trocas de zoom, sem música.
-3. Trabalhe numa pasta ao lado do vídeo. Nunca sobrescreva o original.
+3. Trabalhe numa pasta própria do vídeo dentro de `~/Área de trabalho/videos editados/` (ex.: `videos editados/loopedu_2026-11-06/`). Nunca sobrescreva o original. Organização padrão:
+   - `videos/`: **só os finais**, com nome `AAAA-MM-DD_formato.mp4` (data do vídeo original; formato `vertical`, `horizontal`, `quadrado` ou `retrato`). Mais de um final do mesmo formato: `_2`, `_3`.
+   - `rascunhos/`: rascunhos, intermediários, versões rejeitadas e testes.
+   - na raiz da pasta: original, `*.words.json`, `*.plan.json`, scripts e folhas de quadros.
+   O `edin render` sem `-o` já salva assim (rascunho em `rascunhos/AAAA-MM-DD_formato_rascunho.mp4`).
 4. Leia `docs/REGRAS.md` do repositório (o que nunca fazer). O `edin check` confere boa parte.
-5. **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, mantenha a tela cheia e esconda só as zonas dos elementos antigos com uma cópia desfocada e escurecida do próprio vídeo, com borda suave; os elementos novos entram por cima. Nunca resolva encolhendo o vídeo.
+5. **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, use o fluxo **E. Refazer a edição de um vídeo já editado**. Nunca resolva encolhendo o vídeo.
 
 ## 1. Escolha o fluxo
 
@@ -31,7 +35,8 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
 | Sem fala (viagem, treino, esporte, produto) + música | **C. Montagem no beat** |
 | Tela/tutorial | Fluxo A com `--preset aula` e `--format original` |
 | Quer efeitos de motion (palavra atrás da cabeça, cards, checklist, título cinético) | Fluxo A + **D. Motion** |
-| Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **E. Horizontal para vertical** |
+| Vídeo que já vem editado (legenda, cards ou lower third gravados na imagem) | **E. Refazer a edição** (+ D) |
+| Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **F. Horizontal para vertical** |
 | Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` |
 
 ## A. Vídeo falado
@@ -83,7 +88,21 @@ Use motion com parcimônia: um efeito assinatura a cada 5 a 10 s, sempre ilustra
 
 **O vídeo da pessoa ocupa a tela inteira o tempo todo.** Nunca encolha a filmagem numa janela, moldura, split ou letterbox com faixas sólidas fixas em cima ou embaixo para abrir espaço para cards e legenda. Cards, títulos, gráficos e legenda flutuam por cima do vídeo: entram quando a fala os nomeia e saem depois. Nada de painel permanente; deixe o vídeo respirar entre um card e outro. Tela cheia de texto só por poucos segundos num momento de impacto.
 
-## E. Horizontal para vertical (tela cheia)
+## E. Refazer a edição de um vídeo já editado
+
+Os elementos antigos não saem dos pixels: a câmera fica em tela cheia, as zonas antigas recebem uma cópia desfocada e escurecida do próprio vídeo e os elementos novos entram por cima. Referência que funcionou: `~/Área de trabalho/videos editados/whatsapp_2026-11-06/motion/src/Main.tsx` (componentes `Camera`, `Name`, `Captions`, `FullText`, `Freeze`).
+
+1. **Meça as zonas antes, nada de chute.** Recortes com grade de 50 px em 4 a 6 quadros (início, meio, fim, trechos com e sem card): `ffmpeg -ss T -i fonte.mp4 -frames:v 1 -vf "crop=1080:700:0:0,drawgrid=w=50:h=50:c=red@0.5" topo.png`. Anote y0..y1 de cada elemento (cards, legenda, lower third) e quando cada um aparece. Para conferir um tempo específico use sempre `ffmpeg -i arquivo -ss T -frames:v 1` (seek preciso): os rótulos do `edin sheet` podem sair defasados.
+2. **Máscara de desfoque** em coordenadas da fonte, dentro da camada que recebe o zoom, para acompanhar o punch-in. Borda curta (≈30 px) logo depois do fim do elemento antigo: nunca pega cabelo nem rosto.
+3. **Legenda nova centralizada vertical e horizontalmente na faixa desfocada** e acompanhando o punch-in: com a zona em y0..y1 da fonte e zoom `s` em torno de `FACE_Y`, o centro na tela é `FACE_Y + ((y0+y1)/2 - FACE_Y) * s`.
+4. **Cards no topo cabem dentro da zona desfocada em todos os zooms.** Com punch-in a zona sobe: a base do card fica acima de `FACE_Y + (y1 - FACE_Y) * s_max`.
+5. **Cards com vida curta:** cada um entra na palavra que o nomeia e sai quando a ideia acaba (≈2 a 5 s), com câmera limpa entre eles. Cards emendados leem como faixa fixa. Corte os redundantes, que repetem o que a legenda ou a pessoa já mostram.
+6. **Lower third antigo:** cubra com um novo no mesmo lugar, em coordenadas da fonte (dentro da camada com zoom), entrando um pouco antes do antigo aparecer.
+7. **Trechos sem câmera na fonte** (telas só de texto): viram telas cheias de texto novas, sincronizadas palavra a palavra.
+8. **Fim:** se a pessoa pega o celular ou a câmera treme, segure o último quadro limpo (`Freeze`) e só depois entre o encerramento.
+9. Revise com recortes do final nos zooms 1.0 e máximo (legenda no centro da faixa, card dentro da zona, nada do antigo vazando) e rode o agente **`critico-de-edicao`**. Corrija o pior trecho apontado (seção 2).
+
+## F. Horizontal para vertical (tela cheia)
 
 **A vertical usa a tela inteira.** Nunca encaixe o quadro 16:9 no meio com faixas em cima e embaixo (letterbox), nem disfarçado com a cor do fundo: no celular isso vira "vídeo pequeno com fundo preto". Decida cena por cena (um segmento por troca de cena; ache as trocas com `ffmpeg -vf "select='gt(scene,0.25)',showinfo"`):
 
@@ -101,9 +120,9 @@ Use motion com parcimônia: um efeito assinatura a cada 5 a 10 s, sempre ilustra
 ## 2. Revisar e entregar
 
 1. `edin check plano.json` e corrija erros e avisos que fizerem sentido.
-2. `edin render plano.json --draft` (meia resolução, rápido).
+2. `edin render plano.json --draft` (meia resolução, rápido; vai para `rascunhos/`).
 3. `edin sheet video_rascunho.mp4 -n 12` e **abra a imagem**: rosto enquadrado e cabeça inteira, legenda legível sem cobrir o rosto, título aparecendo, b-roll no lugar. Ajuste `captions.position` (0 topo, 1 base, zona segura 0.55 a 0.78) ou `focus` (`"center"` ou `[x, y]`).
-4. Render final: `edin render plano.json -o final.mp4`.
+4. Render final: `edin render plano.json` (sai em `videos/AAAA-MM-DD_formato.mp4`).
 5. **Crítica independente:** chame o agente **`critico-de-edicao`** com o plano e o `final.mp4` (ele roda `check`, `verify`, folha de quadros e devolve PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho). Sem o agente, rode você mesmo `edin check plano.json final.mp4` e `edin verify plano.json final.mp4`.
 6. Se o veredito for MAIS UMA PASSADA, corrija **só o trecho apontado**, renderize de novo e repita no máximo 2 vezes.
 7. Entregue com 2 ou 3 linhas: duração final, o que foi cortado, as escolhas criativas principais e o que foi conferido. Ofereça uma variação (outro gancho, outro estilo de legenda) se fizer sentido.
@@ -125,4 +144,4 @@ Legendas: `hormozi`, `clean`, `karaoke`, `minimal`. Efeitos: `softclick`, `click
 - **Respiração ou "ahn" sobrando:** diminua o `end`/aumente o `start` do segmento, ou apague o segmento do filler.
 - **Rosto não detectado** (de lado, escuro): `"focus": [0.6, 0.35]` no segmento.
 - **Lento:** `--draft` para iterar. Transcrição em CPU: `--model small` (padrão) ou `base`; com GPU: `turbo`.
-- Temporários ficam em `<saida>_edin_tmp/` (cache de rosto e efeitos). Apague com `edin clean saida.mp4`.
+- Temporários ficam em `.edin_tmp/` (pasta oculta ao lado da saída: cache de rosto, efeitos e segmentos). Apague com `edin clean saida.mp4`.

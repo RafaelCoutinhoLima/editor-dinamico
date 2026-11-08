@@ -76,13 +76,15 @@ O que vem junto:
 edin transcribe video.mp4                  # transcreve -> video.words.json
 edin plan video.mp4 --preset reels         # plano de edição -> video.plan.json
 edin check video.plan.json                 # aponta problemas antes de renderizar
-edin render video.plan.json --draft        # rascunho rápido
-edin render video.plan.json -o final.mp4   # vídeo final
+edin render video.plan.json --draft        # rascunho rápido -> rascunhos/
+edin render video.plan.json                # vídeo final -> videos/2026-11-06_vertical.mp4
 
 edin auto video.mp4 --preset reels         # tudo de uma vez, sem refinar
 ```
 
 Presets: `reels`, `podcast`, `youtube` e `aula`. Veja todos os comandos com `edin --help`.
+
+Sem `-o`, os vídeos saem organizados: finais em `videos/AAAA-MM-DD_formato.mp4` (data do vídeo original; formato `vertical`, `horizontal`, `quadrado` ou `retrato`) e rascunhos em `rascunhos/`. Nada é sobrescrito: um segundo final do mesmo formato vira `_2`.
 
 ## Documentação
 

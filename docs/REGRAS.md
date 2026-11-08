@@ -29,6 +29,9 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 - **Uma ênfase só:** cor de destaque OU escala, nunca as duas em tudo. No máximo uma palavra de ênfase a cada 2 ou 3 s.
 - **Uma cor de destaque por identidade.** Se Rafael tem uma cor de marca, use só ela.
 - **Cards, títulos, gráficos e legenda flutuam por cima do vídeo.** Entram quando a fala os nomeia e saem depois. Nada de painel permanente: deixe o vídeo respirar entre um card e outro.
+- **Cards com vida curta:** cada card entra na palavra que o nomeia e sai quando a ideia acaba (≈2 a 5 s), com câmera limpa entre um e outro. Cards emendados leem como faixa fixa. Corte os redundantes, que repetem o que a legenda ou a pessoa já mostram.
+- **Legenda centralizada na sua faixa e acompanhando o zoom.** Ela fica no centro vertical e horizontal da faixa reservada a ela (inclusive a faixa desfocada que esconde uma legenda antiga) e se move junto com o punch-in: faixa em y0..y1 e zoom `s` em torno de `FACE_Y` dão centro na tela em `FACE_Y + ((y0+y1)/2 - FACE_Y) * s`.
+- **Nenhum card cobre cabelo ou rosto em nenhum nível de zoom.** Confira no zoom 1.0 e no máximo: com punch-in a cabeça sobe e cresce, então o card do topo precisa caber acima dela (e dentro da zona desfocada, se houver) no zoom máximo.
 - **Tela cheia de texto é exceção:** só por poucos segundos, num momento de impacto.
 
 ## Som
