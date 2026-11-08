@@ -24,6 +24,7 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
    - na raiz da pasta: original, `*.words.json`, `*.plan.json`, scripts e folhas de quadros.
    O `edin render` sem `-o` já salva assim (rascunho em `rascunhos/AAAA-MM-DD_formato_rascunho.mp4`).
 4. Leia `docs/REGRAS.md` do repositório (o que nunca fazer). O `edin check` confere boa parte.
+   Leia também `docs/REFERENCIA_PRO.md` antes de editar (o padrão dos talking heads profissionais: olhos, legenda, gráficos, ritmo, som e o que parece amador).
 5. **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, use o fluxo **E. Refazer a edição de um vídeo já editado**. Nunca resolva encolhendo o vídeo.
 
 ## 1. Escolha o fluxo
@@ -104,6 +105,8 @@ Os elementos antigos não saem dos pixels: a câmera fica em tela cheia, as zona
 
 ## F. Horizontal para vertical (tela cheia)
 
+Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, renderiza, roda o `check` e pede a crítica). Sem o agente, siga você mesmo.
+
 **A vertical usa a tela inteira.** Nunca encaixe o quadro 16:9 no meio com faixas em cima e embaixo (letterbox), nem disfarçado com a cor do fundo: no celular isso vira "vídeo pequeno com fundo preto". Decida cena por cena (um segmento por troca de cena; ache as trocas com `ffmpeg -vf "select='gt(scene,0.25)',showinfo"`):
 
 | Tipo de cena | Como fazer | Campos |
@@ -114,7 +117,8 @@ Os elementos antigos não saem dos pixels: a câmera fica em tela cheia, as zona
 | Texto em fundo branco liso | igual, estendendo a cor exata | `"fit": "pad"`, `pad_color` amostrado no canto |
 
 - **Rótulo ou legenda gravados na fonte** que ficariam cortados ou duplicados: esconda com `"hide": [[x0, y0, x1, y1]]` (normalizado na fonte; cópia desfocada e escurecida do próprio vídeo) e ponha o texto novo por cima, grande, com `titles` (`font`, `accent`, `box: true`).
-- `fit: "blur"` (desfoque da cena atrás) só serve para fonte com fundo de foto/vídeo; em tela branca vira cinza e em degradê mostra a emenda.
+- `fit: "blur"` (desfoque da cena atrás) só serve para fonte com fundo de foto/vídeo; em tela branca vira cinza e em degradê mostra a emenda. Para texto/logo use `extend` (espelha a própria cena até as bordas), que funciona em fundo branco, escuro, colorido e em transições.
+- **Confira o arquivo final em resolução cheia**, nunca só o rascunho (um filtro do ffmpeg só quebrava em 1080x1920 e deixou a base preta em telas brancas). `edin check plano.json video.mp4` varre o vídeo a 4 quadros/s e acusa qualquer faixa como ERRO.
 - Confira a folha de quadros procurando: faixa ou retângulo visível, texto cortado nas laterais, texto antigo aparecendo atrás do novo.
 
 ## 2. Revisar e entregar

@@ -218,6 +218,16 @@ def audit_video(plan_path: str, video: str) -> list:
     if not info["has_audio"]:
         warn.append(("erro", "Vídeo final sem áudio."))
         return warn
+    if info["h"] > info["w"]:  # vertical: nada de faixa
+        # faixa no topo atrás de um título no topo é intencional (barra do título): não conta
+        tops = [(float(t.get("start", 0)), float(t.get("end", 2.5))) for t in plan.get("titles") or []
+                if float(t.get("y", 0.15)) < 0.35]
+        bands = find_bands(video, ignore_top=tops)
+        for a, b, lado in bands[:12]:
+            warn.append(("erro", f"Faixa na {lado} de {fmt_time(a)} a {fmt_time(b)}: região lisa de cor diferente da cena "
+                                 "(vídeo encaixado ou fundo esticado errado). Abra esse quadro e corrija o `fit`."))
+        if len(bands) > 12:
+            warn.append(("erro", f"... e mais {len(bands) - 12} trechos com faixa."))
     lu = loudness(video)
     target = float(plan.get("loudness", -14))
     if lu["lufs"] is not None:
@@ -226,6 +236,45 @@ def audit_video(plan_path: str, video: str) -> list:
     if lu["true_peak"] is not None and lu["true_peak"] > -0.5:
         warn.append(("aviso", f"Pico {lu['true_peak']:.1f} dBTP: pode distorcer no celular (alvo ≤ -1)."))
     return warn
+
+
+def find_bands(video: str, step: float = 0.25, ignore_top: list | None = None) -> list:
+    """Varre o vídeo (4 quadros/s) atrás de faixas: região lisa no topo ou na base, com >= 8% da altura e cor muito
+    diferente do centro da cena (letterbox, borda esticada errada, fundo preto embaixo de tela branca).
+    Devolve [(início, fim, 'topo'|'base')] agrupados."""
+    import subprocess
+
+    import numpy as np
+
+    w, h = 108, 192
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", video, "-vf", f"fps={1 / step},scale={w}:{h}",
+                          "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True).stdout
+    n = len(raw) // (w * h)
+    frames = np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w).astype(float)
+    hits = []
+    for k, f in enumerate(frames):
+        m, sd = f.mean(axis=1), f.std(axis=1)
+        centro = float(np.median(m[int(h * 0.3):int(h * 0.7)]))
+        for lado, rows in (("topo", range(h)), ("base", range(h - 1, -1, -1))):
+            rows = list(rows)
+            ref, alt = m[rows[0]], 0
+            for y in rows:
+                if sd[y] < 8 and abs(m[y] - ref) < 6:
+                    alt += 1
+                else:
+                    break
+            t = k * step
+            if lado == "topo" and any(a <= t <= b for a, b in ignore_top or []):
+                continue
+            if alt >= 0.08 * h and abs(ref - centro) > 60:
+                hits.append((t, lado))
+    out = []
+    for t, lado in hits:
+        if out and out[-1][2] == lado and t - out[-1][1] <= step * 1.5:
+            out[-1][1] = t + step
+        else:
+            out.append([t, t + step, lado])
+    return [tuple(x) for x in out if x[1] - x[0] >= step * 2]  # ignora 1 quadro solto (transição)
 
 
 def print_report(warn: list) -> int:

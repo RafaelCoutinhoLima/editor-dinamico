@@ -106,3 +106,57 @@ def crop_box(sw: int, sh: int, out_w: int, out_h: int, zoom: float, fx: float, f
     cx = int(min(max(cx, 0), sw - cw))
     cy = int(min(max(cy, 0), sh - ch))
     return cx, cy, cw, ch
+
+
+def activity_pan(src: str, t0: float, t1: float, view: float, cache_dir: Path) -> list:
+    """Câmera lateral automática para telas de app, site e planilha (estilo Auto Reframe para UI).
+    Devolve [x_inicio, x_fim] normalizados (centro do recorte).
+
+    Interfaces são lidas da esquerda para a direita: a câmera mantém no quadro o INÍCIO do texto (rótulos, campos,
+    o que está sendo digitado). O início é achado pelas bordas de letras (Canny) abaixo do topo da tela, quadro a
+    quadro, e suavizado pela mediana de cada terço do segmento (a transição de entrada não engana).
+    Zona morta: se o alvo anda menos de 6% da largura, a câmera fica parada.
+    É uma proposta, como o Auto Reframe: telas com texto CENTRALIZADO (loader, card central) podem sair cortadas;
+    confira cada segmento e troque por `pan` manual onde errar.
+    `view` = largura do recorte / largura da fonte."""
+    import cv2
+
+    key = cache_dir / f"{Path(src).name}.pan7_{t0:.2f}_{t1:.2f}_{view:.3f}.json"
+    if key.exists():
+        return load_json(str(key))
+    w = 480
+    info = probe(src)
+    h = int(round(w * info["h"] / info["w"] / 2) * 2)
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t0:.3f}", "-t", f"{max(0.2, t1 - t0):.3f}", "-i", src,
+                          "-vf", f"fps=4,scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                         capture_output=True).stdout
+    n = len(raw) // (w * h)
+    half = view / 2
+
+    def clamp(x):
+        return float(min(max(x, half), 1 - half))
+
+    alvos = []
+    for f in np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w):
+        e = cv2.Canny(f, 60, 160)[int(h * 0.22):]
+        bordas = (e > 0).sum(axis=0).astype(float)
+        bordas[bordas > e.shape[0] * 0.35] = 0  # linhas verticais longas são borda de card/janela, não texto
+        if bordas.sum() < 1:
+            continue
+        acum = np.cumsum(bordas) / bordas.sum()
+        inicio = (np.searchsorted(acum, 0.08) + 0.5) / w  # onde começa o texto (8% das bordas à esquerda)
+        fim = (np.searchsorted(acum, 0.92) + 0.5) / w
+        if fim - inicio <= view * 0.9:
+            alvos.append((inicio + fim) / 2)  # conteúdo estreito: centraliza nele
+        else:
+            alvos.append(inicio - 0.03 + half)  # conteúdo largo: mantém o início da leitura com margem
+    if not alvos:
+        res = [0.5, 0.5]
+    else:
+        k = max(1, len(alvos) // 3)
+        x0, x1 = float(np.median(alvos[:k])), float(np.median(alvos[-k:]))
+        if abs(x1 - x0) < 0.06:
+            x0 = x1 = float(np.median(alvos))
+        res = [clamp(x0), clamp(x1)]
+    save_json(res, str(key))
+    return res

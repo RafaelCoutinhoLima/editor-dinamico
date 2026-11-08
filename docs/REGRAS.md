@@ -43,6 +43,9 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 
 ## Entrega
 
+- **Nunca aprove pelo rascunho.** Confira o arquivo final em resolução cheia: há filtros que só quebram em 1080x1920.
+- **Folha de 16 quadros não basta.** Olhe quadros em toda troca de cena e rode `edin check plano.json final.mp4` (varre faixas a 4 quadros/s).
+
 - **Nunca entregue sem conferir o arquivo final** (folha de quadros do vídeo final, não do rascunho) e diga o que foi conferido e o que não foi.
 - **Depois de feedback, mexa só no trecho apontado.** Não refaça o vídeo inteiro.
 - **Nunca sobrescreva o vídeo original.**

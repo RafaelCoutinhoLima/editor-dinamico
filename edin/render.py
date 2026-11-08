@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .captions import build_ass
 from .plan import load_plan, remap_words, seg_out_dur, seg_src
-from .reframe import crop_box, face_track, focus_for
+from .reframe import activity_pan, crop_box, face_track, focus_for
 from .sfx import VOLUME as SFX_VOLUME
 from .sfx import sfx_file, sync_start
 from .utils import FONTS_DIR, ffmpeg_filter_path, is_image, load_json, probe, run, workdir_for
@@ -99,12 +99,35 @@ class Renderer:
         bw, bh = W * zoom, H * zoom
         fw, fh = (bw, bw / src_ar) if src_ar > bw / bh else (bh * src_ar, bh)
         fw, fh = _even(fw), _even(fh)
-        pw, ph = max(fw, W), max(fh, H)
-        l, t = (pw - fw) // 2, (ph - fh) // 2
-        chain = (f"scale={fw}:{fh}:flags=lanczos,split[ex_a][ex_b];"
-                 f"[ex_b]pad={pw}:{ph}:{l}:{t},fillborders=left={l}:right={pw - fw - l}:top={t}"
-                 f":bottom={ph - fh - t}:mode=smear,boxblur=30:2,crop={W}:{H}[ex_bg];"
-                 f"[ex_a]crop='min(iw,{W})':'min(ih,{H})'[ex_fg];[ex_bg][ex_fg]overlay=(W-w)/2:(H-h)/2")
+        # fundo: o quarto de cima e o de baixo da própria cena, espelhados, esticados até as bordas e desfocados.
+        # Sem vstack/fillborders nem ampliar tiras finas: no ffmpeg 8 isso corrompia memória e deixava a base preta.
+        top = max(0, (H - fh) // 2)
+        bot = max(0, H - fh - top)
+        cw = max(fw, W)
+        q = max(8, _even(fh / 40))  # tira fina da borda (2,5%): só fundo; faixas maiores pegavam botão/ícone e viravam mancha
+        chain = f"scale={fw}:{fh}:flags=lanczos,split=4[ex_a][ex_t][ex_c][ex_b];"
+        chain += f"[ex_c]pad={cw}:{fh + top + bot}:{(cw - fw) // 2}:{top}[ex_cv];"
+        cur = "[ex_cv]"
+        if top:
+            chain += f"[ex_t]crop={fw}:{q}:0:0,vflip,scale={fw}:{top}[ex_tt];{cur}[ex_tt]overlay={(cw - fw) // 2}:0[ex_c1];"
+            cur = "[ex_c1]"
+        else:
+            chain += "[ex_t]nullsink;"
+        if bot:
+            chain += (f"[ex_b]crop={fw}:{q}:0:{fh - q},vflip,scale={fw}:{bot}[ex_bb];"
+                      f"{cur}[ex_bb]overlay={(cw - fw) // 2}:{top + fh}[ex_c2];")
+            cur = "[ex_c2]"
+        else:
+            chain += "[ex_b]nullsink;"
+        if cw > fw:  # laterais (fonte mais estreita que a saída): espelha o quarto da esquerda e da direita
+            side = (cw - fw) // 2
+            qw = max(8, _even(fw / 40))
+            chain += (f"{cur}split=3[ex_m][ex_l][ex_r];[ex_l]crop={qw}:ih:{side}:0,hflip,scale={side}:ih[ex_ll];"
+                      f"[ex_r]crop={qw}:ih:{side + fw - qw}:0,hflip,scale={cw - fw - side}:ih[ex_rr];"
+                      f"[ex_m][ex_ll]overlay=0:0[ex_m1];[ex_m1][ex_rr]overlay={side + fw}:0[ex_c3];")
+            cur = "[ex_c3]"
+        chain += (f"{cur}crop={W}:{H},boxblur=30:2[ex_bg];"
+                  f"[ex_a]crop='min(iw,{W})':'min(ih,{H})'[ex_fg];[ex_bg][ex_fg]overlay=(W-w)/2:(H-h)/2")
         if abs(drift - 1.0) > 1e-3:
             n = max(1, int(round(d_out * self.fps)) - 1)
             up = 1.0 if self.draft else 1.5
@@ -137,6 +160,9 @@ class Renderer:
         zmin = min(zoom, zoom_to)
         cx, cy, cw, ch = crop_box(info["w"], info["h"], self.W, self.H, zmin, fx, fy, has_face)
         chain = [f"crop={cw}:{ch}:{cx}:{cy}"]
+        if self._pan == "auto":  # câmera segue a atividade da tela (cursor, digitação, elementos entrando)
+            self._pan = activity_pan(src, t0, t1, cw / info["w"], self.cache)
+            print(f"\r[edin] pan automático {self._pan[0]:.2f} -> {self._pan[1]:.2f}", end="")
         if self._pan:  # câmera lateral: o recorte anda de pan[0] até pan[1] (x normalizado) com easing suave
             x0, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[0]), fy, has_face)
             x1, *_ = crop_box(info["w"], info["h"], self.W, self.H, zmin, float(self._pan[1]), fy, has_face)
@@ -147,8 +173,11 @@ class Renderer:
             for k, (x0, y0, x1, y1) in enumerate(self._hide):
                 rx, ry = _even(x0 * info["w"]), _even(y0 * info["h"])
                 rw, rh = _even((x1 - x0) * info["w"]), _even((y1 - y0) * info["h"])
+                # borda suave: a cópia desfocada some aos poucos nos 20% finais da região (sem linha dura)
                 pre.append(f"split[hd{k}a][hd{k}b];[hd{k}b]crop={rw}:{rh}:{rx}:{ry},boxblur=24:3,"
-                           f"eq=brightness=-0.25[hd{k}c];[hd{k}a][hd{k}c]overlay={rx}:{ry}")
+                           f"eq=brightness=-0.25,format=yuva420p,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)'"
+                           f":a='255*min(1,(H-Y)/(H*0.2))'[hd{k}c];[hd{k}a][hd{k}c]overlay={rx}:{ry}:format=auto")
+            pre[-1] += ",format=yuv420p"
             chain = pre + chain
         if abs(zoom_to - zoom) > 1e-3:
             a, b = zoom / zmin, zoom_to / zmin
