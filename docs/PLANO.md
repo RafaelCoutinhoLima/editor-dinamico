@@ -57,12 +57,19 @@ O plano é a "linha do tempo" do vídeo. A ordem de `segments` é a ordem do ví
 - `focus`: `"face"` (padrão, segue o rosto), `"center"` ou `[x, y]` normalizado de 0 a 1.
 - `speed`: 0.5 câmera lenta, 2.0 acelerado (o áudio acompanha, sem mudar o tom). `edin plan --speed 1.08` aplica em todos os segmentos de fala.
 - `broll`: troca só a imagem e mantém a fala. `{"src", "start", "zoom", "zoom_to", "focus"}`. Imagens ganham zoom lento automático.
+- `broll: {"query": "estudante cansado"}` (sem `src`): b-roll grátis do Pexels. No render o edin busca na orientação do vídeo, baixa o melhor clipe que cubra o segmento para `broll/` ao lado do plano (com cache) e grava autor e URL em `broll/CREDITOS.txt`. `"pick": 1` usa o 2º resultado. Para revisar antes, `edin broll --plan plano.json` grava o `src` escolhido no plano. Avulso: `edin broll "consulta" --orientation portrait --n 3`. Precisa da chave grátis em `PEXELS_API_KEY` (sem ela o edin explica como pegar).
 
 **Legendas** (`captions`, ou `null` para desligar)
 - `style`: `hormozi`, `clean`, `karaoke`, `minimal`.
+- Animação padrão Submagic: cada palavra tem posição fixa (medida pela fonte), o grupo entra subindo com fade e a palavra falada sobe um pouco e cresce (pop 92% → 113% → 110%) sem empurrar as vizinhas, então nada treme.
+- `letter_px`: altura das maiúsculas em px numa saída de 1080 de largura (padrão `hormozi` 80, `clean` 70; padrão pro 65 a 90). `scale` multiplica.
+- `words_per_group`: 1 a 4 nos estilos animados. Grupo largo demais quebra em 2 linhas.
 - `emphasis`: índices das palavras (o `#n` mostrado por `edin text` e `edin timeline`).
-- `position`: altura do centro da legenda (0 topo, 1 base).
-- Cores no formato ASS `&H00BBGGRR&` (azul, verde, vermelho invertidos).
+- `categories`: segunda cor por categoria, além da cor principal da palavra ativa. `true` liga todas; `["numero"]` só uma; ou `{"numero": "#39FF14", "alerta": {"color": "#FF3B30", "words": ["prova"]}}`. `numero`: algarismos, R$, %, números por extenso, mil, milhões, reais. `alerta`: não, nunca, nada, nenhum, cuidado, erro, pior. Use no máximo 2 cores de categoria.
+- `emoji`: `[{"word": 41, "emoji": "🔥"}, {"at": 3.2, "emoji": "💡", "duration": 1.2}]`. PNG do Twemoji animado (pop de entrada, flutuação leve, saída), 150 px em 1080. Fica acima da palavra; se cobrir rosto (detectado no vídeo montado) ou legenda, tenta menor, ao lado da legenda, ao lado da cabeça e abaixo da legenda. `"x"`/`"y"` (0 a 1) forçam a posição; `"size"` muda o tamanho. No máximo 1 emoji a cada 3 s (o render e o `edin captions` avisam).
+- `position`: altura do centro da legenda (0 topo, 1 base). No 9:16 a legenda respeita 90 px à esquerda e 120 px à direita.
+- `edin captions plano.json` confere sem renderizar: altura da letra, palavras de cada categoria e avisos (tamanho, zona segura, emojis seguidos).
+- Cores no formato ASS `&H00BBGGRR&` (azul, verde, vermelho invertidos) ou `#RRGGBB`.
 
 **Efeitos sonoros**
 - `sfx[].at` é o momento do evento **no vídeo final** (veja `edin timeline`). O edin alinha o ponto de sincronia do efeito nesse momento: o ataque de cliques e batidas, o pico de whoosh e riser (que começam antes). Não desconte nada à mão.

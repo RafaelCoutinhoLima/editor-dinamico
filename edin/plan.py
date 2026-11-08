@@ -241,7 +241,7 @@ def load_plan(path: str) -> dict:
     for seg in plan["segments"]:
         if seg.get("src"):
             seg["src"] = ab(seg["src"])
-        if seg.get("broll"):
+        if seg.get("broll") and seg["broll"].get("src"):  # {"query": ...} sem src: resolvido no render
             seg["broll"]["src"] = ab(seg["broll"]["src"])
     if plan.get("music") and plan["music"].get("file"):
         plan["music"]["file"] = ab(plan["music"]["file"])
@@ -291,7 +291,8 @@ def print_timeline(plan_path: str) -> None:
         ws = [w for w in words if t0 <= w["s"] < t0 + d]
         txt = " ".join(f"{w['w']}" for w in ws)
         idx = f"#{ws[0]['i']}-{ws[-1]['i']}" if ws else ""
-        extra = f" broll={seg['broll']['src']}" if seg.get("broll") else ""
+        b = seg.get("broll") or {}
+        extra = f" broll={b.get('src') or 'pexels:' + str(b.get('query'))}" if b else ""
         src = f" src={seg['src']}" if seg.get("src") else ""
         print(f"seg {n:02d} out[{fmt_time(t0)}-{fmt_time(t0 + d)}] src[{fmt_time(seg['start'])}-{fmt_time(seg['end'])}]"
               f" zoom {seg.get('zoom', 1.0)}{src}{extra} {idx} | {txt}")

@@ -244,6 +244,71 @@ def _add_motion_parser(sp):
 # ---- fim motion
 
 
+# ---- b-roll (Pexels) e conferência de legenda/emoji ------------------------------------- ver docs/PLANO.md
+def cmd_broll(a):
+    from .broll import fetch, resolve_plan
+
+    if a.plan:
+        from .plan import load_plan
+        from .utils import save_json
+
+        raw = load_json(a.plan)
+        plan = load_plan(a.plan)
+        n = resolve_plan(plan, Path(a.plan).resolve().parent)
+        base = Path(a.plan).resolve().parent
+        for seg_raw, seg in zip(raw["segments"], plan["segments"]):
+            if (seg_raw.get("broll") or {}).get("query") and not seg_raw["broll"].get("src"):
+                seg_raw["broll"]["src"] = str(Path(seg["broll"]["src"]).relative_to(base))
+        save_json(raw, a.plan)
+        print(f"[edin] {n} b-roll(s) resolvido(s) em {a.plan} (créditos em broll/CREDITOS.txt)")
+        return
+    if not a.query:
+        raise SystemExit("[edin] Passe a consulta (edin broll \"estudante cansado\") ou --plan plano.json")
+    dest = Path(a.dir) if a.dir else Path.cwd() / "broll"
+    for path, it in fetch(a.query, a.orientation, a.n, dest):
+        print(f"{path}  {it['w']}x{it['h']} {it['duration']:.0f}s  {it['author']}  {it['url']}")
+    print(f"[edin] Créditos em {dest / 'CREDITOS.txt'}")
+
+
+def cmd_captions(a):
+    from .captions import caption_warnings, layout_captions, word_categories
+    from .emoji import plan_warnings
+    from .plan import load_plan, remap_words
+    from .render import FORMATS
+
+    plan = load_plan(a.plan)
+    cap = plan.get("captions")
+    if not cap:
+        print("Plano sem legenda (captions: null).")
+        return
+    W, H = FORMATS.get(plan.get("format", "9:16"), (1080, 1920))
+    words = remap_words(plan)
+    lay = layout_captions(words, cap, W, H)
+    p = lay["params"]
+    print(f"Legenda {cap.get('style', 'hormozi')}: letra {p['letter']:.0f} px (fonte {p['size']:.0f}), "
+          f"centro em y={p['pos_y']} de {H}, {len(lay['groups'])} grupos, até {p['per']} palavras")
+    cats = word_categories(words, cap)
+    if cats:
+        print("Categorias: " + " ".join(f"#{w['i']}:{w['w']}" for w in words if w["i"] in cats))
+    for wmsg in caption_warnings(cap, W, H) + plan_warnings(cap, words):
+        print(f"aviso: {wmsg}")
+
+
+def _add_broll_parser(sp):
+    s = sp.add_parser("broll", help="baixa b-roll grátis do Pexels (PEXELS_API_KEY) com créditos em broll/")
+    s.add_argument("query", nargs="?", help="o que buscar, ex.: \"estudante cansado\"")
+    s.add_argument("--orientation", choices=["portrait", "landscape", "square"], default="portrait")
+    s.add_argument("--n", type=int, default=3, help="quantos clipes baixar")
+    s.add_argument("--dir", help="pasta de destino (padrão: ./broll)")
+    s.add_argument("--plan", help="resolve os \"broll\": {\"query\"} do plano e grava o src nele")
+    s.set_defaults(fn=cmd_broll)
+
+    s = sp.add_parser("captions", help="confere a legenda do plano: tamanho, posição, categorias e emojis")
+    s.add_argument("plan")
+    s.set_defaults(fn=cmd_captions)
+# ---- fim b-roll
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="edin", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = p.add_subparsers(dest="cmd", required=True)
@@ -359,6 +424,7 @@ def main(argv=None):
     s.set_defaults(fn=cmd_clean)
 
     _add_motion_parser(sp)
+    _add_broll_parser(sp)
 
     a = p.parse_args(argv)
     if a.cmd not in ("doctor", "sfx", "text"):
