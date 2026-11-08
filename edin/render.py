@@ -313,7 +313,14 @@ class Renderer:
 
         # 1ª passada, só áudio: voz + SFX + música + loudnorm -> mix.wav. Num filtergraph único com vídeo e
         # áudio, o ffmpeg 8 com encoder AAC abria saltos no áudio (3 s = lookahead do loudnorm): fala sumia.
-        inputs = ["-i", joined.name]
+        voice_src = joined.name
+        vcfg = self.plan.get("voice")
+        if vcfg and vcfg.get("clean") not in (None, False, "none") and self.plan.get("audio", "source") == "source":
+            from .voice import clean as clean_voice
+
+            print(f"[edin] Limpando a voz ({vcfg.get('clean')}, {vcfg.get('chain') or 'sem cadeia'})...")
+            voice_src = clean_voice(str(self.wd / joined.name), str(self.wd / "voz_limpa.wav"), vcfg, self.verbose)
+        inputs = ["-i", voice_src]
         fc = ["[0:a]asplit=2[voice][sc]"]
         mix = ["[voice]"]
         n = 1

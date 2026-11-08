@@ -151,6 +151,17 @@ def audit_plan(plan_path: str) -> list:
         if not Path(mus["file"]).exists():
             w("erro", f"Música não encontrada: {mus['file']}")
 
+    # ------------------------------------------------ voz
+    if plan.get("words") and plan.get("audio", "source") == "source" and Path(plan["source"]).exists():
+        v = plan.get("voice") or {}
+        if not v.get("clean"):
+            from .voice import noise_report
+
+            nr = noise_report(plan["source"])
+            if nr["snr_db"] is not None and nr["snr_db"] < 30:
+                w("aviso", f"Fonte com ruído de fundo (fala só {nr['snr_db']} dB acima do ruído) e limpeza de voz "
+                           "desligada. Ligue `\"voice\": {\"clean\": \"dfn\"}` (padrão do `edin plan`).")
+
     # ------------------------------------------------ arquivos
     for n, seg in enumerate(segs):
         for p in (seg.get("src"), (seg.get("broll") or {}).get("src")):

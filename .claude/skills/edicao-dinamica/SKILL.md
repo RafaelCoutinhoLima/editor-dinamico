@@ -61,7 +61,8 @@ O `plan` decide o que manter pelas palavras do Whisper e ajusta cada borda de co
 6. **Ritmo:** o plano alterna zoom 1.0 e 1.18 a cada ~3 s. Impacto: `zoom` 1.3 num segmento curto. Fala emotiva: `zoom_to` para um zoom lento. Nada parado por mais de ~3 s em 9:16.
 7. **B-roll:** se Rafael tiver imagens/vídeos de apoio, `"broll": {"src": "arquivo"}` onde ele cita aquilo. A fala continua. No máximo 30% do tempo.
 8. **Som:** o `reels` já põe `softclick` nas trocas de zoom. Acentos manuais só nos momentos chave: `boom` no gancho, `ding` em número/dica, `whoosh` numa transição grande. `boom`/`riser` no máximo 2 por vídeo. Lista: `edin sfx`. Menos é mais.
-9. **Música:** só se Rafael mandar o arquivo. `"music": {"file": "...", "volume": 0.12, "duck": true}`. Se ele vai pôr música no app, entregue sem.
+9. **Voz:** o `edin plan` já liga a limpeza (`"voice": {"clean": "dfn", "strength": 24, "chain": "broadcast"}`). Em gravação já limpa de estúdio, use `strength` 12 ou desligue (`"voice": null`); em lugar muito barulhento, suba para 36. Para comparar antes de decidir: `edin voice video.mp4`.
+10. **Música:** só se Rafael mandar o arquivo. `"music": {"file": "...", "volume": 0.12, "duck": true}`. Se ele vai pôr música no app, entregue sem.
 
 Referência dos campos: `docs/PLANO.md`.
 

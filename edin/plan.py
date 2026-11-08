@@ -22,6 +22,7 @@ import random
 import re
 
 from .audio import snap_segments
+from .voice import DEFAULT as VOICE_DEFAULT
 from .utils import fmt_time, load_json, parse_range, probe, save_json
 
 PRESETS = {
@@ -50,7 +51,7 @@ def _is_filler(word: str) -> bool:
 
 def build_talking_plan(src: str, words_json: str, preset: str = "reels", rng: str | None = None,
                        remove_fillers: bool = True, fmt: str | None = None, speed: float = 1.0,
-                       snap: bool = True) -> dict:
+                       snap: bool = True, clean_voice: bool = True) -> dict:
     cfg = PRESETS[preset]
     info = probe(src)
     all_words = load_json(words_json)["words"]
@@ -148,6 +149,8 @@ def build_talking_plan(src: str, words_json: str, preset: str = "reels", rng: st
         "auto_sfx": dict(cfg["auto_sfx"]),
         "music": None,
         "loudness": -14,
+        # limpeza de voz (DeepFilterNet + cadeia broadcast); null desliga
+        "voice": dict(VOICE_DEFAULT) if clean_voice else None,
     }
     return plan
 

@@ -55,6 +55,11 @@ if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
   fi
 fi
 
+# ---------------------------------------------------------------- limpeza de voz (DeepFilterNet + RNNoise)
+say "Baixando a limpeza de voz (DeepFilterNet 36 MB + modelo RNNoise 300 KB)..."
+"$VENV/bin/python" -c "from edin.voice import dfn_binary, rnn_model; dfn_binary(); rnn_model()" || \
+  say "Não deu para baixar agora; o edin tenta de novo no primeiro uso."
+
 # ---------------------------------------------------------------- skill e agentes do Claude Code
 mkdir -p "$HOME/.claude/skills" "$HOME/.claude/agents"
 ln -sfn "$REPO/.claude/skills/edicao-dinamica" "$HOME/.claude/skills/edicao-dinamica"

@@ -10,10 +10,10 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
 
 ## Próximos passos (por impacto/esforço)
 
-1. **Limpeza de voz.** O que o Descript Studio Sound faz, misturado com ~15% do original para não soar robótico.
+1. ✅ **Limpeza de voz** (feito: `voice` no plano e `edin voice`). O que o Descript Studio Sound faz, misturado com ~15% do original para não soar robótico.
    - Já disponível: filtro `arnndn` do ffmpeg (RNNoise) com o modelo `sh.rnnn` de 300 KB ([rnnoise-models](https://github.com/GregorR/rnnoise-models)).
    - Melhor qualidade: [DeepFilterNet 3](https://github.com/Rikorose/DeepFilterNet) (MIT/Apache), binário `deep-filter` de 36 MB, 5 s de áudio em 1,3 s de CPU, WAV 48 kHz.
-   - Plano: `"voice": {"clean": "dfn|rnn", "mix": 0.85, "chain": "broadcast"}` (highpass 80 Hz, de-esser, compressor, EQ de presença antes do loudnorm).
+   - No plano: `"voice": {"clean": "dfn|rnn", "strength": 24, "chain": "broadcast"}`. Medido num vídeo de celular: ruído de fundo -25 → -40 dBFS, fala/ruído 15 → 28 dB, 231/231 palavras preservadas, atraso 0 ms.
 2. **Mais QA no `edin check`**, tudo com o ffmpeg que já existe: `blackdetect` (quadro preto fora do fim), `freezedetect`, `silencedetect` no final, `ebur128` com pico real e LRA, ffprobe (1080x1920, yuv420p, fps constante, AAC 48 kHz, `+faststart`, áudio e vídeo com a mesma duração), cortes por minuto com `scdet`, contraste e altura mínima da legenda.
 3. **Câmera virtual suavizada** (o que o Premiere Auto Reframe acerta): mapa de atividade com compensação de movimento global (ORB + RANSAC do OpenCV), zona morta de ~15%, filtro One Euro, velocidade máxima e modo "parado" por plano. Campo: `reframe: {"mode": "static|track|auto", "deadzone": 0.15}`.
 4. **Detecção de cenas** com [PySceneDetect](https://scenedetect.com) (`AdaptiveDetector`, BSD-3, 1 MB): `edin scenes video.mp4` → `scenes.json`, para recomeçar o rastreio a cada plano e não deixar `pan` atravessar corte.

@@ -38,7 +38,7 @@ Você recebe: o plano (`*.plan.json`), o vídeo renderizado e, se houver, o pedi
 4. **Enquadramento:** cabeça inteira, rosto no terço superior, legenda sem cobrir olhos e boca, nada nas zonas do app (topo ~220 px, base ~320 px no 9:16).
 5. **Ritmo:** algo muda a cada 1,5 a 3 s? Trechos mortos?
 6. **Legenda e títulos:** legíveis no celular (texto principal com pelo menos ~60 px de altura de letra em 1080 de largura), ênfase nas palavras certas, sem erro de transcrição em nomes e números.
-7. **Som:** efeitos discretos, música abaixo da voz, loudness perto de -14 LUFS.
+7. **Som:** voz limpa (sem chiado, ventilador ou eco: compare `edin voice <original>` se suspeitar; `voice` deve estar ligado no plano), efeitos discretos, música abaixo da voz, loudness perto de -14 LUFS.
 8. **Final:** termina numa imagem forte, sem rabo morto.
 
 ## Padrão profissional (Reels/TikTok)

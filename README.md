@@ -10,6 +10,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 - **Reenquadra 16:9 para 9:16** seguindo o rosto, ou encaixa o quadro inteiro com fundo desfocado ou de cor sólida.
 - **Punch-ins e zoom suave** para esconder cortes e dar ritmo.
 - **Legendas animadas** palavra a palavra (estilos `hormozi`, `clean`, `karaoke`, `minimal`) e títulos com qualquer fonte.
+- **Limpeza de voz** de gravação de celular (o que o Descript Studio Sound faz): DeepFilterNet ou RNNoise + cadeia broadcast (EQ, de-esser, compressor). Ligada por padrão; `edin voice` para um arquivo avulso.
 - **B-roll, efeitos sonoros e música** com ducking automático e áudio final em -14 LUFS.
 - **Cortes de vídeo longo em vários shorts** e **montagem no ritmo da música** (detecção de BPM).
 - **Crítico automático** (`edin check`) que aponta problemas de ritmo, gancho, legenda e som, e **verificação** (`edin verify`) que retranscreve o vídeo final para achar palavras perdidas.
@@ -23,6 +24,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 | **ffmpeg** | corta, junta, aplica zoom, legendas e mixa o áudio | `sudo apt install ffmpeg` (se não houver, o `install.sh` baixa uma versão estática) |
 | **faster-whisper** | transcreve a fala com o tempo de cada palavra | automático |
 | **OpenCV** | detecta o rosto para reenquadrar (modelo YuNet de 230 KB já incluso) | automático |
+| **DeepFilterNet / RNNoise** | limpeza de voz (ruído de fundo, chiado, ventilador) | automático (baixados uma vez para `~/.local/share/edin`) |
 | **librosa** | detecta as batidas da música nas montagens | automático |
 | **numpy** | cálculos de áudio e imagem | automático |
 | **CUDA (cuBLAS/cuDNN)** | opcional: transcrição até ~13x mais rápida em GPU NVIDIA | automático se houver GPU |

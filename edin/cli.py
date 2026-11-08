@@ -39,6 +39,11 @@ def cmd_doctor(_):
         except ImportError:
             print(f"FALTA {mod} ({why})  -> pip install -r requirements.txt")
             ok = False
+    from .voice import dfn_binary, rnn_model
+
+    dfn, rnn = dfn_binary(download=False), rnn_model(download=False)
+    print(f"{'OK ' if dfn else '-- '} limpeza de voz DeepFilterNet {dfn or '(baixa no 1º uso)'}")
+    print(f"{'OK ' if rnn else '-- '} limpeza de voz RNNoise {rnn or '(baixa no 1º uso)'}")
     try:
         import ctranslate2
 
@@ -70,7 +75,7 @@ def cmd_plan(a):
     if not Path(words).exists():
         sys.exit(f"[edin] {words} não existe. Rode antes: edin transcribe {a.video}")
     plan = build_talking_plan(a.video, words, a.preset, a.range, not a.keep_fillers, a.format, a.speed,
-                              not a.no_snap)
+                              not a.no_snap, not a.no_clean_voice)
     out = a.out or _stem(a.video) + (f".{a.name}" if a.name else "") + ".plan.json"
     save_plan(plan, out)
 
@@ -164,6 +169,25 @@ def cmd_verify(a):
     sys.exit(print_report(verify_render(a.plan, a.video, a.model, None if a.lang == "auto" else a.lang)))
 
 
+def cmd_voice(a):
+    from .utils import run
+    from .voice import clean, noise_report
+
+    out = a.out or _stem(a.input) + "_voz_limpa" + (".mp4" if not a.input.lower().endswith((".wav", ".mp3", ".m4a"))
+                                                     else ".wav")
+    cfg = {"clean": None if a.mode == "none" else a.mode, "strength": a.strength,
+           "chain": None if a.no_chain else "broadcast"}
+    wav = clean(a.input, str(Path(out).with_suffix(".wav")) if out.endswith(".mp4") else out, cfg, a.verbose)
+    if out.endswith(".mp4"):  # devolve o vídeo com a voz limpa (vídeo copiado, sem reencode)
+        run(["ffmpeg", "-y", "-v", "error", "-i", a.input, "-i", wav, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy",
+             "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out])
+        Path(wav).unlink()
+    antes, depois = noise_report(a.input), noise_report(out)
+    print(f"[edin] Voz limpa: {out}")
+    print(f"       ruído de fundo {antes['ruido_db']} -> {depois['ruido_db']} dBFS | "
+          f"fala/ruído {antes['snr_db']} -> {depois['snr_db']} dB")
+
+
 def cmd_sheet(a):
     from .render import contact_sheet
 
@@ -236,6 +260,7 @@ def main(argv=None):
     s.add_argument("--keep-fillers", action="store_true", help="não remover ahn/hum/éé")
     s.add_argument("--speed", type=float, default=1.0, help="acelera a fala depois do corte (1.05-1.10 soa natural)")
     s.add_argument("--no-snap", action="store_true", help="não ajustar cortes pela energia do áudio")
+    s.add_argument("--no-clean-voice", action="store_true", help="não limpar a voz (ruído + cadeia broadcast)")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_plan)
 
@@ -290,6 +315,15 @@ def main(argv=None):
     s.add_argument("-n", type=int, default=12)
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_sheet)
+
+    s = sp.add_parser("voice", help="limpa a voz de um áudio/vídeo (DeepFilterNet ou RNNoise + cadeia broadcast)")
+    s.add_argument("input")
+    s.add_argument("-o", "--out", help="saída .wav ou .mp4 (padrão: <nome>_voz_limpa)")
+    s.add_argument("--mode", default="dfn", choices=["dfn", "rnn", "none"], help="redutor de ruído (padrão dfn)")
+    s.add_argument("--strength", type=float, default=24, help="redução máxima em dB (padrão 24; 100 = total)")
+    s.add_argument("--no-chain", action="store_true", help="sem a cadeia broadcast (EQ, de-esser, compressor)")
+    s.add_argument("-v", "--verbose", action="store_true")
+    s.set_defaults(fn=cmd_voice)
 
     s = sp.add_parser("sfx", help="lista efeitos sonoros embutidos")
     s.set_defaults(fn=cmd_sfx)

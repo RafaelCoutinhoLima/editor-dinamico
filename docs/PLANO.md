@@ -31,7 +31,8 @@ O plano é a "linha do tempo" do vídeo. A ordem de `segments` é a ordem do ví
   "sfx": [{"at": 0.0, "type": "boom", "volume": 0.6}],
   "auto_sfx": {"on_zoom": "softclick"},
   "music": {"file": "musica.mp3", "volume": 0.12, "start": 0, "duck": true},
-  "loudness": -14
+  "loudness": -14,
+  "voice": {"clean": "dfn", "strength": 24, "chain": "broadcast"}
 }
 ```
 
@@ -68,6 +69,12 @@ O plano é a "linha do tempo" do vídeo. A ordem de `segments` é a ordem do ví
 - `sfx[].volume` é opcional; o padrão de cada efeito já fica abaixo da voz (cliques ~20 dB abaixo).
 - Tipos: `softclick`, `click`, `tock`, `pop`, `snap`, `ding`, `whoosh`, `swoosh`, `boom`, `riser`, `glitch` (sintetizados em camadas, sem direitos autorais).
 - `auto_sfx`: `on_zoom` (troca de zoom), `on_emphasis` (palavras de ênfase), `on_cut` (todo corte). Prefira `softclick` a `whoosh` nos automáticos; não ligue `on_zoom` e `on_cut` juntos.
+
+**Voz** (`voice`, ou `null` para desligar; o `edin plan` já liga)
+- `clean`: `"dfn"` (DeepFilterNet 3, melhor qualidade), `"rnn"` (RNNoise, mais leve) ou `null`.
+- `strength`: redução máxima de ruído em dB (padrão 24). Guarda um pouco do som original para a voz não ficar robótica; 100 = redução total.
+- `chain`: `"broadcast"` (corta grave de manuseio, tira o "embolado", de-esser, compressor suave e presença) ou `null`.
+- Para limpar um arquivo avulso ou comparar: `edin voice video.mp4` (gera `video_voz_limpa.mp4` e mostra ruído antes/depois).
 
 **Motion** (opcional, Remotion): lista `motion` com efeitos por cima do vídeo editado. Ver [MOTION.md](MOTION.md).
 
