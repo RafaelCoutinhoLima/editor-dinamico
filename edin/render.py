@@ -57,6 +57,9 @@ class Renderer:
         self._pan = None
         self._hide = None
         self._dim = 0.22
+        self._ext_y = 0.5
+        self._detail = None
+        self._seg = {}
         self.camera_log = []  # trajetórias da câmera virtual (para medir tremor e conferir)
         main = self.info(plan["source"])
         self.W, self.H = out_size(plan, main, draft)
@@ -106,7 +109,8 @@ class Renderer:
         fw, fh = _even(fw), _even(fh)
         # fundo: o quarto de cima e o de baixo da própria cena, espelhados, esticados até as bordas e desfocados.
         # Sem vstack/fillborders nem ampliar tiras finas: no ffmpeg 8 isso corrompia memória e deixava a base preta.
-        top = max(0, (H - fh) // 2)
+        # extend_y: onde fica o centro do quadro da fonte (0 topo, 1 base); padrão no meio
+        top = max(0, min(H - fh, int(round(H * self._ext_y - fh / 2)))) if H > fh else 0
         bot = max(0, H - fh - top)
         cw = max(fw, W)
         q = max(8, _even(fh / 40))  # tira fina da borda (2,5%): só fundo; faixas maiores pegavam botão/ícone e viravam mancha
@@ -255,15 +259,109 @@ class Renderer:
             expr = e if expr is None else f"if(lt(t,{(b - t0) / speed - 0.01:.3f}),{e},{expr})"
         return expr
 
+    def _glow_bg(self, cols: list, cy: int) -> Path:
+        """Fundo desenhado (PNG, cache): brilho radial na cor 0 centrado em y=cy, indo até a última cor nas
+        bordas, com grão leve contra faixas de cor. Nunca fica uma área lisa e preta."""
+        import numpy as np
+
+        def rgb(c):
+            c = str(c).replace("0x", "").lstrip("#")
+            return np.array([int(c[k:k + 2], 16) for k in (0, 2, 4)], float)
+
+        W, H = self.W, self.H
+        key = "_".join(str(c).replace("0x", "").lstrip("#") for c in cols)
+        out = self.cache / f"glow_{W}x{H}_{cy}_{key}.png"
+        if out.exists():
+            return out
+        yy, xx = np.mgrid[0:H, 0:W].astype(float)
+        d = np.sqrt(((xx - W / 2) / (W * 0.9)) ** 2 + ((yy - cy) / (H * 0.62)) ** 2)  # elipse alta
+        d = np.clip(d, 0, 1) ** 1.3
+        pal = [rgb(c) for c in cols]
+        pos = np.linspace(0, 1, len(pal))
+        img = np.zeros((H, W, 3))
+        for ch in range(3):
+            img[..., ch] = np.interp(d, pos, [p[ch] for p in pal])
+        img += np.random.default_rng(7).normal(0, 1.2, img.shape)  # grão (dither)
+        import cv2
+
+        cv2.imwrite(str(out), np.clip(img[..., ::-1], 0, 255).astype(np.uint8))
+        return out
+
+    def _card_layout(self, info: dict, d_out: float) -> str:
+        """Remonta a cena para o vertical (o que um motion designer faria): recorta só o card/tela da fonte
+        (`card`: [x0, y0, x1, y1] normalizados, já sem rótulo e fundo antigos), bordas suaves, na largura
+        `card_width` da saída, sobre um fundo em degradê gerado (`bg_colors`), centro na altura `extend_y`.
+        Sem emenda, sem espelho e sem faixa: o fundo é desenhado, não esticado da fonte."""
+        W, H = self.W, self.H
+        x0, y0, x1, y1 = (float(v) for v in self._seg.get("card", [0.12, 0.17, 0.88, 1.0]))
+        cx, cy = _even(x0 * info["w"]), _even(y0 * info["h"])
+        cw, ch = _even((x1 - x0) * info["w"]), _even((y1 - y0) * info["h"])
+        ow = _even(W * float(self._seg.get("card_width", 0.94)))
+        oh = _even(ow * ch / cw)
+        if oh > H * 0.62:  # card alto demais: limita a altura para sobrar espaço para o título
+            oh = _even(H * 0.62)
+            ow = _even(oh * cw / ch)
+        feather = max(8, ow // 40)
+        cols = self._seg.get("bg_colors") or self.plan.get("bg_colors") or ["#4a33b8", "#26176a", "#130b34"]
+        cols = ["0x" + str(c).lstrip("#") for c in cols][:8]
+        grad = ":".join(f"c{k}={c}" for k, c in enumerate(cols))
+        oy = int(min(max(H * self._ext_y - oh / 2, 0), H - oh))
+        return (f"crop={cw}:{ch}:{cx}:{cy},scale={ow}:{oh}:flags=lanczos,format=yuva420p,"
+                f"geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':"
+                f"a='255*min(1,min(min(X,W-1-X),min(Y,H-1-Y))/{feather})'[cd_c];"
+                f"movie=filename='{ffmpeg_filter_path(str(self._glow_bg(cols, oy + oh // 2)))}',"
+                f"loop=loop=-1:size=1,setpts=N/{self.fps}/TB,fps={self.fps},trim=duration={d_out + 0.5:.3f}[cd_bg];"
+                f"[cd_bg][cd_c]overlay=(W-w)/2:{oy}:format=auto:shortest=1,fps={self.fps},setsar=1,format=yuv420p")
+
+    def _with_detail(self, info: dict, main_chain: str, d_out: float) -> str:
+        """Destaque ampliado (estilo demo de app vertical): a tela inteira fica no `main_chain` e uma região da
+        fonte aparece ampliada num card com borda de destaque, abaixo (ou acima) dela.
+        detail = {"x", "y": centro da região (0 a 1 na fonte), "w": largura da região (fração da fonte),
+                  "aspect": 1.9, "y_out": 0.72 (centro do card na saída), "width_out": 0.88, "color": "#2EE59D"}"""
+        d = self._detail
+        W, H = self.W, self.H
+        aspect = float(d.get("aspect", 1.9))
+        rw = _even(min(info["w"], float(d.get("w", 0.4)) * info["w"]))
+        rh = _even(min(info["h"], rw / aspect))
+        rx = int(min(max(float(d.get("x", 0.5)) * info["w"] - rw / 2, 0), info["w"] - rw))
+        ry = int(min(max(float(d.get("y", 0.5)) * info["h"] - rh / 2, 0), info["h"] - rh))
+        ow = _even(W * float(d.get("width_out", 0.88)))
+        oh = _even(ow * rh / rw)
+        b = max(4, _even(W * 0.006))  # borda
+        color = "0x" + str(d.get("color", "#2EE59D")).lstrip("#")
+        ox = (W - ow - 2 * b) // 2
+        oy = int(min(max(H * float(d.get("y_out", 0.72)) - oh / 2 - b, 0), H - oh - 2 * b))
+        return (f"split[dt_m][dt_d];[dt_d]crop={rw}:{rh}:{rx}:{ry},scale={ow}:{oh}:flags=lanczos,"
+                f"pad={ow + 2 * b}:{oh + 2 * b}:{b}:{b}:color={color},format=yuva420p,"
+                f"fade=t=in:st=0.12:d=0.25:alpha=1,fade=t=out:st={max(0.0, d_out - 0.2):.3f}:d=0.2:alpha=1[dt_o];"
+                f"[dt_m]{main_chain}[dt_e];[dt_e][dt_o]overlay={ox}:{oy}:format=auto,format=yuv420p")
+
+    def _hide_chain(self, info: dict) -> str:
+        """Esconde regiões da fonte (rótulo/legenda gravados) com uma cópia desfocada e escurecida, borda suave."""
+        pre = []
+        for k, (x0, y0, x1, y1) in enumerate(self._hide):
+            rx, ry = _even(x0 * info["w"]), _even(y0 * info["h"])
+            rw, rh = _even((x1 - x0) * info["w"]), _even((y1 - y0) * info["h"])
+            # a cópia desfocada some aos poucos nos 20% finais da região (sem linha dura)
+            pre.append(f"split[hd{k}a][hd{k}b];[hd{k}b]crop={rw}:{rh}:{rx}:{ry},boxblur=24:3,"
+                       f"eq=brightness=-0.25,format=yuva420p,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)'"
+                       f":a='255*min(1,(H-Y)/(H*0.2))'[hd{k}c];[hd{k}a][hd{k}c]overlay={rx}:{ry}:format=auto")
+        return ",".join(pre) + ",format=yuv420p"
+
     def _vchain(self, src: str, t0: float, t1: float, zoom: float, zoom_to: float, focus, d_out: float,
                 fit: str | None = None, speed: float = 1.0, reframe=None) -> str:
         info = self.info(src)
         # "blur": mostra o quadro inteiro com fundo desfocado. Automático quando a fonte é vertical e a saída
         # horizontal (o crop cortaria a testa e o queixo).
         src_ar, out_ar = info["w"] / info["h"], self.W / self.H
+        if fit == "card":
+            return self._card_layout(info, d_out)
         if fit == "extend":
             z = max(1.0, zoom)
-            return self._extend_fill(src_ar, z, max(1.0, zoom_to) / z, d_out)
+            ext = self._extend_fill(src_ar, z, max(1.0, zoom_to) / z, d_out)
+            if self._detail:
+                ext = self._with_detail(info, ext, d_out)
+            return (self._hide_chain(info) + "," + ext) if self._hide else ext
         if fit in ("blur", "pad") or (fit is None and src_ar < out_ar * 0.75):
             z = max(1.0, zoom)
             color = None
@@ -286,17 +384,8 @@ class Renderer:
                 chain = [f"crop={cw}:{ch}:'{cam[0]}':'{cam[1]}':exact=1"]
         if self._pan:  # câmera lateral: o recorte anda de pan[0] até pan[1] (x normalizado) com easing suave
             chain = [f"crop={cw}:{ch}:'{self._pan_expr(src, t0, t1, zmin, fy, has_face, d_out, speed)}':{cy}"]
-        if self._hide:  # esconde regiões da fonte (legenda/rótulo gravado) com uma cópia desfocada e escurecida
-            pre = []
-            for k, (x0, y0, x1, y1) in enumerate(self._hide):
-                rx, ry = _even(x0 * info["w"]), _even(y0 * info["h"])
-                rw, rh = _even((x1 - x0) * info["w"]), _even((y1 - y0) * info["h"])
-                # borda suave: a cópia desfocada some aos poucos nos 20% finais da região (sem linha dura)
-                pre.append(f"split[hd{k}a][hd{k}b];[hd{k}b]crop={rw}:{rh}:{rx}:{ry},boxblur=24:3,"
-                           f"eq=brightness=-0.25,format=yuva420p,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)'"
-                           f":a='255*min(1,(H-Y)/(H*0.2))'[hd{k}c];[hd{k}a][hd{k}c]overlay={rx}:{ry}:format=auto")
-            pre[-1] += ",format=yuv420p"
-            chain = pre + chain
+        if self._hide:
+            chain = [self._hide_chain(info)] + chain
         if abs(zoom_to - zoom) > 1e-3:
             a, b = zoom / zmin, zoom_to / zmin
             n = max(1, int(round(d_out * self.fps)) - 1)
@@ -318,6 +407,9 @@ class Renderer:
         self._pan = seg.get("pan")  # [x_inicio, x_fim] normalizados: câmera lateral dentro do segmento
         self._dim = float(seg.get("blur_dim", 0.22))  # quanto escurecer o fundo do fit "blur" (0 = nada)
         self._hide = seg.get("hide")  # [[x0, y0, x1, y1], ...] normalizados na fonte: regiões a esconder
+        self._ext_y = float(seg.get("extend_y", 0.5))  # altura do conteúdo no fit "extend"
+        self._detail = seg.get("detail")  # destaque ampliado de uma região da fonte, num card
+        self._seg = seg
         src = seg_src(self.plan, seg)
         speed = float(seg.get("speed", 1.0) or 1.0)
         d_src = seg["end"] - seg["start"]

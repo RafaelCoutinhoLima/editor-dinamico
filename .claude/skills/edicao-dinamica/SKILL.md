@@ -114,9 +114,18 @@ Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, rende
 | Tipo de cena | Como fazer | Campos |
 |---|---|---|
 | Pessoa / ação | recorte 9:16 seguindo o rosto | `fit` padrão, `focus: "face"` |
-| Tela de app, site, planilha (conteúdo largo) | altura cheia e a câmera percorre a tela de um lado ao outro | `"pan": [0.34, 0.66]`, `zoom: 1.0` |
+| Tela de app, site, planilha, demo de produto (conteúdo largo) | **cena remontada**: recorta só a tela/card da fonte (sem rótulo e fundo antigos), na largura do celular, sobre fundo desenhado com brilho da cor da marca; rótulo curto e grande acima, frase completa menor abaixo | `"fit": "card"`, `card` = contorno medido da área clara, `card_width: 0.96`, `bg_colors`; fonte passada antes no `edin enhance --mode esrgan` |
 | Texto, logo, motion em fundo liso ou degradê | conteúdo ampliado até ~80% da largura (meça a largura do conteúdo) e as bordas da própria cena esticadas até o topo e a base | `"fit": "extend"`, `zoom` calculado |
 | Texto em fundo branco liso | igual, estendendo a cor exata | `"fit": "pad"`, `pad_color` amostrado no canto |
+
+**Telas de app em vertical (lição de Rafael: "deu zoom nas telas do app, cortou e perdeu qualidade"):**
+- **Nunca amplie e recorte uma tela de app para encher a vertical** (altura cheia + câmera lateral). Corta a tela, borra o texto (fonte 720p do WhatsApp não aguenta 1,8x) e a pessoa não entende o app.
+- Faça como anúncio vertical de produto: **título curto em cima (y ≈ 0.25), tela INTEIRA no meio na largura do celular, frase de apoio embaixo (y ≈ 0.75), fundo desenhado com brilho da cor da marca** (`fit: "card"`). A tela fica reduzida (~0,8x), nítida e sem corte.
+- Recorte o card pelo **contorno medido** da área clara (sem o halo escuro da fonte, que vira moldura) e **abaixo do rótulo antigo** (ele some sem `hide`).
+- Passe a fonte no `edin enhance --mode esrgan` antes (texto de tela fica mais nítido que o original) e use o arquivo melhorado no `src` dessas cenas.
+- Fundo nunca liso e preto: o `card` desenha um brilho radial que vai até as bordas. Não use `extend` em tela de app (o espelho pega a borda branca do card e o rótulo antigo transparece).
+- `detail` (destaque ampliado num card abaixo da tela) existe, mas só use se a tela for pequena e sem zoom animado na fonte: em geral duplica a informação e colide com o card.
+
 
 - **Rótulo ou legenda gravados na fonte** que ficariam cortados ou duplicados: esconda com `"hide": [[x0, y0, x1, y1]]` (normalizado na fonte; cópia desfocada e escurecida do próprio vídeo) e ponha o texto novo por cima, grande, com `titles` (`font`, `accent`, `box: true`).
 - `fit: "blur"` (desfoque da cena atrás) só serve para fonte com fundo de foto/vídeo; em tela branca vira cinza e em degradê mostra a emenda. Para texto/logo use `extend` (espelha a própria cena até as bordas), que funciona em fundo branco, escuro, colorido e em transições.

@@ -109,8 +109,9 @@ def _shots(plan: dict) -> list:
         moving = (abs(float(seg.get("zoom_to", seg.get("zoom", 1.0))) - float(seg.get("zoom", 1.0))) > 0.02
                   or bool(seg.get("pan")))
         # zoom lento recomeçando no segmento seguinte também é uma mudança visível
+        # "card"/"extend" são usados com um segmento por cena (conversão de peça pronta): cada um é um plano
         cont = (prev is not None and abs(seg["start"] - prev["end"]) < 0.02 and key == prev["_key"]
-                and not moving and not prev["_moving"])
+                and not moving and not prev["_moving"] and seg.get("fit") not in ("card", "extend"))
         if cont:
             shots[-1]["end"] += d
             shots[-1]["moving"] = shots[-1]["moving"] and moving
@@ -731,7 +732,11 @@ def find_bands(video: str, step: float = BAND_STEP, ignore_top: list | None = No
             t = k * step
             if lado == "topo" and any(a <= t <= b for a, b in ignore_top or []):
                 continue
-            if alt >= 0.08 * h and abs(ref - centro) > 60:
+            # faixa de verdade termina numa borda dura (letterbox, borda esticada errada); fundo em degradê não
+            k_in = rows[min(alt, h - 1)] if alt < h else rows[-1]
+            k_in2 = rows[min(alt + 2, h - 1)]
+            borda_dura = abs(m[k_in2] - m[rows[max(alt - 1, 0)]]) > 25
+            if alt >= 0.08 * h and abs(ref - centro) > 60 and borda_dura:
                 hits.append((t, lado))
     out = []
     for t, lado in hits:
