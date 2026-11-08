@@ -119,6 +119,7 @@ Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, rende
 | Texto em fundo branco liso | igual, estendendo a cor exata | `"fit": "pad"`, `pad_color` amostrado no canto |
 
 **Telas de app em vertical (lição de Rafael: "deu zoom nas telas do app, cortou e perdeu qualidade"):**
+- **No horizontal também:** tela de app sem zoom (`zoom_to: 1.0`) e com `src` da fonte melhorada no ESRGAN; zoom lento só em tela de texto/logo. Copie a fonte crua para dentro do projeto (nunca link para Downloads) e gere o ESRGAN a partir dela, não do vídeo já editado.
 - **Nunca amplie e recorte uma tela de app para encher a vertical** (altura cheia + câmera lateral). Corta a tela, borra o texto (fonte 720p do WhatsApp não aguenta 1,8x) e a pessoa não entende o app.
 - Faça como anúncio vertical de produto: **título curto em cima (y ≈ 0.25), tela INTEIRA no meio na largura do celular, frase de apoio embaixo (y ≈ 0.75), fundo desenhado com brilho da cor da marca** (`fit: "card"`). A tela fica reduzida (~0,8x), nítida e sem corte.
 - Recorte o card pelo **contorno medido** da área clara (sem o halo escuro da fonte, que vira moldura) e **abaixo do rótulo antigo** (ele some sem `hide`).

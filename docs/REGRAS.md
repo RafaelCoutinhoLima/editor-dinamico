@@ -20,6 +20,7 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 - **O vídeo da pessoa ocupa a tela inteira o tempo todo.** Nunca encolha a filmagem numa janela, moldura, split ou letterbox com faixas sólidas fixas em cima ou embaixo para abrir espaço para cards e legenda.
 - **Vertical usa a tela inteira, inclusive ao converter vídeo horizontal.** Nada de quadro 16:9 no meio com faixas (nem da cor do fundo). Tela de app: altura cheia + `pan`. Texto/logo: ampliar e `fit: "extend"`. Pessoa: recorte pelo rosto.
 - **Tela de app em vertical: nunca ampliar e recortar.** Tela inteira na largura do celular (`fit: "card"`), título acima, frase abaixo, fundo desenhado na cor da marca. Zoom de 1,8x numa fonte 720p corta a tela e borra o texto.
+- **Tela de app no horizontal também fica sem zoom** (`zoom_to: 1.0`), inteira e vinda da fonte melhorada no Real-ESRGAN. Zoom lento (Ken Burns) só em tela de texto/logo. Guarde sempre a fonte original crua junto do projeto (`original.mp4` de verdade, não link para Downloads): sem ela não dá para refazer nada sem o zoom já embutido.
 - **Fonte já editada** (legenda ou cards gravados na imagem): avise Rafael que não dá para apagar isso dos pixels e peça a gravação crua. Se ele quiser seguir com aquele arquivo, mantenha a tela cheia e esconda só as zonas dos elementos antigos com uma cópia desfocada e escurecida do próprio vídeo, com borda suave. Os elementos novos entram por cima dessas zonas. Nunca resolva encolhendo o vídeo.
 
 ## Texto na tela
