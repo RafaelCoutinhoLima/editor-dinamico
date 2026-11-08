@@ -1,89 +1,95 @@
 # editor-dinamico
 
-**Edição de vídeos dinamicamente para posts de qualquer tipo**: Reels, TikTok, YouTube Shorts, vídeos de YouTube, cortes de podcast, aulas, vlogs, reviews, montagens de viagem, treino ou esporte no ritmo da música.
+**Edição de vídeo dinâmica com IA, grátis e local.** Você grava, a IA edita: corta pausas e erros, dá zoom no ritmo da fala, reenquadra para vertical seguindo o rosto, coloca legenda animada, efeitos sonoros e música. Serve para Reels, TikTok, Shorts, YouTube, cortes de podcast, aulas, vlogs e montagens no ritmo da música.
 
-Você grava, a IA edita: corta pausas e erros, dá zoom no ritmo da fala, reenquadra para vertical seguindo o rosto, coloca legenda animada, efeitos sonoros e música. Tudo **100% grátis e local**, sem assinatura e sem API paga, e feito para ser dirigido pelo **Claude Code**.
+Tudo roda no seu computador com ferramentas open source, sem assinatura e sem API paga. A ferramenta de linha de comando se chama `edin` e foi feita para ser dirigida pelo **Claude Code**: o Claude lê a transcrição, decide o que cortar, onde dar zoom e qual o gancho, e o `edin` executa.
 
-O Claude lê a transcrição do vídeo e decide o que cortar, onde dar zoom, quais palavras destacar e qual o gancho. A ferramenta `edin` executa tudo com ferramentas open source:
+## O que ele faz
 
-| O quê | Como |
-|---|---|
-| Corte de silêncio, "ahn", "hum" e takes repetidos | timestamps por palavra do **faster-whisper** |
-| Reenquadramento 16:9 → 9:16 seguindo o rosto | **OpenCV + YuNet** (modelo de 230 KB incluso) |
-| Punch-ins e zoom suave | ffmpeg |
-| Legendas animadas palavra a palavra (estilo Hormozi, karaokê, clean) | legendas ASS + fontes livres (Anton, Montserrat) |
-| B-roll por cima da fala | ffmpeg |
-| Efeitos sonoros (whoosh, pop, boom, ding...) | sintetizados no ffmpeg, sem direitos autorais |
-| Música com ducking automático e áudio em -14 LUFS | sidechain + loudnorm |
-| Cortes de vídeo longo em vários shorts | Claude escolhe os trechos |
-| Montagem cortada no ritmo da música | **librosa** (detecção de BPM) |
-| Cortes que não comem palavras | energia do áudio + verificação por retranscrição (`edin verify`) |
-| Crítico automático de ritmo, gancho, legenda e som | `edin check` + agente `critico-de-edicao` |
-| Motion design por cima (palavra atrás da cabeça, cards, títulos) | **Remotion** (`edin motion`, opcional) |
+- **Corta silêncio, "ahn", "hum" e takes repetidos** sem comer o começo ou o fim das palavras (o corte é ajustado pela energia do áudio).
+- **Reenquadra 16:9 para 9:16** seguindo o rosto, ou encaixa o quadro inteiro com fundo desfocado ou de cor sólida.
+- **Punch-ins e zoom suave** para esconder cortes e dar ritmo.
+- **Legendas animadas** palavra a palavra (estilos `hormozi`, `clean`, `karaoke`, `minimal`) e títulos com qualquer fonte.
+- **B-roll, efeitos sonoros e música** com ducking automático e áudio final em -14 LUFS.
+- **Cortes de vídeo longo em vários shorts** e **montagem no ritmo da música** (detecção de BPM).
+- **Crítico automático** (`edin check`) que aponta problemas de ritmo, gancho, legenda e som, e **verificação** (`edin verify`) que retranscreve o vídeo final para achar palavras perdidas.
+- **Motion design por cima** (opcional, com Remotion): palavra gigante atrás da cabeça, cards, checklist, títulos animados.
+
+## Dependências
+
+| Dependência | Para que serve | Como é instalada |
+|---|---|---|
+| **Python 3.12** | roda o `edin` | automático pelo `install.sh` (via [uv](https://docs.astral.sh/uv/)) |
+| **ffmpeg** | corta, junta, aplica zoom, legendas e mixa o áudio | `sudo apt install ffmpeg` (se não houver, o `install.sh` baixa uma versão estática) |
+| **faster-whisper** | transcreve a fala com o tempo de cada palavra | automático |
+| **OpenCV** | detecta o rosto para reenquadrar (modelo YuNet de 230 KB já incluso) | automático |
+| **librosa** | detecta as batidas da música nas montagens | automático |
+| **numpy** | cálculos de áudio e imagem | automático |
+| **CUDA (cuBLAS/cuDNN)** | opcional: transcrição até ~13x mais rápida em GPU NVIDIA | automático se houver GPU |
+| **Node.js 20+ e Remotion** | opcional: só para o motion design (`edin motion`) | `./install.sh --motion` |
+| **Claude Code** | opcional, mas recomendado: é quem toma as decisões criativas | [claude.com/claude-code](https://claude.com/claude-code) |
+
+Na primeira transcrição o modelo do Whisper é baixado (uns 500 MB para o `small`).
 
 ## Instalação
-
-Pré-requisitos: Python 3.10+ e [ffmpeg](https://ffmpeg.org/download.html) no PATH.
 
 ```bash
 git clone https://github.com/RafaelCoutinhoLima/editor-dinamico.git
 cd editor-dinamico
 ./install.sh            # Linux/macOS
-./install.sh --motion   # + Remotion e a skill cinematic-motion-director (inclusa, MIT; precisa de Node 20+)
+./install.sh --motion   # opcional: + Remotion para motion design
 ```
 
-O `install.sh` não precisa de `pip` nem de `sudo`: usa o [uv](https://docs.astral.sh/uv/) para criar um Python 3.12 próprio em `~/.local/share/edin/venv`, põe o comando `edin` em `~/.local/bin`, instala as bibliotecas CUDA se houver GPU NVIDIA e, se não achar o ffmpeg, baixa um estático (o melhor ainda é `sudo apt install ffmpeg`).
+O `install.sh` não precisa de `pip` nem de `sudo`. Ele cria um ambiente Python próprio em `~/.local/share/edin/venv`, coloca o comando `edin` em `~/.local/bin` e liga as skills e os agentes em `~/.claude`, para funcionarem no Claude Code em qualquer pasta. No fim roda `edin doctor` para conferir tudo.
 
-No Windows (PowerShell):
+No Windows (PowerShell), com Python e ffmpeg já instalados:
 
 ```powershell
 pip install -e .
-New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-Copy-Item -Recurse -Force .claude\skills\edicao-dinamica "$HOME\.claude\skills\"
+Copy-Item -Recurse -Force .claude\skills\* "$HOME\.claude\skills\"
+Copy-Item -Force .claude\agents\* "$HOME\.claude\agents\"
 edin doctor
 ```
 
-Ele também liga a skill `edicao-dinamica` e os agentes `critico-de-edicao` e `cacador-de-cortes` em `~/.claude`, então funcionam no Claude Code em qualquer pasta. Na primeira transcrição o modelo do Whisper é baixado (uns 500 MB para o `small`).
+## Como usar
 
-## Uso com o Claude Code
+### Com o Claude Code (recomendado)
 
-Abra o Claude Code na pasta do vídeo e peça em linguagem natural:
+Abra o Claude Code na pasta do vídeo e peça em português:
 
 - "edita esse video.mp4 pra reels, bem dinâmico"
 - "transforma esse podcast.mp4 em 4 shorts"
-- "faz uma montagem de 30s com esses clipes do treino no ritmo dessa música"
-- "legenda esse vídeo no estilo karaoke e coloca essas fotos de b-roll quando eu falar da praia"
+- "faz uma montagem de 30s com esses clipes no ritmo dessa música"
 
-A skill guia o Claude por: transcrever → ler → planejar → refinar o plano → `edin check` → rascunho → conferir os quadros → render final → crítica independente (agente `critico-de-edicao`) → entrega. Em vídeo longo, o agente `cacador-de-cortes` escolhe os trechos para shorts.
+O que vem junto:
 
-## Uso manual
+| Tipo | Nome | O que faz |
+|---|---|---|
+| Skill | `edicao-dinamica` | guia o Claude pelo processo inteiro de edição |
+| Skill | `cinematic-motion-director` | direção de motion design em Remotion (de [Fabio Fernandes](https://github.com/fabiofernandesss/skills), MIT) |
+| Agente | `critico-de-edicao` | revisa o vídeo pronto e diz "pode publicar" ou "mais uma passada", com o pior trecho |
+| Agente | `cacador-de-cortes` | escolhe os melhores trechos de um vídeo longo para virar shorts |
+
+### Manual
 
 ```bash
-edin transcribe video.mp4                    # video.words.json
-edin text video.words.json                   # transcrição com tempos e índices
-edin plan video.mp4 --preset reels --speed 1.08  # video.plan.json
-edin timeline video.plan.json                # prévia da linha do tempo
-edin check video.plan.json                   # crítico: ritmo, gancho, legenda, som
-edin render video.plan.json --draft          # rascunho rápido
-edin sheet video_rascunho.mp4                # folha de quadros para conferir
-edin render video.plan.json -o final.mp4     # final
-edin check video.plan.json final.mp4         # + duração e loudness do arquivo
-edin verify video.plan.json final.mp4        # retranscreve e acha palavras comidas
+edin transcribe video.mp4                  # transcreve -> video.words.json
+edin plan video.mp4 --preset reels         # plano de edição -> video.plan.json
+edin check video.plan.json                 # aponta problemas antes de renderizar
+edin render video.plan.json --draft        # rascunho rápido
+edin render video.plan.json -o final.mp4   # vídeo final
 
-edin auto video.mp4 --preset reels           # tudo de uma vez, sem refinamento
-
-edin montage a.mp4 b.mp4 --music m.mp3 --duration 30 -o montagem.plan.json
-edin render montagem.plan.json -o montagem.mp4
+edin auto video.mp4 --preset reels         # tudo de uma vez, sem refinar
 ```
 
-Presets: `reels`, `podcast`, `youtube`, `aula`. Referência do plano: [docs/PLANO.md](docs/PLANO.md). Regras de edição: [docs/REGRAS.md](docs/REGRAS.md). Motion com Remotion: [docs/MOTION.md](docs/MOTION.md).
+Presets: `reels`, `podcast`, `youtube` e `aula`. Veja todos os comandos com `edin --help`.
 
-## Dicas de desempenho
+## Documentação
 
-- Com GPU NVIDIA, a transcrição usa CUDA sozinha. Aí vale `--model turbo` ou `large-v3`.
-- Em CPU, `small` é o equilíbrio bom para português; `base` é mais rápido.
-- Use `--draft` enquanto ajusta e só renderize o final no fim.
+- [docs/PLANO.md](docs/PLANO.md): todos os campos do plano de edição.
+- [docs/REGRAS.md](docs/REGRAS.md): regras de edição (o que nunca fazer).
+- [docs/MOTION.md](docs/MOTION.md): motion design com Remotion.
 
 ## Licenças
 
-Código: MIT. Várias regras de edição e de som foram adaptadas da skill [cinematic-motion-director](https://github.com/fabiofernandesss/skills) (MIT, Fabio Fernandes). Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas. Fontes Anton e Montserrat: SIL Open Font License (`assets/fonts`). Modelo YuNet: MIT (`assets/models`).
+Código: MIT. Skill `cinematic-motion-director`: MIT, Fabio Fernandes. Fontes (Anton, Montserrat, Archivo Black, Poppins, Bebas Neue, Plus Jakarta Sans): SIL Open Font License. Modelo YuNet: MIT. O Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas.
