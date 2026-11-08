@@ -231,6 +231,36 @@ def _add_motion_parser(sp):
 # ---- fim motion
 
 
+# ---- enhance (upscale/nitidez) ------------------------------------------------------- ver docs/PLANO.md
+def cmd_enhance(a):
+    from .enhance import enhance, quality
+
+    out = a.out or _stem(a.video) + f"_{a.mode}_x{a.scale:g}.mp4"
+    res = enhance(a.video, out, a.mode, a.scale, a.model, a.tile, a.verbose, cache=not a.no_cache)
+    print(f"[edin] Melhorado: {res}")
+    if a.ref:
+        q, q0 = quality(res, a.ref), quality(a.video, a.ref)
+        print(f"       contra {Path(a.ref).name}: SSIM {q0.get('ssim', 0):.4f} -> {q.get('ssim', 0):.4f} | "
+              f"PSNR {q0.get('psnr', 0):.2f} -> {q.get('psnr', 0):.2f} dB (fonte só com lanczos -> melhorado)")
+
+
+def _add_enhance_parser(sp):
+    s = sp.add_parser("enhance", help="upscale e nitidez de fonte ruim (720p do WhatsApp): fast (ffmpeg) ou esrgan")
+    s.add_argument("video")
+    s.add_argument("--mode", default="fast", choices=["fast", "esrgan"],
+                   help="fast: denoise + lanczos + cas (ffmpeg); esrgan: Real-ESRGAN na GPU por Vulkan")
+    s.add_argument("--scale", type=float, default=2, help="fator de ampliação (padrão 2: 720x1280 -> 1440x2560)")
+    s.add_argument("--model", default="realesr-animevideov3",
+                   help="modelo do esrgan: realesr-animevideov3 (padrão), realesrgan-x4plus, realesrgan-x4plus-anime")
+    s.add_argument("--tile", type=int, default=0, help="tile do esrgan (0 = auto; 200 ou 100 se faltar VRAM)")
+    s.add_argument("--ref", help="vídeo de referência em alta para medir SSIM/PSNR")
+    s.add_argument("--no-cache", action="store_true", help="refaz mesmo se já estiver no cache")
+    s.add_argument("-o", "--out")
+    s.add_argument("-v", "--verbose", action="store_true")
+    s.set_defaults(fn=cmd_enhance)
+# ---- fim enhance
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="edin", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = p.add_subparsers(dest="cmd", required=True)
@@ -333,6 +363,7 @@ def main(argv=None):
     s.set_defaults(fn=cmd_clean)
 
     _add_motion_parser(sp)
+    _add_enhance_parser(sp)
 
     a = p.parse_args(argv)
     if a.cmd not in ("doctor", "sfx", "text"):

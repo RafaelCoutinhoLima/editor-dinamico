@@ -18,10 +18,12 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
 3. **Câmera virtual suavizada** (o que o Premiere Auto Reframe acerta): mapa de atividade com compensação de movimento global (ORB + RANSAC do OpenCV), zona morta de ~15%, filtro One Euro, velocidade máxima e modo "parado" por plano. Campo: `reframe: {"mode": "static|track|auto", "deadzone": 0.15}`.
 4. **Detecção de cenas** com [PySceneDetect](https://scenedetect.com) (`AdaptiveDetector`, BSD-3, 1 MB): `edin scenes video.mp4` → `scenes.json`, para recomeçar o rastreio a cada plano e não deixar `pan` atravessar corte.
 5. **Rubrica de cortes estilo OpusClip** no agente `cacador-de-cortes`: Hook, Flow, Value e Trend de 0 a 25 cada, mais sinais objetivos (pico de energia, palavras por segundo, frase completa, 20 a 60 s) e **cold open** (a frase mais forte repetida no início).
-6. **Upscale de fontes 720p do WhatsApp.**
-   - Rápido: `nlmeans` ou `hqdn3d` + `scale` lanczos + `cas=0.5`, todos no ffmpeg.
-   - Qualidade: [Real-ESRGAN ncnn/Vulkan](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0), 47 MB, sem Python. O modelo `realesr-animevideov3` é ótimo para tela, texto e motion.
-   - Comando: `edin enhance`.
+6. ✅ **Upscale de fontes 720p do WhatsApp** (feito: `edin enhance` e `"enhance"` no plano, com cache por arquivo + modo; o `edin check` avisa fonte abaixo de 1080).
+   - `fast`: `hqdn3d=1.5:1.5:6:6` + `scale` lanczos + `cas=0.5`, tudo no ffmpeg. O `nlmeans` dá o mesmo resultado 8x mais devagar.
+   - `esrgan`: [Real-ESRGAN ncnn/Vulkan](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) (BSD-3, 47 MB, sem Python), modelo `realesr-animevideov3` x2, quadros por pipe em lotes de 60 com leitura, GPU e encoder em paralelo. Escolhe a GPU dedicada (o binário usa a integrada Intel por padrão, 15x mais lenta). Sem Vulkan cai para `fast`.
+   - Medido (degradei o original 1080x1920 para 720x1280 crf 32, melhorei de volta e comparei com o original, 10 s): só lanczos SSIM 0,9690 / PSNR 37,22 dB; `fast` 0,9673 / 36,95; `esrgan` **0,9742** / 37,11, com nitidez (variância do Laplaciano) 273 contra 252 do original e 83 do lanczos. Tela de app 1280x720 crf 30 contra o 1080p original: lanczos 0,9958, `fast` 0,9948, `esrgan` 0,9942 (texto visivelmente mais nítido que o próprio original; a métrica pune isso e o desfoque intencional que ele "conserta").
+   - `realesrgan-x4plus` no rosto: SSIM 0,9645 contra 0,9709 do animevideov3 no mesmo trecho, aspecto pintado e 184 s por segundo de vídeo. Ficou o animevideov3.
+   - Tempo por segundo de vídeo (RTX 4050, máquina com outros jobs): `fast` 0,5 a 1 s; `esrgan` 5,5 a 7 s (~5 quadros/s em 720p -> 1440p).
 7. **Legenda nível Submagic e B-roll automático.**
    - Legenda: segunda cor por categoria e pop por palavra.
    - Emoji via PNG do [Twemoji](https://github.com/jdecked/twemoji) (CC BY 4.0, exige crédito). O libass não desenha emoji colorido de forma confiável.

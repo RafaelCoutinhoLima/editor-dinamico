@@ -76,6 +76,12 @@ O plano é a "linha do tempo" do vídeo. A ordem de `segments` é a ordem do ví
 - `chain`: `"broadcast"` (corta grave de manuseio, tira o "embolado", de-esser, compressor suave e presença) ou `null`.
 - Para limpar um arquivo avulso ou comparar: `edin voice video.mp4` (gera `video_voz_limpa.mp4` e mostra ruído antes/depois).
 
+**Fonte ruim** (`enhance`, opcional): `{"mode": "fast|esrgan", "scale": 2}` na raiz. Antes de renderizar, troca a fonte principal (e os segmentos com o mesmo arquivo) pela versão ampliada e com nitidez; mesmo fps e duração, então nenhum tempo do plano muda. Fica em cache (`~/.local/share/edin/cache/enhance`, por arquivo + modo): só o primeiro render paga. O `--draft` ignora e usa a fonte original.
+- `fast`: ffmpeg `hqdn3d` leve + `scale` lanczos + `cas=0.5`. ~0,5 a 1 s por segundo de vídeo. Ganho pequeno (um pouco mais de nitidez), mas nunca estraga.
+- `esrgan`: Real-ESRGAN ncnn/Vulkan, modelo `realesr-animevideov3` (baixado no 1º uso, 47 MB). É o que mais se aproxima do original em 1080, inclusive em rosto; texto e telas de app ficam mais nítidos que o próprio original. Efeitos: pele fica lisa e desfoque intencional (texto "fora de foco" de motion) volta nítido. ~7 s por segundo de vídeo numa RTX 4050 (usa a GPU dedicada sozinho; `EDIN_GPU=n` força outra). Sem GPU Vulkan dedicada cai para `fast` com aviso. `"model": "realesrgan-x4plus"` existe, mas é ~26x mais lento e ficou pior que o padrão; `"tile": 200` se faltar VRAM.
+- O `edin check` dá a dica quando a fonte tem menos de 1080 no lado menor e o plano não tem `enhance`.
+- Avulso: `edin enhance video.mp4 [--mode fast|esrgan] [--scale 2] [-o saida.mp4] [--ref original_1080.mp4]` (o `--ref` mede SSIM/PSNR contra uma versão em alta).
+
 **Motion** (opcional, Remotion): lista `motion` com efeitos por cima do vídeo editado. Ver [MOTION.md](MOTION.md).
 
 **Música**

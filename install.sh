@@ -2,6 +2,7 @@
 # Instala o edin num ambiente próprio, liga a skill e os agentes do Claude Code e confere tudo.
 #   ./install.sh            instala
 #   ./install.sh --motion   também instala o Remotion (motion design por cima do vídeo)
+#   ./install.sh --esrgan   também baixa o Real-ESRGAN (upscale na GPU, 47 MB; senão baixa no 1º uso)
 set -euo pipefail
 cd "$(dirname "$0")"
 REPO="$(pwd)"
@@ -60,6 +61,14 @@ say "Baixando a limpeza de voz (DeepFilterNet 36 MB + modelo RNNoise 300 KB)..."
 "$VENV/bin/python" -c "from edin.voice import dfn_binary, rnn_model; dfn_binary(); rnn_model()" || \
   say "Não deu para baixar agora; o edin tenta de novo no primeiro uso."
 
+# ---------------------------------------------------------------- upscale Real-ESRGAN (opcional, 47 MB)
+# Não baixa por padrão: o `edin enhance --mode esrgan` baixa no 1º uso. --esrgan adianta o download.
+if [[ " $* " == *" --esrgan "* ]]; then
+  say "Baixando o Real-ESRGAN ncnn/Vulkan (47 MB)..."
+  "$VENV/bin/python" -c "from edin.enhance import esrgan_binary; print(esrgan_binary())" || \
+    say "Não deu para baixar agora; o edin tenta de novo no primeiro uso."
+fi
+
 # ---------------------------------------------------------------- skill e agentes do Claude Code
 mkdir -p "$HOME/.claude/skills" "$HOME/.claude/agents"
 ln -sfn "$REPO/.claude/skills/edicao-dinamica" "$HOME/.claude/skills/edicao-dinamica"
@@ -69,7 +78,7 @@ done
 say "Skill e agentes ligados em ~/.claude (edicao-dinamica, $(ls "$REPO"/.claude/agents | sed 's/\.md//' | tr '\n' ' '))"
 
 # ---------------------------------------------------------------- motion (Remotion), opcional
-if [[ "${1:-}" == "--motion" ]]; then
+if [[ " $* " == *" --motion "* ]]; then
   if ! command -v npm >/dev/null; then
     say "Node.js não encontrado. Instale o Node 20+ (https://nodejs.org) e rode de novo com --motion."
   elif [ -f "$REPO/remotion/package.json" ]; then
