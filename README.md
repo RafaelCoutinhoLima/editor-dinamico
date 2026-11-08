@@ -9,7 +9,8 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 - **Corta silêncio, "ahn", "hum" e takes repetidos** sem comer o começo ou o fim das palavras (o corte é ajustado pela energia do áudio).
 - **Reenquadra 16:9 para 9:16** seguindo o rosto, ou encaixa o quadro inteiro com fundo desfocado ou de cor sólida.
 - **Punch-ins e zoom suave** para esconder cortes e dar ritmo.
-- **Legendas animadas** palavra a palavra (estilos `hormozi`, `clean`, `karaoke`, `minimal`) e títulos com qualquer fonte.
+- **Legendas animadas** palavra a palavra no padrão Submagic (estilos `hormozi`, `clean`, `karaoke`, `minimal`), segunda cor para números e negações, **emojis animados** acima da legenda e títulos com qualquer fonte.
+- **B-roll automático grátis** do Pexels (`edin broll "consulta"` ou `"broll": {"query": ...}` no plano), com créditos em `broll/CREDITOS.txt`.
 - **Limpeza de voz** de gravação de celular (o que o Descript Studio Sound faz): DeepFilterNet ou RNNoise + cadeia broadcast (EQ, de-esser, compressor). Ligada por padrão; `edin voice` para um arquivo avulso.
 - **B-roll, efeitos sonoros e música** com ducking automático e áudio final em -14 LUFS.
 - **Cortes de vídeo longo em vários shorts** e **montagem no ritmo da música** (detecção de BPM).
@@ -78,6 +79,8 @@ O que vem junto:
 edin transcribe video.mp4                  # transcreve -> video.words.json
 edin plan video.mp4 --preset reels         # plano de edição -> video.plan.json
 edin check video.plan.json                 # aponta problemas antes de renderizar
+edin captions video.plan.json              # confere legenda, categorias e emojis
+edin broll "estudante cansado" --n 3       # b-roll grátis do Pexels (PEXELS_API_KEY) -> broll/
 edin render video.plan.json --draft        # rascunho rápido -> rascunhos/
 edin render video.plan.json                # vídeo final -> videos/2026-11-06_vertical.mp4
 
@@ -96,4 +99,4 @@ Sem `-o`, os vídeos saem organizados: finais em `videos/AAAA-MM-DD_formato.mp4`
 
 ## Licenças
 
-Código: MIT. Skill `cinematic-motion-director`: MIT, Fabio Fernandes. Fontes (Anton, Montserrat, Archivo Black, Poppins, Bebas Neue, Plus Jakarta Sans): SIL Open Font License. Modelo YuNet: MIT. O Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas.
+Código: MIT. Skill `cinematic-motion-director`: MIT, Fabio Fernandes. Emojis: gráficos do [Twemoji](https://github.com/jdecked/twemoji), Copyright 2019 Twitter, Inc and other contributors, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (baixados só os usados, para `~/.local/share/edin/emoji`). B-roll: vídeos do [Pexels](https://www.pexels.com/license/), créditos de cada clipe em `broll/CREDITOS.txt`. Fontes (Anton, Montserrat, Archivo Black, Poppins, Bebas Neue, Plus Jakarta Sans): SIL Open Font License. Modelo YuNet: MIT. O Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas.

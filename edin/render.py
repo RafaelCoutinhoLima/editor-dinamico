@@ -4,7 +4,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from .captions import build_ass
+from .captions import build_ass, caption_warnings, layout_captions
 from .plan import load_plan, remap_words, seg_out_dur, seg_src
 from .reframe import activity_pan, crop_box, face_track, focus_for
 from .sfx import VOLUME as SFX_VOLUME
@@ -286,6 +286,34 @@ class Renderer:
                 out.append(e)
         return sorted(out, key=lambda e: float(e["at"]))
 
+    # ------------------------------------------------------------ emojis
+    def emoji_overlays(self, cap: dict, layout: dict | None, words_out: list, joined: Path) -> list:
+        """Emojis de `captions.emoji`: posição acima da legenda e fora do rosto (rosto detectado no vídeo já
+        montado, então vale com zoom e reenquadramento) e quadros animados com alfa para o overlay."""
+        from . import emoji as emo
+
+        if not layout:
+            layout = layout_captions([], cap, self.W, self.H)
+        faces = []
+        try:
+            stale = self.cache / f"{joined.name}.faces.json"  # o joined muda a cada render: sem cache velho
+            stale.unlink(missing_ok=True)
+            faces = face_track(str(self.wd / joined.name), self.cache)
+        except Exception as ex:  # sem detector: posiciona só pela legenda
+            print(f"[edin] Aviso: rosto não detectado para os emojis ({ex})")
+        items, warns = emo.place(cap["emoji"], layout, words_out, self.W, self.H, faces)
+        for wmsg in warns:
+            print(f"[edin] Aviso (emoji): {wmsg}")
+        out = []
+        for k, it in enumerate(items):
+            png = emo.emoji_png(it["emoji"], it["size"] * 2)
+            d = self.wd / f"emoji_{k:02d}"
+            shutil.rmtree(d, ignore_errors=True)
+            canvas = emo.render_frames(png, it["size"], it["t1"] - it["t0"], self.fps, d)
+            out.append({**it, "dir": str(d), "canvas": canvas})
+            print(f"[edin] emoji {it['emoji']} {it['t0']:.2f}-{it['t1']:.2f}s em ({it['x']}, {it['y']})")
+        return out
+
     # ------------------------------------------------------------ pipeline
     def run(self) -> str:
         segs = self.plan["segments"]
@@ -307,9 +335,14 @@ class Renderer:
         cap = self.plan.get("captions")
         titles = self.plan.get("titles") or []
         has_subs = bool((cap and words_out) or titles)
+        layout = None
         if has_subs:
-            ass = build_ass(words_out if cap else [], cap or {}, self.W, self.H, titles, total)
+            layout = layout_captions(words_out if cap else [], cap or {}, self.W, self.H, total)
+            for wmsg in caption_warnings(cap, self.W, self.H):
+                print(f"[edin] Aviso (legenda): {wmsg}")
+            ass = build_ass(words_out if cap else [], cap or {}, self.W, self.H, titles, total, layout)
             (self.wd / "captions.ass").write_text(ass, encoding="utf-8")
+        emojis = self.emoji_overlays(cap, layout, words_out, joined) if cap and cap.get("emoji") else []
 
         # 1ª passada, só áudio: voz + SFX + música + loudnorm -> mix.wav. Num filtergraph único com vídeo e
         # áudio, o ffmpeg 8 com encoder AAC abria saltos no áudio (3 s = lookahead do loudnorm): fala sumia.
@@ -354,10 +387,18 @@ class Renderer:
         out_abs = str(Path(self.output).resolve())
         run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(fc), "-map", "[a]",
              "-c:a", "pcm_s16le", "mix.wav"], cwd=str(self.wd), verbose=self.verbose)
-        # 2ª passada: legenda no vídeo e junta o áudio já mixado
+        # 2ª passada: legenda e emojis (overlay com alfa, acima da legenda) no vídeo e junta o áudio já mixado
         vf = f"subtitles=captions.ass:fontsdir='{ffmpeg_filter_path(str(FONTS_DIR))}'" if has_subs else "null"
-        cmd = ["ffmpeg", "-y", "-v", "error", "-i", joined.name, "-i", "mix.wav", "-filter_complex", f"[0:v]{vf}[v]",
-               "-map", "[v]", "-map", "1:a", "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", self.preset,
+        e_in, graph, cur = [], [f"[0:v]{vf}[c0]"], "[c0]"
+        for k, e in enumerate(emojis):
+            e_in += ["-framerate", f"{self.fps:g}", "-i", f"{e['dir']}/%04d.png"]
+            graph.append(f"[{k + 2}:v]format=rgba,setpts=PTS-STARTPTS+{e['t0']:.3f}/TB[em{k}];"
+                         f"{cur}[em{k}]overlay=x={e['x'] - e['canvas'] // 2}:y={e['y'] - e['canvas'] // 2}"
+                         f":eof_action=pass:enable='between(t,{e['t0']:.3f},{e['t1']:.3f})'[c{k + 1}]")
+            cur = f"[c{k + 1}]"
+        graph.append(f"{cur}null[v]")
+        cmd = ["ffmpeg", "-y", "-v", "error", "-i", joined.name, "-i", "mix.wav", *e_in,
+               "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "1:a", "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", self.preset,
                "-crf", str(self.crf + 2),
                "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out_abs]
         run(cmd, cwd=str(self.wd), verbose=self.verbose)
@@ -367,6 +408,10 @@ class Renderer:
 
 def render(plan_path: str, output: str, draft: bool = False, keep: bool = False, verbose: bool = False) -> str:
     plan = load_plan(plan_path)
+    if any((s.get("broll") or {}).get("query") and not s["broll"].get("src") for s in plan["segments"]):
+        from .broll import resolve_plan  # "broll": {"query": ...} -> baixa o melhor clipe do Pexels
+
+        resolve_plan(plan, Path(plan_path).resolve().parent)
     r = Renderer(plan, output, draft, verbose)
     try:
         return r.run()
@@ -374,6 +419,8 @@ def render(plan_path: str, output: str, draft: bool = False, keep: bool = False,
         if not keep:
             for f in r.wd.glob("seg_*.mov"):
                 f.unlink()
+            for d in r.wd.glob("emoji_*"):
+                shutil.rmtree(d, ignore_errors=True)
             for name in ("joined.mov", "mix.wav"):
                 p = r.wd / name
                 if p.exists():

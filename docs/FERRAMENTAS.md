@@ -22,10 +22,10 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
    - Rápido: `nlmeans` ou `hqdn3d` + `scale` lanczos + `cas=0.5`, todos no ffmpeg.
    - Qualidade: [Real-ESRGAN ncnn/Vulkan](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0), 47 MB, sem Python. O modelo `realesr-animevideov3` é ótimo para tela, texto e motion.
    - Comando: `edin enhance`.
-7. **Legenda nível Submagic e B-roll automático.**
-   - Legenda: segunda cor por categoria e pop por palavra.
-   - Emoji via PNG do [Twemoji](https://github.com/jdecked/twemoji) (CC BY 4.0, exige crédito). O libass não desenha emoji colorido de forma confiável.
-   - B-roll pela [API do Pexels](https://www.pexels.com/api/documentation/): grátis, 200 req/h.
+7. ✅ **Legenda nível Submagic e B-roll automático** (feito: `captions.categories`, `captions.emoji`, `broll.query`, `edin broll`, `edin captions`).
+   - Legenda: palavra com posição fixa, subida e pop na palavra ativa sem tremer, letra de 80 px (antes saía com ~56 px), segunda cor por categoria (`numero`, `alerta`).
+   - Emoji via PNG do [Twemoji](https://github.com/jdecked/twemoji) (CC BY 4.0, exige crédito), animado em quadros com alfa e posto com `overlay`, acima da legenda e fora do rosto. O libass não desenha emoji colorido de forma confiável.
+   - B-roll pela [API do Pexels](https://www.pexels.com/api/documentation/): grátis, 200 req/h, com cache e `broll/CREDITOS.txt`.
 
 ## Lições de reenquadramento 16:9 → 9:16
 
