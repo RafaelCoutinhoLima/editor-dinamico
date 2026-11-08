@@ -17,7 +17,7 @@ Você recebe: o plano (`*.plan.json`), o vídeo renderizado e, se houver, o pedi
 
 ## Passos
 
-1. `edin check <plano> <video>`. Ele varre o vídeo a 4 quadros/s atrás de faixas e mede loudness. Todo ERRO é bloqueante.
+1. `edin check <plano> <video>` (ou `--json`). Ele varre o vídeo a 4 quadros/s atrás de faixas e confere tela preta, imagem congelada, silêncio, loudness/pico/LRA, o técnico (resolução, yuv420p, fps constante, AAC 48 kHz, faststart), o ritmo medido e a legibilidade do texto. Todo ERRO é bloqueante.
 2. `edin timeline <plano>` para ver ordem, tempos e texto de cada segmento.
 3. **Quadros em cada troca de cena**, em resolução cheia, montados em folhas que você abre com Read:
    ```bash

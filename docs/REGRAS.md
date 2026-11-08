@@ -46,6 +46,18 @@ Regras tiradas de edições reais. Muitas vêm da skill `cinematic-motion-direct
 - **Nunca aprove pelo rascunho.** Confira o arquivo final em resolução cheia: há filtros que só quebram em 1080x1920.
 - **Folha de 16 quadros não basta.** Olhe quadros em toda troca de cena e rode `edin check plano.json final.mp4` (varre faixas a 4 quadros/s).
 
+### O que o `edin check plano.json final.mp4` mede no arquivo
+
+Uma passada só do ffmpeg (3 a 5 s para 60 a 100 s de vídeo). `--json` imprime o mesmo relatório em JSON, com as medidas brutas em `medidas` (para os agentes).
+
+- **Tela preta** (`blackdetect`, quadro ≥ 99,8% preto): erro se abrir no preto (≥ 0,3 s) ou se passar de 1 s no meio (0,5 s em vídeo com fala). O último segundo não conta (fade final).
+- **Imagem congelada** (`freezedetect`): aviso acima de 1,5 s em vídeo com fala e de 4 s em motion. Quadro final segurado até 2,5 s não conta.
+- **Silêncio** (`silencedetect`, -45 dB, só em vídeo com fala): aviso acima de 1,2 s no meio, aviso se abrir com mais de 0,5 s mudo.
+- **Áudio** (`ebur128`): loudness, pico real (aviso acima de -0,5 dBTP) e LRA (aviso acima de 15 LU).
+- **Técnico** (ffprobe): resolução do formato do plano (rascunho ou proporção errada é erro), yuv420p, fps constante, AAC 48 kHz, `+faststart` (moov antes do mdat), áudio e vídeo com menos de 50 ms de diferença, duração para Reels (aviso acima de 90 s, erro acima de 180 s).
+- **Ritmo medido** (`scdet`): cortes por minuto e o maior trecho sem mudança visual. Entrada e saída de título e de overlay de motion contam como mudança. Em 9:16 com fala, mais de 4 s parado é aviso (6,4 s se a câmera estiver em zoom lento).
+- **Legibilidade**: corpo da legenda e dos títulos em px no vídeo final; abaixo de 55 px num quadro de 1080 de largura é aviso. **Contraste**: borda grossa ou caixa escura já garantem leitura; quando a cor do texto não contrasta com a própria borda (texto escuro), o fundo é medido na região do texto e abaixo de 3:1 é aviso.
+
 - **Nunca entregue sem conferir o arquivo final** (folha de quadros do vídeo final, não do rascunho) e diga o que foi conferido e o que não foi.
 - **Depois de feedback, mexa só no trecho apontado.** Não refaça o vídeo inteiro.
 - **Nunca sobrescreva o vídeo original.**

@@ -155,11 +155,13 @@ def cmd_auto(a):
 
 
 def cmd_check(a):
-    from .check import audit_plan, audit_video, print_report
+    from .check import audit_plan, audit_video, print_report, report_json
 
-    warn = audit_plan(a.plan)
+    warn, metrics = audit_plan(a.plan), {}
     if a.video:
-        warn += audit_video(a.plan, a.video)
+        warn += audit_video(a.plan, a.video, metrics)
+    if a.json:
+        sys.exit(report_json(warn, metrics, plano=a.plan, video=a.video))
     sys.exit(print_report(warn))
 
 
@@ -300,7 +302,9 @@ def main(argv=None):
 
     s = sp.add_parser("check", help="crítico automático: ritmo, gancho, legendas, som (e o vídeo final, se passar)")
     s.add_argument("plan")
-    s.add_argument("video", nargs="?", help="vídeo renderizado (mede duração e loudness)")
+    s.add_argument("video", nargs="?", help="vídeo renderizado (preto, congelado, silêncio, loudness, ffprobe, ritmo, "
+                                            "faixas, contraste)")
+    s.add_argument("--json", action="store_true", help="relatório em JSON (para agentes)")
     s.set_defaults(fn=cmd_check)
 
     s = sp.add_parser("verify", help="retranscreve o vídeo final e acha palavras comidas nos cortes")
