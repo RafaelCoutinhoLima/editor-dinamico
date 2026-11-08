@@ -21,7 +21,8 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
 3. Trabalhe numa pasta própria do vídeo dentro de `~/Área de trabalho/videos editados/` (ex.: `videos editados/loopedu_2026-11-06/`). Nunca sobrescreva o original. Organização padrão:
    - `videos/`: **só os finais**, com nome `AAAA-MM-DD_formato.mp4` (data do vídeo original; formato `vertical`, `horizontal`, `quadrado` ou `retrato`). Mais de um final do mesmo formato: `_2`, `_3`.
    - `rascunhos/`: rascunhos, intermediários, versões rejeitadas e testes.
-   - na raiz da pasta: original, `*.words.json`, `*.plan.json`, scripts e folhas de quadros.
+   - na raiz da pasta: `original.mp4`, `*.words.json`, `*.plan.json`, scripts e folhas de quadros.
+   **Copie a fonte crua para `original.mp4` (cópia de verdade, nunca link para Downloads ou WhatsApp).** Rafael limpa os Downloads; sem a fonte crua, nada pode ser refeito sem os zooms e cortes já embutidos. Melhorias (ESRGAN, limpeza de voz) saem sempre do original, nunca de um vídeo já editado.
    O `edin render` sem `-o` já salva assim (rascunho em `rascunhos/AAAA-MM-DD_formato_rascunho.mp4`).
 4. Leia `docs/REGRAS.md` do repositório (o que nunca fazer). O `edin check` confere boa parte.
    Leia também `docs/REFERENCIA_PRO.md` antes de editar (o padrão dos talking heads profissionais: olhos, legenda, gráficos, ritmo, som e o que parece amador).
@@ -35,7 +36,7 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
 | Pessoa falando (vlog, dica, aula, review) | **A. Vídeo falado** |
 | Vídeo longo (podcast, live, aula) que vira vários cortes | **B. Cortes/shorts** |
 | Sem fala (viagem, treino, esporte, produto) + música | **C. Montagem no beat** |
-| Tela/tutorial | Fluxo A com `--preset aula` e `--format original` |
+| Tela/tutorial | Fluxo A com `--preset aula` e `--format original` (sem zoom na tela; ver "Telas de app" no fluxo F) |
 | Quer efeitos de motion (palavra atrás da cabeça, cards, checklist, título cinético) | Fluxo A + **D. Motion** |
 | Vídeo que já vem editado (legenda, cards ou lower third gravados na imagem) | **E. Refazer a edição** (+ D) |
 | Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **F. Horizontal para vertical** |
@@ -118,16 +119,20 @@ Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, rende
 | Texto, logo, motion em fundo liso ou degradê | conteúdo ampliado até ~80% da largura (meça a largura do conteúdo) e as bordas da própria cena esticadas até o topo e a base | `"fit": "extend"`, `zoom` calculado |
 | Texto em fundo branco liso | igual, estendendo a cor exata | `"fit": "pad"`, `pad_color` amostrado no canto |
 
-**Telas de app em vertical (lição de Rafael: "deu zoom nas telas do app, cortou e perdeu qualidade"):**
-- **No horizontal também:** tela de app sem zoom (`zoom_to: 1.0`) e com `src` da fonte melhorada no ESRGAN; zoom lento só em tela de texto/logo. Copie a fonte crua para dentro do projeto (nunca link para Downloads) e gere o ESRGAN a partir dela, não do vídeo já editado.
-- **Nunca amplie e recorte uma tela de app para encher a vertical** (altura cheia + câmera lateral). Corta a tela, borra o texto (fonte 720p do WhatsApp não aguenta 1,8x) e a pessoa não entende o app.
-- Faça como anúncio vertical de produto: **título curto em cima (y ≈ 0.25), tela INTEIRA no meio na largura do celular, frase de apoio embaixo (y ≈ 0.75), fundo desenhado com brilho da cor da marca** (`fit: "card"`). A tela fica reduzida (~0,8x), nítida e sem corte.
-- Recorte o card pelo **contorno medido** da área clara (sem o halo escuro da fonte, que vira moldura) e **abaixo do rótulo antigo** (ele some sem `hide`).
-- Passe a fonte no `edin enhance --mode esrgan` antes (texto de tela fica mais nítido que o original) e use o arquivo melhorado no `src` dessas cenas.
-- Fundo nunca liso e preto: o `card` desenha um brilho radial que vai até as bordas. Não use `extend` em tela de app (o espelho pega a borda branca do card e o rótulo antigo transparece).
-- `detail` (destaque ampliado num card abaixo da tela) existe, mas só use se a tela for pequena e sem zoom animado na fonte: em geral duplica a informação e colide com o card.
+**Telas de app, em qualquer formato (lição de Rafael: "deu zoom nas telas do app, cortou e perdeu qualidade"):**
+- **Tela de app aparece inteira e nítida.** Sem punch-in, sem Ken Burns, sem recorte: `zoom` e `zoom_to` 1.0 nessas cenas, também no 16:9 e no `aula`. O movimento vem do corte entre telas, do título entrando e do próprio app (cursor, rolagem). Zoom lento só em tela de texto/logo.
+- **Conta da ampliação real:** `zoom x altura de saída / altura da fonte`. Fonte 720p em saída 1080p já é 1,5x antes de qualquer zoom; acima de ~1,5x o texto da tela borra. Se a conta passa disso, passe a fonte no ESRGAN ou não amplie.
+- **Destaque de um detalhe** (botão, número) só como callout separado (`detail`) ou com a fonte em 1080p+ e no máximo 1,3x, mantendo o texto inteiro no quadro. Nunca por recorte da tela inteira.
+- No vertical:
+  - **Nunca amplie e recorte uma tela de app para encher a vertical** (altura cheia + câmera lateral). Corta a tela, borra o texto (fonte 720p do WhatsApp não aguenta 1,8x) e a pessoa não entende o app.
+  - Faça como anúncio vertical de produto: **título curto em cima (y ≈ 0.25), tela INTEIRA no meio na largura do celular, frase de apoio embaixo (y ≈ 0.75), fundo desenhado com brilho da cor da marca** (`fit: "card"`). A tela fica reduzida (~0,8x), nítida e sem corte.
+  - Recorte o card pelo **contorno medido** da área clara (sem o halo escuro da fonte, que vira moldura) e **abaixo do rótulo antigo** (ele some sem `hide`).
+  - Passe o `original.mp4` no `edin enhance --mode esrgan` antes (texto de tela fica mais nítido que o original) e use o arquivo melhorado no `src` dessas cenas.
+  - Fundo nunca liso e preto: o `card` desenha um brilho radial que vai até as bordas. Não use `extend` em tela de app (o espelho pega a borda branca do card e o rótulo antigo transparece).
+  - `detail` (destaque ampliado num card abaixo da tela) existe, mas só use se a tela for pequena e sem zoom animado na fonte: em geral duplica a informação e colide com o card.
+- **Confira a nitidez:** recorte 1:1 do final numa tela de app (`ffmpeg -ss T -i final.mp4 -frames:v 1 -vf crop=540:540 nitidez.png`) e leia o menor texto da tela. Se não dá para ler no recorte, não dá no celular.
 
-
+**Outras regras do vertical:**
 - **Rótulo ou legenda gravados na fonte** que ficariam cortados ou duplicados: esconda com `"hide": [[x0, y0, x1, y1]]` (normalizado na fonte; cópia desfocada e escurecida do próprio vídeo) e ponha o texto novo por cima, grande, com `titles` (`font`, `accent`, `box: true`).
 - `fit: "blur"` (desfoque da cena atrás) só serve para fonte com fundo de foto/vídeo; em tela branca vira cinza e em degradê mostra a emenda. Para texto/logo use `extend` (espelha a própria cena até as bordas), que funciona em fundo branco, escuro, colorido e em transições.
 - **Confira o arquivo final em resolução cheia**, nunca só o rascunho (um filtro do ffmpeg só quebrava em 1080x1920 e deixou a base preta em telas brancas). `edin check plano.json video.mp4` varre o vídeo a 4 quadros/s e acusa qualquer faixa como ERRO.
@@ -140,8 +145,9 @@ Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, rende
 3. `edin sheet video_rascunho.mp4 -n 12` e **abra a imagem**: rosto enquadrado e cabeça inteira, legenda legível sem cobrir o rosto, título aparecendo, b-roll no lugar. Ajuste `captions.position` (0 topo, 1 base, zona segura 0.55 a 0.78) ou `focus` (`"center"` ou `[x, y]`).
 4. Render final: `edin render plano.json` (sai em `videos/AAAA-MM-DD_formato.mp4`).
 5. **Crítica independente:** chame o agente **`critico-de-edicao`** com o plano e o `final.mp4` (ele roda `check`, `verify`, folha de quadros e devolve PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho). Sem o agente, rode você mesmo `edin check plano.json final.mp4` e `edin verify plano.json final.mp4`.
-6. Se o veredito for MAIS UMA PASSADA, corrija **só o trecho apontado**, renderize de novo e repita no máximo 2 vezes.
-7. Entregue com 2 ou 3 linhas: duração final, o que foi cortado, as escolhas criativas principais e o que foi conferido. Ofereça uma variação (outro gancho, outro estilo de legenda) se fizer sentido.
+6. Antes de entregar, pergunte-se o que Rafael já reprovou: faixa preta ou letterbox, tela de app ampliada/cortada/borrada, legenda cobrindo o rosto, vídeo encolhido numa janela. Se qualquer um aparecer, não entregue.
+7. Se o veredito for MAIS UMA PASSADA, corrija **só o trecho apontado**, renderize de novo e repita no máximo 2 vezes.
+8. Entregue com 2 ou 3 linhas: duração final, o que foi cortado, as escolhas criativas principais e o que foi conferido. Ofereça uma variação (outro gancho, outro estilo de legenda) se fizer sentido.
 
 ## Presets
 

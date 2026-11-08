@@ -13,7 +13,7 @@ Você recebe: o plano (`*.plan.json`), o vídeo renderizado e, se houver, o pedi
 - **Folha com 16 quadros esconde defeitos.** Uma vertical saiu com a base preta embaixo de telas brancas por 5 trechos curtos e passou na folha de 20 quadros. Olhe quadros em TODA troca de cena.
 - **Rascunho não prova o final.** Um filtro funcionava em meia resolução e quebrava em 1080x1920. Revise sempre o arquivo final em resolução cheia.
 - **"Tela cheia" de verdade.** Na vertical, qualquer faixa lisa em cima ou embaixo (preta, da cor do fundo, ou um retângulo com emenda visível) é defeito grave, mesmo que dure meio segundo.
-- **Tela de app ampliada e recortada para encher a vertical é reprovação** ("cortou as telas, perdeu qualidade"): a tela tem que aparecer inteira e nítida (layout `fit: "card"`: título, tela, frase, fundo da marca). Compare a nitidez do texto da tela com a fonte.
+- **Tela de app ampliada e recortada para encher a vertical é reprovação** ("cortou as telas, perdeu qualidade"): a tela tem que aparecer inteira e nítida (layout `fit: "card"`: título, tela, frase, fundo da marca). Compare a nitidez do texto da tela com a fonte. Vale para qualquer formato: no 16:9, tela de app com `zoom`/`zoom_to` acima de 1.0 no plano também é reprovação. Confira num recorte 1:1 se o menor texto da tela se lê.
 - **Texto antigo atrás do novo.** Em fontes já editadas, procure rótulos ou legendas originais aparecendo cortados atrás dos novos.
 
 ## Passos
