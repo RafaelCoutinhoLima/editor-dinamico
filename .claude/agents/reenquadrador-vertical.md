@@ -12,16 +12,18 @@ A tela inteira é usada o tempo todo. Faixa lisa em cima ou embaixo (preta, da c
 
 ## Processo
 
-1. **Cenas:** ache as trocas de cena com `ffmpeg -i video -vf "select='gt(scene,0.25)',showinfo" -f null - 2>&1 | grep -o "pts_time:[0-9.]*"`. Junte cortes a menos de 0,4 s. Um segmento por cena.
+1. **Cenas:** `edin scenes video.mp4 --segments` grava `video.scenes.json` e imprime um segmento por cena (PySceneDetect), já com as cenas curtas juntas à anterior. A lista marca cada corte como "troca de plano" ou "mesmo plano, conteúdo mudou" (banner, rolagem, texto trocando): numa tela de app, use `--hard-only` para não picar a mesma tela em vários segmentos. Para gerar o plano num script: `from edin.scenes import scene_segments; scene_segments(video, min_len=0.4, hard_only=False, focus="center")`.
 2. **Classifique cada cena** olhando 3 quadros dela (início + 0,3 s, meio, fim − 0,3 s). Em cena com transição no meio (wipe, slide, fade para branco), classifique por TODOS os quadros, não só pelo primeiro.
 
 | Cena | Técnica | Campos |
 |---|---|---|
-| Pessoa / ação real | recorte 9:16 seguindo o rosto | `fit` padrão, `focus: "face"` |
+| Pessoa / ação real | recorte 9:16 com câmera virtual (parada quando a pessoa quase não se mexe, segue suave quando anda) | `fit` padrão, `focus: "face"`; `"auto"` se o plano mistura pessoa e cenas sem rosto; `reframe` para ajustar |
 | Tela de app, site, planilha, gráfico largo | altura cheia + câmera lateral que segue o conteúdo | `"pan": "auto"` (proposta) e depois `pan` manual onde errar, `zoom: 1.0` |
 | Texto, logo, motion em fundo liso/degradê (escuro, colorido ou branco) | ampliar até o conteúdo ocupar ~80% da largura (meça) e estender a própria cena até as bordas | `"fit": "extend"`, `zoom` = 0.80 / largura do conteúdo (máx. 1.8); nunca `pad` (caixa visível e quebra no fade) |
 | Foto ou vídeo com fundo detalhado que não cabe | ampliar + desfoque da própria cena atrás | `"fit": "blur"`, `blur_dim: 0` |
 
+   **Câmera virtual (`reframe`)**: padrão `{"mode": "auto", "deadzone": 0.15, "smooth": 1.0, "max_speed": 1.0}`. Ela recomeça em cada troca de plano (nunca desliza entre planos), então um segmento pode atravessar corte de câmera sem problema. Ajustes: palestrante que anda pelo palco e sai do quadro → `"deadzone": 0.1`, `"smooth": 0.7`; entrevista sentada que "flutua" → `"reframe": "static"`; plano em que a câmera deve seguir sempre → `"mode": "track"`. Rode `edin render -v` para ver por plano se a câmera ficou "parado" ou "segue" e se guiou por "rosto" ou "atividade".
+   O `pan` também respeita os planos: com corte no meio, `"auto"` mede cada plano, e o manual faz o movimento no plano mais longo.
 3. **Texto gravado na fonte** que ficaria cortado ou duplicado na vertical (rótulo de tela, legenda, marca): esconda com `"hide": [[x0, y0, x1, y1]]` e reescreva grande com `titles` (`font`, `accent`, `box: true`, `y` entre 0.12 e 0.80).
 4. **Medir largura do conteúdo:** quadro em escala de cinza 480x270, diferença absoluta para a mediana da borda > 45, colunas com conteúdo. Una os 3 quadros da cena.
 5. **Câmera das telas (o que um editor faz depois do Auto Reframe):** o `pan: "auto"` mantém no quadro o início do texto (bom para telas alinhadas à esquerda). Ele erra em: texto centralizado (loader, card no meio), elemento principal à direita (card, painel, botão) e fontes que já têm zoom animado (o conteúdo escorrega durante a cena). Para CADA tela, extraia da fonte o quadro do início e do fim da cena com uma grade (`drawgrid=w=<largura/10>:h=0`), ache a posição x do elemento principal nos dois e use `"pan": [x_inicio, x_fim]`. Confira de novo no vídeo final (início, meio e fim da cena).

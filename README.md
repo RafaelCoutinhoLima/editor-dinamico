@@ -7,7 +7,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 ## O que ele faz
 
 - **Corta silêncio, "ahn", "hum" e takes repetidos** sem comer o começo ou o fim das palavras (o corte é ajustado pela energia do áudio).
-- **Reenquadra 16:9 para 9:16** seguindo o rosto, ou encaixa o quadro inteiro com fundo desfocado ou de cor sólida.
+- **Reenquadra 16:9 para 9:16** com câmera virtual suave (estilo Premiere Auto Reframe: parada quando a pessoa quase não se mexe, segue sem tremer quando anda, recomeça a cada troca de plano detectada pelo `edin scenes`), ou encaixa o quadro inteiro com fundo desfocado ou de cor sólida.
 - **Punch-ins e zoom suave** para esconder cortes e dar ritmo.
 - **Legendas animadas** palavra a palavra no padrão Submagic (estilos `hormozi`, `clean`, `karaoke`, `minimal`), segunda cor para números e negações, **emojis animados** acima da legenda e títulos com qualquer fonte.
 - **B-roll automático grátis** do Pexels (`edin broll "consulta"` ou `"broll": {"query": ...}` no plano), com créditos em `broll/CREDITOS.txt`.
@@ -25,6 +25,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 | **ffmpeg** | corta, junta, aplica zoom, legendas e mixa o áudio | `sudo apt install ffmpeg` (se não houver, o `install.sh` baixa uma versão estática) |
 | **faster-whisper** | transcreve a fala com o tempo de cada palavra | automático |
 | **OpenCV** | detecta o rosto para reenquadrar (modelo YuNet de 230 KB já incluso) | automático |
+| **PySceneDetect** | detecta trocas de plano (`edin scenes`; a câmera e o `pan` recomeçam por plano) | automático |
 | **DeepFilterNet / RNNoise** | limpeza de voz (ruído de fundo, chiado, ventilador) | automático (baixados uma vez para `~/.local/share/edin`) |
 | **librosa** | detecta as batidas da música nas montagens | automático |
 | **numpy** | cálculos de áudio e imagem | automático |

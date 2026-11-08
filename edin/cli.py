@@ -98,6 +98,23 @@ def cmd_montage(a):
     save_plan(plan, a.out)
 
 
+def cmd_scenes(a):
+    import json
+
+    from .scenes import detect_scenes, scene_segments
+    from .utils import fmt_time
+
+    out = a.out or _stem(a.video) + ".scenes.json"
+    data = detect_scenes(a.video, out, a.force)
+    hard = set(data.get("hard_cuts", data["cuts"]))
+    print(f"[edin] {len(data['cuts'])} cortes ({len(hard)} trocas de plano de verdade) -> {out}")
+    for sc in data["scenes"]:
+        tipo = "" if sc["start"] == 0 else ("troca de plano" if sc["start"] in hard else "mesmo plano, conteúdo mudou")
+        print(f"  {fmt_time(sc['start'])}-{fmt_time(sc['end'])} ({sc['end'] - sc['start']:.2f}s) {tipo}")
+    if a.segments:  # segmentos prontos para colar no plano (um por cena)
+        print(json.dumps(scene_segments(a.video, a.min_len, a.hard_only), ensure_ascii=False, indent=1))
+
+
 def cmd_timeline(a):
     from .plan import print_timeline
 
@@ -363,6 +380,15 @@ def main(argv=None):
     s.add_argument("--seed", type=int, default=7)
     s.add_argument("-o", "--out", default="montagem.plan.json")
     s.set_defaults(fn=cmd_montage)
+
+    s = sp.add_parser("scenes", help="detecta trocas de plano (PySceneDetect) -> video.scenes.json")
+    s.add_argument("video")
+    s.add_argument("-o", "--out", help="padrão: <nome>.scenes.json ao lado do vídeo")
+    s.add_argument("--segments", action="store_true", help="imprime um segmento por cena, pronto para o plano")
+    s.add_argument("--min-len", type=float, default=0.4, help="cenas mais curtas que isso juntam com a anterior")
+    s.add_argument("--hard-only", action="store_true", help="separa só nas trocas de plano de verdade")
+    s.add_argument("--force", action="store_true", help="ignora o cache e detecta de novo")
+    s.set_defaults(fn=cmd_scenes)
 
     s = sp.add_parser("timeline", help="mostra a linha do tempo final de um plano")
     s.add_argument("plan")
