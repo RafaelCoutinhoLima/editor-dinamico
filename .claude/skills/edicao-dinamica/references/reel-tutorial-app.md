@@ -27,6 +27,7 @@ Cada item é uma correção de Rafael ou do `critico-de-edicao`.
 - **Tempo de fala:** `edin falas` errou quando a narração tinha mais pausas internas do que trocas de fala (juntou "Primeiro, você digita..." com a fala seguinte). Confira as falas com `edin transcribe` num trecho antes de montar.
 - **Silêncio:** respiro de 0,75 s entre falas (0,15 s de entrada + 0,6 s de cauda) ficou bom; o limite é 1 s.
 - **Dados pessoais:** a conta de teste ("Theo Montenegro") aparece na barra lateral, na saudação e no cartão de nível. Tape (lista `HIDE`).
+- **"Cuidado com esses zooms, perde partes das imagens":** zooms que cortavam o campo do nome, a lista de assuntos, as linhas dos períodos, as colunas da semana, o resumo e o cartão de nível foram reprovados. Regra: a borda do enquadramento cai no vão entre blocos; tela de duas colunas fica na largura inteira do conteúdo (sem a barra lateral); o movimento é só o empurrão leve. Ao abrir mais o quadro, confira se apareceu dado pessoal que antes ficava fora ("Boa noite, Theo" voltou na Lupe).
 - **Zoom:** confira as bordas do cartão em cada quadro-chave. Título ou enunciado cortado ao meio foi apontado pelo crítico. No zoom final das insígnias, feche na conquistada (cerca de 420 px da fonte) e escureça o resto.
 - **Legenda × fala:** a troca de legenda e de tela tem que esperar a palavra. "Ganhe insígnias" entrou 1,4 s antes da voz; resolvido congelando o painel anterior.
 - **Áudio:** -14 LUFS, estéreo.
