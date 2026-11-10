@@ -9,6 +9,10 @@ Fluxo típico (vídeo falado):
   edin render video.plan.json -o final.mp4  -> vídeo editado
   edin sheet final.mp4                      -> folha de quadros para conferir
 
+Narração (ElevenLabs, ELEVENLABS_API_KEY):
+  edin tts roteiro.txt -o voz.mp3           -> voz.mp3 + alinhamento + tabela fala x tempo
+  edin falas narracao.mp3 roteiro.txt       -> tabela fala x tempo de uma narração pronta
+
 Montagem no beat (sem fala):
   edin montage clip1.mp4 clip2.mp4 --music musica.mp3 --duration 30 -o montagem.plan.json
 """
@@ -45,6 +49,13 @@ def cmd_doctor(_):
     dfn, rnn = dfn_binary(download=False), rnn_model(download=False)
     print(f"{'OK ' if dfn else '-- '} limpeza de voz DeepFilterNet {dfn or '(baixa no 1º uso)'}")
     print(f"{'OK ' if rnn else '-- '} limpeza de voz RNNoise {rnn or '(baixa no 1º uso)'}")
+    import os
+
+    from .elevenlabs import KEY_FILE
+
+    el_key = bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()) or KEY_FILE.exists()
+    print(f"{'OK ' if el_key else '-- '} narração ElevenLabs "
+          f"{'(chave encontrada)' if el_key else f'(sem chave: ELEVENLABS_API_KEY ou {KEY_FILE})'}")
     try:
         import ctranslate2
 
@@ -355,6 +366,65 @@ def _add_enhance_parser(sp):
 # ---- fim enhance
 
 
+# ---- narração (ElevenLabs) ------------------------------------------------------- ver edin/elevenlabs.py
+def cmd_voices(a):
+    from . import elevenlabs as el
+
+    if a.action == "search":
+        el.print_voices(el.search_voices(a.name, a.lang, a.n))
+    else:
+        v = el.add_voice(a.name, a.new_name)
+        print(f"[edin] Na conta: {v['name']}  voice_id={v['voice_id']}")
+
+
+def cmd_tts(a):
+    from .elevenlabs import tts
+
+    out = a.out or _stem(a.script) + ".mp3"
+    tts(a.script, out, a.voice, a.model, a.stability, a.similarity, a.style, a.speed,
+        None if a.lang == "none" else a.lang, a.seed)
+
+
+def cmd_falas(a):
+    from .elevenlabs import falas_table
+
+    falas_table(a.audio, a.script, a.alignment, a.out)
+
+
+def _add_narration_parser(sp):
+    from .elevenlabs import DEFAULT_MODEL, DEFAULT_VOICE
+
+    s = sp.add_parser("voices", help="vozes do ElevenLabs: procura (conta + Voice Library) e adiciona à conta")
+    s.add_argument("action", choices=["search", "add"])
+    s.add_argument("name", help="nome (ou parte) da voz, ou voice_id")
+    s.add_argument("--lang", help="só na busca da biblioteca: idioma, ex. pt")
+    s.add_argument("--n", type=int, default=30, help="quantas vozes da biblioteca listar (padrão 30)")
+    s.add_argument("--new-name", help="nome na conta ao adicionar (padrão: o da biblioteca)")
+    s.set_defaults(fn=cmd_voices)
+
+    s = sp.add_parser("tts", help="gera a narração no ElevenLabs (com alinhamento e tabela fala x tempo)")
+    s.add_argument("script", help="roteiro .txt: uma fala por parágrafo, separadas por linha em branco")
+    s.add_argument("--voice", default=DEFAULT_VOICE, help=f"nome ou voice_id (padrão: {DEFAULT_VOICE})")
+    s.add_argument("--model", default=DEFAULT_MODEL, help=f"model_id (padrão {DEFAULT_MODEL}; sem ele cai para "
+                                                          "eleven_v3). v3/v4 ignoram <break time>")
+    s.add_argument("--stability", type=float, default=0.5)
+    s.add_argument("--similarity", type=float, default=0.75)
+    s.add_argument("--style", type=float, default=0.0)
+    s.add_argument("--speed", type=float, default=1.0)
+    s.add_argument("--lang", default="pt", help="language_code (padrão pt; none para não mandar)")
+    s.add_argument("--seed", type=int, help="semente para repetir o mesmo resultado")
+    s.add_argument("-o", "--out", help="saída .mp3 (padrão: <roteiro>.mp3)")
+    s.set_defaults(fn=cmd_tts)
+
+    s = sp.add_parser("falas", help="tabela fala x tempo de uma narração pronta (alinhamento ou silencedetect)")
+    s.add_argument("audio")
+    s.add_argument("script", help="roteiro .txt com as falas separadas por linha em branco")
+    s.add_argument("--alignment", help="<voz>.alignment.json gerado pelo edin tts (mais preciso)")
+    s.add_argument("-o", "--out", help="padrão: <audio>.falas.json")
+    s.set_defaults(fn=cmd_falas)
+# ---- fim narração
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="edin", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = p.add_subparsers(dest="cmd", required=True)
@@ -481,9 +551,10 @@ def main(argv=None):
     _add_motion_parser(sp)
     _add_broll_parser(sp)
     _add_enhance_parser(sp)
+    _add_narration_parser(sp)
 
     a = p.parse_args(argv)
-    if a.cmd not in ("doctor", "sfx", "text"):
+    if a.cmd not in ("doctor", "sfx", "text", "voices"):
         check_tools()
     a.fn(a)
 

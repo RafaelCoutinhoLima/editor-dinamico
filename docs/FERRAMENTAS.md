@@ -29,6 +29,15 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
    - Emoji via PNG do [Twemoji](https://github.com/jdecked/twemoji) (CC BY 4.0, exige crédito), animado em quadros com alfa e posto com `overlay`, acima da legenda e fora do rosto. O libass não desenha emoji colorido de forma confiável.
    - B-roll pela [API do Pexels](https://www.pexels.com/api/documentation/): grátis, 200 req/h, com cache e `broll/CREDITOS.txt`.
 
+8. ✅ **Roteiro e narração com o ElevenLabs** (feito: `edin voices`, `edin tts`, `edin falas` em `edin/elevenlabs.py` e agente `roteirista`).
+   - API REST oficial ([docs](https://elevenlabs.io/docs/api-reference)), chave em `ELEVENLABS_API_KEY` ou `~/.config/edin/elevenlabs.key` (nunca no repositório). `edin doctor` mostra se achou a chave.
+   - `edin voices search "Yuri"`: procura nas vozes da conta (`GET /v2/voices?search=`) e na Voice Library compartilhada (`GET /v1/shared-voices?search=`), com nome, voice_id, public_owner_id, idioma e categoria.
+   - `edin voices add "<nome ou voice_id>"`: se a voz não está na conta, adiciona da biblioteca (`POST /v1/voices/add/{public_owner_id}/{voice_id}` com `new_name`). Qualquer voz da biblioteca vira utilizável só pelo nome; nome ambíguo para e lista as parecidas.
+   - `edin tts roteiro.txt --voice "Yuri - Natural Brazilian Narrator" -o voz.mp3`: resolve a voz (conta → biblioteca → adiciona), confere o modelo em `GET /v1/models` (padrão `eleven_v4`; sem ele cai para `eleven_v3` e avisa), Stability 0.50, Similarity 0.75, `language_code` pt, e usa `POST /v1/text-to-speech/{voice_id}/with-timestamps`. Roteiro maior que o limite do modelo (v4 10 mil, v3 5 mil caracteres) vai em partes com `previous_text`/`next_text` e é emendado. Saídas: `voz.mp3`, `voz.alignment.json` (por caractere), `voz.words.json` (formato do `edin transcribe`, serve para legenda) e `voz.falas.json` (início, fim, silêncio depois e corte sugerido de cada fala; avisa silêncio maior que 1 s).
+   - `edin falas narracao.mp3 roteiro.txt [--alignment voz.alignment.json]`: tabela fala x tempo de uma narração pronta (a de Rafael), pelo alinhamento ou por `silencedetect=noise=-35dB:d=0.35` nos N-1 maiores silêncios.
+   - v3 e v4 ignoram `<break time>`: a pausa vem da linha em branco entre as falas e a sincronia é feita na montagem.
+   - Testado só com respostas simuladas da API (sem chave nesta máquina): resolução de voz, queda para v3, partes e emenda, tabela por alinhamento e por silencedetect. Falta a primeira geração real.
+
 ## Lições de reenquadramento 16:9 → 9:16
 
 - Os profissionais remontam o layout de motion e texto para o vertical em vez de recortar. Usam "Fill" com rastreio para live-action e "Fit" com fundo da própria cena, nunca faixa sólida.

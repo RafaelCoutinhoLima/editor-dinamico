@@ -1,6 +1,6 @@
 ---
 name: edicao-dinamica
-description: Edita vídeos de forma dinâmica com IA, de graça e local (cortes de silêncio que não comem palavras, punch-ins, reenquadramento 9:16 pelo rosto, legendas animadas, b-roll, efeitos sonoros, música, cortes de vídeo longo em shorts, montagem no ritmo da música e motion design por cima com Remotion). Use sempre que Rafael pedir para editar, cortar, legendar, deixar dinâmico, transformar em Reels/Shorts/TikTok ou montar um vídeo.
+description: Edita vídeos de forma dinâmica com IA, de graça e local (cortes de silêncio que não comem palavras, punch-ins, reenquadramento 9:16 pelo rosto, legendas animadas, b-roll, efeitos sonoros, música, cortes de vídeo longo em shorts, montagem no ritmo da música, motion design por cima com Remotion, roteiro e narração com voz do ElevenLabs e Reel tutorial de app a partir de gravação de tela). Dispara sempre os agentes do repositório (roteirista, cacador-de-cortes, reenquadrador-vertical, critico-de-edicao). Use sempre que Rafael pedir para editar, cortar, legendar, deixar dinâmico, transformar em Reels/Shorts/TikTok, narrar ou montar um vídeo.
 ---
 
 # Edição dinâmica de vídeo (edin)
@@ -10,6 +10,19 @@ Você é o **diretor de edição**. A ferramenta `edin` faz o trabalho pesado (f
 Fale sempre em português com Rafael e não use travessões nos textos.
 
 Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?**
+
+## Agentes do repositório: dispare SEMPRE
+
+A skill não faz sozinha o que tem agente próprio. Em cada etapa abaixo, chame o agente (ferramenta Agent, `subagent_type` com o nome dele) e passe os caminhos completos; só faça você mesmo se a ferramenta de agentes não existir nesta sessão, e diga isso a Rafael.
+
+| Quando | Agente | O que passar | O que volta |
+|---|---|---|---|
+| O vídeo precisa de narração ou roteiro (tutorial de app, demo, explainer, vídeo sem fala) | **`roteirista`** | objetivo, cenas ou folhas de contato, duração alvo, pasta do vídeo; e a narração de Rafael, se ele mandou | `roteiro.txt`, `voz.mp3` (ElevenLabs, voz "Yuri - Natural Brazilian Narrator", Stability 50, Similarity 75), alinhamento e tabela fala x tempo. Se Rafael já mandou a narração, ele usa a dele e só gera a tabela |
+| Vídeo longo (mais de ~3 min) que vira cortes | **`cacador-de-cortes`** | `.words.json`, quantos cortes, duração alvo | `candidates.json` com rubrica e comandos `edin plan --range` |
+| Vídeo horizontal que precisa virar vertical | **`reenquadrador-vertical`** | vídeo, pasta, pedido | plano e vertical renderizada e conferida |
+| **Antes de entregar qualquer vídeo, sempre** | **`critico-de-edicao`** | plano e vídeo FINAL em resolução cheia, pedido de Rafael | PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho |
+
+Agentes independentes podem rodar em paralelo (ex.: `roteirista` escrevendo enquanto você mede as cenas). Nunca entregue sem o veredito do `critico-de-edicao`.
 
 ## 0. Preparação
 
@@ -40,7 +53,8 @@ Toda decisão responde a uma pergunta: **isso faz a pessoa continuar assistindo?
 | Quer efeitos de motion (palavra atrás da cabeça, cards, checklist, título cinético) | Fluxo A + **D. Motion** |
 | Vídeo que já vem editado (legenda, cards ou lower third gravados na imagem) | **E. Refazer a edição** (+ D) |
 | Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **F. Horizontal para vertical** |
-| Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` |
+| Reel tutorial de app a partir de gravação de tela, com narração | **G. Reel tutorial de app** (`roteirista` + montagem) |
+| Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` (narração pelo agente `roteirista`) |
 
 ## A. Vídeo falado
 
@@ -64,14 +78,15 @@ O `plan` decide o que manter pelas palavras do Whisper e ajusta cada borda de co
 7. **B-roll:** se Rafael tiver imagens/vídeos de apoio, `"broll": {"src": "arquivo"}` onde ele cita aquilo. Sem material, `"broll": {"query": "estudante cansado"}` baixa um clipe grátis do Pexels (precisa de `PEXELS_API_KEY`; revise com `edin broll --plan plano.json`). A fala continua. 1,5 a 3 s por plano, no máximo 30% do tempo.
 8. **Som:** o `reels` já põe `softclick` nas trocas de zoom. Acentos manuais só nos momentos chave: `boom` no gancho, `ding` em número/dica, `whoosh` numa transição grande. `boom`/`riser` no máximo 2 por vídeo. Lista: `edin sfx`. Menos é mais.
 9. **Voz:** o `edin plan` já liga a limpeza (`"voice": {"clean": "dfn", "strength": 24, "chain": "broadcast"}`). Em gravação já limpa de estúdio, use `strength` 12 ou desligue (`"voice": null`); em lugar muito barulhento, suba para 36. Para comparar antes de decidir: `edin voice video.mp4`.
-10. **Música:** só se Rafael mandar o arquivo. `"music": {"file": "...", "volume": 0.12, "duck": true}`. Se ele vai pôr música no app, entregue sem.
+10. **Narração nova** (o vídeo não tem fala, ou Rafael pediu locução): agente **`roteirista`** (seção "Agentes do repositório").
+11. **Música:** só se Rafael mandar o arquivo. `"music": {"file": "...", "volume": 0.12, "duck": true}`. Se ele vai pôr música no app, entregue sem.
 
 Referência dos campos: `docs/PLANO.md`.
 
 ## B. Cortes de vídeo longo em shorts
 
 1. `edin transcribe` do vídeo inteiro.
-2. Delegue a escolha ao agente **`cacador-de-cortes`** (passe o `.words.json`, quantos cortes e a duração alvo). Ele parte do `edin hunt video.words.json` (candidatos com sinais objetivos e `nota_objetiva` em `video.candidates.json`), lê tudo e dá a rubrica Hook, Flow, Value, Trend (0 a 25 cada). Sem o agente, faça você o mesmo: `hunt`, leitura completa e de 3 a 6 trechos de 20 a 60 s que funcionem sozinhos.
+2. Delegue a escolha ao agente **`cacador-de-cortes`**, sempre (passe o `.words.json`, quantos cortes e a duração alvo). Ele parte do `edin hunt video.words.json` (candidatos com sinais objetivos e `nota_objetiva` em `video.candidates.json`), lê tudo e dá a rubrica Hook, Flow, Value, Trend (0 a 25 cada). Sem o agente, faça você o mesmo: `hunt`, leitura completa e de 3 a 6 trechos de 20 a 60 s que funcionem sozinhos.
 3. Apresente a lista para Rafael (tempo, título, rubrica, cold open) e siga com os aprovados.
 4. Para cada um: `edin plan video.mp4 --range INICIO-FIM --name short1 --cold-open [A-B]` (frase mais forte de 1 a 3 s repetida no início; sem valor escolhe sozinha, `A-B` são índices do `edin text`; omita se o começo já é o gancho). Refine como no fluxo A (título obrigatório) e corte do trecho o que depende de contexto ("como o fulano falou").
 5. Renderize e revise cada um (seção 2). Os cortes são independentes: pode renderizar em paralelo.
@@ -108,7 +123,7 @@ Os elementos antigos não saem dos pixels: a câmera fica em tela cheia, as zona
 
 ## F. Horizontal para vertical (tela cheia)
 
-Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, renderiza, roda o `check` e pede a crítica). Sem o agente, siga você mesmo.
+Delegue sempre ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, renderiza, roda o `check` e pede a crítica). Sem o agente, siga você mesmo.
 
 **A vertical usa a tela inteira.** Nunca encaixe o quadro 16:9 no meio com faixas em cima e embaixo (letterbox), nem disfarçado com a cor do fundo: no celular isso vira "vídeo pequeno com fundo preto". Decida cena por cena (um segmento por troca de cena; ache as trocas com `ffmpeg -vf "select='gt(scene,0.25)',showinfo"`):
 
@@ -138,13 +153,24 @@ Delegue ao agente **`reenquadrador-vertical`** (ele faz o processo abaixo, rende
 - **Confira o arquivo final em resolução cheia**, nunca só o rascunho (um filtro do ffmpeg só quebrava em 1080x1920 e deixou a base preta em telas brancas). `edin check plano.json video.mp4` varre o vídeo a 4 quadros/s e acusa qualquer faixa como ERRO.
 - Confira a folha de quadros procurando: faixa ou retângulo visível, texto cortado nas laterais, texto antigo aparecendo atrás do novo.
 
+## G. Reel tutorial de app a partir de gravação de tela
+
+Detalhes, roteiro modelo e o briefing completo de Rafael: [references/reel-tutorial-app.md](references/reel-tutorial-app.md). Leia inteiro antes de começar. Resumo:
+
+1. **Cenas:** `edin scenes gravacao.mp4 --hard-only` e folhas de contato a cada 3 a 4 s. Só o que ensina a usar o app, na ordem do uso. Nada de cadastro nem dado pessoal; comece quando o nome certo começa a ser digitado.
+2. **Roteiro e voz: agente `roteirista`** (objetivo, lista de cenas ou folhas, duração abaixo de 2 min). Uma fala por cena, frases curtas afirmativas, sem pergunta retórica, "LoopEdu" no masculino, sem travessão. Voz padrão "Yuri - Natural Brazilian Narrator", Stability 50, Similarity 75, modelo `eleven_v4` (`edin tts`). Se Rafael mandou a narração, use a dele e gere só a tabela (`edin falas`).
+3. **Montagem 1080x1920 quadro a quadro** (Python + OpenCV + PIL para o ffmpeg): fundo degradê índigo da marca com halos, cartão do vídeo de 1000 px centrado, legenda em pílula de vidro acima do cartão no imperativo falando com o aluno, rodapé com ícone e "LoopEdu", intro de 4,5 s e fechamento de ~3,7 s ("Estude melhor." / "Viva por inteiro.", "Link na bio").
+4. **Câmera** por quadros-chave com smoothstep e empurrão de ~3,5%, zoom certeiro conferido em grade, sem cortar o importante; nunca zoom em insígnia bloqueada. Navegação acelerada até ~2x, nunca o que precisa ser lido; ajuda e correção em velocidade normal; congelar a correção 2 a 3 s.
+5. **Sincronia pela tabela fala x tempo:** corta a narração no `corte_sugerido` (meio do silêncio), fala entra 0,15 s depois do início da cena (0,3 s na intro), cena = fala + 0,3 a 0,6 s. **Nenhum silêncio maior que 1 s** no final.
+6. **Conferência** (folhas a cada 3 a 4 s, quadros dos momentos críticos, tabela de silêncio do final, duração abaixo de 2 min) e depois o agente `critico-de-edicao`.
+
 ## 2. Revisar e entregar
 
 1. `edin check plano.json` e corrija erros e avisos que fizerem sentido.
 2. `edin render plano.json --draft` (meia resolução, rápido; vai para `rascunhos/`).
 3. `edin sheet video_rascunho.mp4 -n 12` e **abra a imagem**: rosto enquadrado e cabeça inteira, legenda legível sem cobrir o rosto, título aparecendo, b-roll no lugar. Ajuste `captions.position` (0 topo, 1 base, zona segura 0.55 a 0.78) ou `focus` (`"center"` ou `[x, y]`).
 4. Render final: `edin render plano.json` (sai em `videos/AAAA-MM-DD_formato.mp4`).
-5. **Crítica independente:** chame o agente **`critico-de-edicao`** com o plano e o `final.mp4` (ele roda `check`, `verify`, folha de quadros e devolve PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho). Sem o agente, rode você mesmo `edin check plano.json final.mp4` e `edin verify plano.json final.mp4`.
+5. **Crítica independente, sempre:** chame o agente **`critico-de-edicao`** com o plano e o `final.mp4` (ele roda `check`, `verify`, folha de quadros e devolve PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho). Sem o agente, rode você mesmo `edin check plano.json final.mp4` e `edin verify plano.json final.mp4`.
 6. Antes de entregar, pergunte-se o que Rafael já reprovou: faixa preta ou letterbox, tela de app ampliada/cortada/borrada, legenda cobrindo o rosto, vídeo encolhido numa janela. Se qualquer um aparecer, não entregue.
 7. Se o veredito for MAIS UMA PASSADA, corrija **só o trecho apontado**, renderize de novo e repita no máximo 2 vezes.
 8. Entregue com 2 ou 3 linhas: duração final, o que foi cortado, as escolhas criativas principais e o que foi conferido. Ofereça uma variação (outro gancho, outro estilo de legenda) se fizer sentido.
