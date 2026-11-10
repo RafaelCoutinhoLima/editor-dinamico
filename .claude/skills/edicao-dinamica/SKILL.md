@@ -160,9 +160,13 @@ Detalhes, roteiro modelo e o briefing completo de Rafael: [references/reel-tutor
 1. **Cenas:** `edin scenes gravacao.mp4 --hard-only` e folhas de contato a cada 3 a 4 s. Só o que ensina a usar o app, na ordem do uso. Nada de cadastro nem dado pessoal; comece quando o nome certo começa a ser digitado.
 2. **Roteiro e voz: agente `roteirista`** (objetivo, lista de cenas ou folhas, duração abaixo de 2 min). Uma fala por cena, frases curtas afirmativas, sem pergunta retórica, "LoopEdu" no masculino, sem travessão. Voz padrão "Yuri - Natural Brazilian Narrator", Stability 50, Similarity 75, modelo `eleven_v4` (`edin tts`). Se Rafael mandou a narração, use a dele e gere só a tabela (`edin falas`).
 3. **Montagem 1080x1920 quadro a quadro** (Python + OpenCV + PIL para o ffmpeg): fundo degradê índigo da marca com halos, cartão do vídeo de 1000 px centrado, legenda em pílula de vidro acima do cartão no imperativo falando com o aluno, rodapé com ícone e "LoopEdu", intro de 4,5 s e fechamento de ~3,7 s ("Estude melhor." / "Viva por inteiro.", "Link na bio").
-4. **Câmera** por quadros-chave com smoothstep e empurrão de ~3,5%, zoom certeiro conferido em grade, sem cortar o importante; nunca zoom em insígnia bloqueada. Navegação acelerada até ~2x, nunca o que precisa ser lido; ajuda e correção em velocidade normal; congelar a correção 2 a 3 s.
+4. **Câmera** por quadros-chave com smoothstep e empurrão de ~3,5%, zoom certeiro conferido em grade, sem cortar o importante; nunca zoom em insígnia bloqueada. **Velocidade perto de 1x** (no máximo 1,15x; só a digitação pode ir a 1,5x): Rafael reprovou 1,5x a 1,8x como "muito acelerado". Sobrou gravação? Corte tempo parado em vez de acelerar. Ajuda e correção a 1x; congelar a correção 2 a 3 s.
 5. **Sincronia pela tabela fala x tempo:** corta a narração no `corte_sugerido` (meio do silêncio), fala entra 0,15 s depois do início da cena (0,3 s na intro), cena = fala + 0,3 a 0,6 s. **Nenhum silêncio maior que 1 s** no final.
-6. **Conferência** (folhas a cada 3 a 4 s, quadros dos momentos críticos, tabela de silêncio do final, duração abaixo de 2 min) e depois o agente `critico-de-edicao`.
+6. **Cursor redesenhado, sempre:** o cursor de gravação de tela vem travado (para e salta 100+ px num quadro). Detecte seta e mão por modelo, apague com o fundo de um quadro vizinho e redesenhe numa trajetória suavizada (gaussiana de 2,5 quadros), interpolada no tempo fracionário da fonte. Scripts prontos em [references/reel-tutorial/](references/reel-tutorial/).
+7. **Ampliação (ESRGAN) de TODOS os quadros usados**, sem juntar quadros "quase iguais": juntar fez o cursor e as rolagens andarem aos saltos ("lagzinho").
+8. **Dado pessoal da conta de teste** (nome na barra lateral, saudação "Boa noite, Fulano", nome no cartão de nível): tape no quadro (lista `HIDE` em `cenas.py`), mesmo que só apareça por meio segundo.
+9. **Áudio:** voz em -14 LUFS, pico até -1,5 dBTP, estéreo (`loudnorm` + ganho, `-ac 2`). O primeiro saiu em -25 LUFS e mono.
+10. **Conferência** (folhas a cada 3 a 4 s, quadros dos momentos críticos, tabela de silêncio do final, duração abaixo de 2 min) e depois o agente `critico-de-edicao`.
 
 ## 2. Revisar e entregar
 
@@ -171,7 +175,7 @@ Detalhes, roteiro modelo e o briefing completo de Rafael: [references/reel-tutor
 3. `edin sheet video_rascunho.mp4 -n 12` e **abra a imagem**: rosto enquadrado e cabeça inteira, legenda legível sem cobrir o rosto, título aparecendo, b-roll no lugar. Ajuste `captions.position` (0 topo, 1 base, zona segura 0.55 a 0.78) ou `focus` (`"center"` ou `[x, y]`).
 4. Render final: `edin render plano.json` (sai em `videos/AAAA-MM-DD_formato.mp4`).
 5. **Crítica independente, sempre:** chame o agente **`critico-de-edicao`** com o plano e o `final.mp4` (ele roda `check`, `verify`, folha de quadros e devolve PODE PUBLICAR ou MAIS UMA PASSADA com o pior trecho). Sem o agente, rode você mesmo `edin check plano.json final.mp4` e `edin verify plano.json final.mp4`.
-6. Antes de entregar, pergunte-se o que Rafael já reprovou: faixa preta ou letterbox, tela de app ampliada/cortada/borrada, legenda cobrindo o rosto, vídeo encolhido numa janela. Se qualquer um aparecer, não entregue.
+6. Antes de entregar, pergunte-se o que Rafael já reprovou: faixa preta ou letterbox, tela de app ampliada/cortada/borrada, legenda cobrindo o rosto, vídeo encolhido numa janela, gravação de tela acelerada demais, cursor travado ou imagem engasgando. Se qualquer um aparecer, não entregue.
 7. Se o veredito for MAIS UMA PASSADA, corrija **só o trecho apontado**, renderize de novo e repita no máximo 2 vezes.
 8. Entregue com 2 ou 3 linhas: duração final, o que foi cortado, as escolhas criativas principais e o que foi conferido. Ofereça uma variação (outro gancho, outro estilo de legenda) se fizer sentido.
 

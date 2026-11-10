@@ -17,6 +17,21 @@ Referência do fluxo G da skill `edicao-dinamica`. Primeiro vem o roteiro passo 
 6. **Sincronia com a narração** (tabela do `roteirista`, ou `edin falas voz.mp3 roteiro.txt`): uma fala por cena, cortada no meio do silêncio (`corte_sugerido`); a fala entra 0,15 s depois do início da cena (0,3 s na intro), fades de 20 ms; cena = fala + 0,3 a 0,6 s (ajustando velocidade e escalando quadros-chave e legendas); ajuda e correção sem mudar velocidade; o fechamento cobre a última fala. **Nenhum silêncio maior que 1 s** no vídeo (o primeiro foi reprovado por pausas de 3 s).
 7. **Conferência:** folha de contato a cada 3 a 4 s (legenda certa, nada cortado, nenhuma insígnia bloqueada no zoom final, nenhum dado pessoal), quadros únicos dos momentos críticos, tabela de silêncio do vídeo final (`silencedetect=noise=-35dB:d=0.35`), duração abaixo de 2 min, textos em português com "LoopEdu" e sem travessão. Depois, o agente `critico-de-edicao` com o vídeo final.
 
+## Lições do primeiro Reel (2026-11-10), aplicar sempre
+
+Cada item é uma correção de Rafael ou do `critico-de-edicao`.
+
+- **"Tá muito acelerado":** cenas a 1,5x a 1,8x foram reprovadas. Teto de 1,15x (digitação até 1,5x). Se a fala é curta, corte o tempo parado da gravação; não acelere.
+- **"As imagens tão com um lagzinho":** veio de juntar quadros quase iguais para poupar ESRGAN (o cursor andava de 4 em 4 quadros). Amplie todos os quadros usados.
+- **"Ajuste o cursor, tá meio travado":** o próprio gravador de tela entrega o cursor parando e saltando. Solução aprovada: `cursor_modelos.py` (modelos de seta e mão por diferença entre dois quadros, miolo preenchido por flood fill), `cursor_detectar.py` (matchTemplate com máscara; score < 1500 é cursor, acima é cursor de texto ou escondido, e aí fica o original), `cursor_limpar.py` (tapa com o mesmo lugar de um quadro vizinho com o fundo igual, senão inpaint; trajetória com gaussiana de 2,5 quadros) e o desenho em `montar.py` (`cursor_pos`/`draw_cursor`).
+- **Tempo de fala:** `edin falas` errou quando a narração tinha mais pausas internas do que trocas de fala (juntou "Primeiro, você digita..." com a fala seguinte). Confira as falas com `edin transcribe` num trecho antes de montar.
+- **Silêncio:** respiro de 0,75 s entre falas (0,15 s de entrada + 0,6 s de cauda) ficou bom; o limite é 1 s.
+- **Dados pessoais:** a conta de teste ("Theo Montenegro") aparece na barra lateral, na saudação e no cartão de nível. Tape (lista `HIDE`).
+- **Zoom:** confira as bordas do cartão em cada quadro-chave. Título ou enunciado cortado ao meio foi apontado pelo crítico. No zoom final das insígnias, feche na conquistada (cerca de 420 px da fonte) e escureça o resto.
+- **Legenda × fala:** a troca de legenda e de tela tem que esperar a palavra. "Ganhe insígnias" entrou 1,4 s antes da voz; resolvido congelando o painel anterior.
+- **Áudio:** -14 LUFS, estéreo.
+- **Scripts reaproveitáveis** em [reel-tutorial/](reel-tutorial/): copie a pasta para `scripts/` do vídeo novo e troque só `cenas.py` (trechos, câmera, legendas, `HIDE`, `PATCH`). Ordem: `extrair.py` → ESRGAN de `rascunhos/src_raw` para `rascunhos/src_x2` (`realesr-animevideov3 -s 2`) → `cursor_modelos.py` (ajuste os dois instantes dos modelos) → `cursor_detectar.py` → `cursor_limpar.py` → `montar.py`.
+
 ## Roteiro modelo (aprovado)
 
 ```

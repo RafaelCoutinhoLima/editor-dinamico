@@ -262,6 +262,40 @@ def silences(audio: str, noise: str = SILENCE["noise"], d: float = SILENCE["d"])
     return [(max(a, 0.0), en[i] if i < len(en) else dur) for i, a in enumerate(st)], dur
 
 
+def _best_cuts(falas: list, inner: list, head: float, tail: float) -> list:
+    """Escolhe os N-1 silêncios de corte pela duração esperada de cada fala (proporcional ao texto).
+
+    Escolher só os maiores silêncios falha quando há pausas internas do mesmo tamanho das pausas
+    entre falas (em 2026-11-10 juntou "Primeiro, você digita a sua matéria." com a fala seguinte).
+    Programação dinâmica: agrupa os trechos de voz consecutivos em N falas minimizando o erro
+    relativo de duração, com um leve bônus para cortar em silêncios mais longos."""
+    n = len(falas)
+    if n <= 1: return []
+    segs, on = [], head
+    for a, b in inner: segs.append((on, a)); on = b
+    segs.append((on, tail)); m = len(segs)
+    # tamanho esperado: letras + pausas de pontuação (vírgula ~8 letras, ponto/dois-pontos ~15);
+    # frases curtas de marca ("LoopEdu. Estude melhor...") são ditas devagar por causa dos pontos
+    chars = [max(len(re.sub(r"\s+", "", f)) + 8 * f.count(",") + 15 * len(re.findall(r"[.:!?;]", f)), 1) for f in falas]
+    speech = sum(b - a for a, b in segs); exp = [speech * c / sum(chars) for c in chars]
+    sil = [b - a for a, b in inner]; INF = float("inf")
+    # best[k][j]: custo de pôr as falas 0..k-1 nos trechos 0..j-1
+    best = [[INF] * (m + 1) for _ in range(n + 1)]; prev = [[0] * (m + 1) for _ in range(n + 1)]
+    best[0][0] = 0.0
+    for k in range(1, n + 1):
+        for j in range(k, m - (n - k) + 1):
+            for i in range(k - 1, j):
+                if best[k - 1][i] == INF: continue
+                d = segs[j - 1][1] - segs[i][0]
+                c = best[k - 1][i] + ((d - exp[k - 1]) / exp[k - 1]) ** 2
+                if j < m: c -= 0.05 * sil[j - 1]
+                if c < best[k][j]: best[k][j], prev[k][j] = c, i
+    ends, j = [], m
+    for k in range(n, 0, -1): ends.append(j); j = prev[k][j]
+    ends = sorted(ends)[:-1]  # índice do trecho onde cada fala termina (menos a última)
+    return [inner[e - 1] for e in ends]
+
+
 def falas_from_silence(falas: list, audio: str) -> list:
     """Divide a narração nos N-1 maiores silêncios internos (uma fala por parte), em ordem."""
     sil, dur = silences(audio)
@@ -272,7 +306,7 @@ def falas_from_silence(falas: list, audio: str) -> list:
     if len(inner) < n - 1:
         print(f"[edin] Aviso: {n} falas mas só {len(inner) + 1} trechos de voz separados por silêncio "
               f"(noise={SILENCE['noise']}, d={SILENCE['d']}). Confira a tabela no ouvido.")
-    cut = sorted(sorted(inner, key=lambda x: x[1] - x[0], reverse=True)[:n - 1])
+    cut = _best_cuts(falas, inner, head, tail) if len(inner) >= n - 1 else sorted(inner)
     bounds = [head] + [x for a, b in cut for x in (a, b)] + [tail]
     out = []
     for k in range(min(n, len(bounds) // 2)):
