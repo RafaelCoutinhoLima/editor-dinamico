@@ -168,3 +168,10 @@ Na prévia (ou com `?checar=1` no render) o kit avisa no console `[edin] texto p
 - [ ] Primeiro quadro serve de capa; se o vídeo repete, o último emenda com o primeiro (compare os dois quadros: diferença média perto da de dois quadros vizinhos).
 - [ ] Rascunho a 60 fps sem motion blur para iterar; final com `--fps 60 --motion-blur 8`.
 - [ ] `seek` fora de ordem dá o mesmo quadro (teste: 12, 3, 7 contra a ordem normal) e nenhuma borda de camada aparece nos quadros de início, meio e fim de cada cena e no meio de cada transição.
+
+## Lições da revisão do demo (12/11)
+
+- Janela da transição é centrada no corte: dissolve de `d` começa `d/2` antes. Texto da cena que sai some antes disso, senão vira texto sobre texto.
+- Zoom-through usa curva cúbica (com expo o portal tomava a tela em 2 quadros: +42 de brilho num quadro). Se a cena de destino é clara, ponha um véu escuro (#0f0c2e, ~0,55) saindo nos primeiros 0,5 s. Meta: salto de brilho médio por quadro abaixo de ~10.
+- Tela de app (`data-tela`) não aceita escala acima de 1,0: para o plano andar, use preset que translada (`crane-*`, `truck-*`). Elementos que acompanham a tela ficam no mesmo `data-z` e com folga.
+- Meça câmera parada: diferença entre quadros a 1 s de distância (desfocados) abaixo de ~3 é plano parado.

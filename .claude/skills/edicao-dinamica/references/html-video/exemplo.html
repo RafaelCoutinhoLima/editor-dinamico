@@ -161,7 +161,7 @@
   v.cena({
     id: 'relogio', duracao: 3.8,
     camera: mix([
-      preset('crash-zoom-in', { inicio: 0.15, duracao: 0.3, intensidade: V ? 0.3 : 0.35, alvo: [0.5, cy] }),
+      preset('crash-zoom-in', { inicio: 0.05, duracao: 0.3, intensidade: V ? 0.3 : 0.35, alvo: [0.5, cy] }),
       preset('dolly-in', { intensidade: 0.5, de: 0.12, ate: 0.74 }),
       preset('deriva', { intensidade: 1, zeroNoInicio: true, semente: 3 }),   // neutra no t = 0 (capa e loop)
       // recuo que acelera no último 1 s: o anel encolhe até o tamanho do círculo do caderno e o caderno
@@ -270,7 +270,7 @@
   ]);
   v.cena({
     id: 'card', duracao: 4.4,
-    entrada: { tipo: 'zoom-through', alvo: [0.5, cy], raio: RP, duracao: 0.7 },
+    entrada: { tipo: 'zoom-through', alvo: [0.5, cy], raio: RP, duracao: 0.9 },
     camera: movCard,
     montar(el) {
       const r = aleatorio(21);
@@ -289,13 +289,16 @@
             ${item('porcentagem', '')}${item('frações', 'alerta')}${item('regra de três', '')}
             <div class="brilho"></div>
           </div>
-        </div>`;
+        </div>
+        <div class="veu" style="position:absolute;inset:0;background:#0f0c2e;pointer-events:none"></div>`;
+      this.veu = el.querySelector('.veu');   // véu escuro saindo devagar: o portal do zoom-through não vira clarão
       this.barras = [...el.querySelectorAll('.barra b')];
       this.brilho = el.querySelector('.brilho');
       this.p = cenario(el, el.firstElementChild);
       this.leg = legenda(el, { texto: 'você não sabe onde trava', destaque: 'trava', y: yLeg });
     },
     atualizar(el, t, p, ctx) {
+      this.veu.style.opacity = (0.55 * (1 - ease.smoothstep(clamp((t + 0.25) / 0.8)))).toFixed(3);
       const alvos = [0.82, 0.38, 0.9];
       this.barras.forEach((b, i) => { b.style.width = `${alvos[i] * 100 * ease.out(clamp((t - 0.5 - i * 0.12) / 0.8))}%`; });
       const ang = movCard(p, t, ctx.duracao).orbita; // reflexo acompanha o giro (luz fixa na cena)
@@ -316,7 +319,7 @@
   const truckEntra = (T) => (T >= 0 ? TRUCK * (1 - ease.easeOutCubic(T / TR_T)) : TRUCK - VEL * T);
   v.cena({
     id: 'semana', duracao: 3.6,
-    entrada: { tipo: 'travessia', direcao: 'cima', duracao: 0.9 },
+    entrada: { tipo: 'travessia', direcao: 'cima', duracao: 1.3 },
     camera: mix([
       preset('dolly-in', { intensidade: 0.45, alvo: [0.78, cy] }),
       preset('deriva', { intensidade: 0.9, semente: 17 }),
@@ -340,17 +343,22 @@
     },
     atualizar(el, t, p, ctx) {
       // cada bloco vem de perto da câmera (grande, desfocado) e pousa no seu dia: rack focus por bloco
+      // some antes do dissolve para o plano (nada de texto sobre texto) e os dias só aparecem depois da travessia (sem cópias do motion blur)
+      const sai = 1 - ease.smoothstep(clamp((t - 2.95) / 0.3));   // some até 18,85 s: o dissolve de 0,3 s é centrado no corte e começa 0,15 s antes
+      const dz = ease.smoothstep(clamp((t - 0.05) / 0.4)) * sai;
+      if (!this.dias) this.dias = [...el.querySelectorAll('.diaS')];
+      for (const d of this.dias) d.style.opacity = dz.toFixed(3);
       for (const o of this.blocos) {
         const q = ease.outCubic(clamp((t - o.t0) / 0.65));
         const s = lerp(2.2, 1, q), bl = 14 * (1 - q);
         o.b.style.transform = `translate(${px(o.dx * (1 - q))}, ${px(o.dy * (1 - q))}) rotate(${(o.rot * (1 - q)).toFixed(2)}deg) scale(${s.toFixed(4)})`;
-        o.b.style.opacity = ease.smoothstep(clamp((t - o.t0) / 0.25)).toFixed(3);
+        o.b.style.opacity = (ease.smoothstep(clamp((t - o.t0) / 0.25)) * sai).toFixed(3);
         o.b.style.filter = bl > 0.2 ? `blur(${px(bl)})` : '';
       }
       const hl = ease.out(clamp((t - this.laranja.t0 - 0.5) / 0.4));
       this.laranja.b.style.boxShadow = `0 0 0 ${px(4)} rgba(255,220,190,${(0.9 * hl).toFixed(3)}), ${halo(40, 0.25 * hl)}`;
       this.p.atualizar(ctx.tg);
-      this.leg.atualizar(t, 0.6, 3.3);
+      this.leg.atualizar(t, 0.6, 3.2);
     },
   });
 
@@ -358,10 +366,11 @@
   const TW = V ? 980 : 860;
   v.cena({
     id: 'plano', duracao: 4.6,
-    entrada: { tipo: 'dissolve', duracao: 0.45 },
+    entrada: { tipo: 'dissolve', duracao: 0.3 },
     camera: mix([
       (p, T) => { const s = neutro(); s.tx = truckEntra(T); s.ids = ['truck-right']; return s; },
-      preset('deriva', { intensidade: 0.5, semente: 21 }),
+      preset('crane-down', { intensidade: 0.6 }),   // tela de app só translada: o plano anda descendo (conteúdo sobe, longe da legenda), com parallax no fundo
+      preset('deriva', { intensidade: 0.9, semente: 21 }),
     ]),
     montar(el) {
       const linhas = [['qua', 'leitura e resumo', ''], ['qui', 'questões', ''], ['sex', 'revisão: frações', 'revisao']];
@@ -376,8 +385,9 @@
             <div style="height:${px(22)}"></div>
           </div>
         </div>
-        <div data-z="1.1"><div class="centro callout" style="left:${V ? 50 : 79}%;top:${(V ? 0.585 : 0.42) * 100}%;font-size:${px(66)};padding:${px(22)} ${px(48)}">revisão na sexta</div></div>`;
+        <div data-z="1"><div class="centro callout" style="left:${V ? 50 : 79}%;top:${(V ? 0.61 : 0.42) * 100}%;font-size:${px(66)};padding:${px(22)} ${px(48)}">revisão na sexta</div></div>`;
       this.rev = el.querySelector('.linhaPlano.revisao');
+      this.conteudo = [...el.querySelectorAll('.tela h4, .linhaPlano')];
       this.call = el.querySelector('.callout');
       this.p = cenario(el, el.firstElementChild);
       this.leg = legenda(el, { texto: 'um estudo feito pra você', destaque: 'pra você', y: yLeg });
@@ -387,7 +397,10 @@
       const pulso = 0.75 + 0.25 * Math.sin(t * 2 * Math.PI * 1.1);
       this.rev.style.boxShadow = `0 0 0 ${px(4)} rgba(249,115,22,${(hl * pulso).toFixed(3)}), ${halo(30, 0.25 * hl)}`;
       const c = ease.out(clamp((t - 1.0) / 0.45));
-      this.call.style.opacity = c.toFixed(3);
+      // antes do dissolve para o final (0,5 s centrado no corte = começa em 4,35 s), o texto some: o dissolve cruza só o card vazio
+      const fora = 1 - ease.smoothstep(clamp((t - 4.05) / 0.25));
+      for (const e of this.conteudo) e.style.opacity = fora.toFixed(3);
+      this.call.style.opacity = (c * fora).toFixed(3);
       this.call.style.transform = `translate(-50%, calc(-50% + ${px((1 - c) * 30)}))`;
       this.p.atualizar(ctx.tg);
       this.leg.atualizar(t, 0.45, 4.2);

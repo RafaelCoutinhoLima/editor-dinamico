@@ -97,6 +97,7 @@
     inOutQuint: bezier(0.83, 0, 0.17, 1),
     outExpo: bezier(0.16, 1, 0.3, 1),
     inExpo: bezier(0.7, 0, 0.84, 0),
+    inCubic: bezier(0.32, 0, 0.67, 0),
     outCubic: bezier(0.33, 1, 0.68, 1),
     out: bezier(0.16, 1, 0.3, 1),
     outSoft: bezier(0.25, 1, 0.5, 1),
@@ -400,7 +401,8 @@
       const ox = ax * W, oy = ay * H;
       const SA = tr.escala || 2.5;
       const meio = tr.raio ? 0.45 : 0.5;
-      const eIn = ease.inExpo, eOut = ease.outExpo;
+      // cúbica e não expo: com expo o disco do portal toma a tela em 2 quadros e vira clarão (+42 de brilho num quadro)
+      const eIn = ease.inCubic, eOut = ease.outCubic;
       const qa = clamp(q / meio);
       const sA = Math.exp(Math.log(SA) * eIn(qa));
       const vA = Math.abs(velocidade((x) => Math.exp(Math.log(SA) * eIn(x)), qa, tr.duracao * meio)) * Math.hypot(W, H) / 2;
