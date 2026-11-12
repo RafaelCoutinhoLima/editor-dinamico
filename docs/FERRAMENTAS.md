@@ -38,6 +38,13 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
    - v3 e v4 ignoram `<break time>`: a pausa vem da linha em branco entre as falas e a sincronia é feita na montagem.
    - Testado só com respostas simuladas da API (sem chave nesta máquina): resolução de voz, queda para v3, partes e emenda, tabela por alinhamento e por silencedetect. Falta a primeira geração real.
 
+9. ✅ **Cena em código: HTML animado -> vídeo** (feito: `edin html`, `edin/htmlrender.py`, ver [HTML.md](HTML.md)).
+   - Para criar em código as cenas que faltam (título cinético, tela de app desenhada, gráfico, whip pan), sem Canva nem IA.
+   - Chrome do sistema falado por CDP no `--remote-debugging-pipe` (só biblioteca padrão, sem Playwright), um Chrome por worker, faixas de 6 quadros com reordenação e RGB cru por pipe para o x264.
+   - Modo contrato (`window.EDIN = {duration, seek(t)}`) ou modo livre (relógio virtual: Date, performance.now, rAF, timers, `Math.random` com semente e `document.getAnimations()` pausadas no tempo).
+   - `--motion-blur K` (média de K subquadros no obturador de 180°), `--audio`/`--silent-audio`, `--frames-dir`, `--draft`.
+   - Medido em 1080x1920 numa página pesada: 6,0 q/s com 1 worker, 21,2 com 4 e 31,8 com 8 (60 s de cena em 57 s); 4200 quadros sem crescer memória; quadros idênticos pixel a pixel com 1, 4 ou 8 workers.
+
 ## Lições de reenquadramento 16:9 → 9:16
 
 - Os profissionais remontam o layout de motion e texto para o vertical em vez de recortar. Usam "Fill" com rastreio para live-action e "Fit" com fundo da própria cena, nunca faixa sólida.

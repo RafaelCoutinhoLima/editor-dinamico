@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>exemplo edin html: o ciclo (LoopEdu)</title>
+<style>
+  @font-face { font-family: Sora; src: url(fontes/Sora-700.ttf) format('truetype'); font-weight: 700; }
+  @font-face { font-family: Sora; src: url(fontes/Sora-600.ttf) format('truetype'); font-weight: 600; }
+  :root { --indigo: #4F46E5; --violeta: #7C3AED; --laranja: #F97316; --noite: #0f0c2e; }
+  .palco-base { font-family: Sora, system-ui, sans-serif; color: #fff; }
+  .centro { position: absolute; transform: translate(-50%, -50%); }
+  .abs { position: absolute; }
+  .in { position: absolute; inset: 0; }
+  /* luz única: vem de cima à esquerda, sombra cai para baixo e um pouco à direita (--sx, --sy do kit) */
+  /* 1. relógio */
+  .fundo1 { background: radial-gradient(ellipse 70% 50% at 42% 36%, #3b33b8 0%, #1e1b4b 55%, #0f0c2e 100%); }
+  .fundo1::after { content: ''; position: absolute; inset: 0; opacity: .16;
+    background: repeating-linear-gradient(0deg, transparent 0 calc(var(--u) * 58), rgba(199,210,254,.55) calc(var(--u) * 58) calc(var(--u) * 60)); }
+  .relogio { border-radius: 50%; background: radial-gradient(circle at 40% 32%, #2f2890, #16123f 72%);
+    box-shadow: calc(var(--sx) * 44) calc(var(--sy) * 44) calc(var(--u) * 90) rgba(5,3,30,.6), inset 0 0 0 calc(var(--u) * 3) rgba(255,255,255,.08); }
+  .relogio svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .hora { font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: #fff; }
+  .rotulo { font-weight: 600; color: #c7d2fe; letter-spacing: .1em; }
+  .bola { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #c7d2fe 45%, #8b8fd6); }
+  .interroga { font-weight: 700; color: rgba(196,181,253,.5); }
+  /* 2. caderno */
+  .fundo2 { background: radial-gradient(ellipse 80% 60% at 40% 35%, #2a2470, #120f35 70%); }
+  .pagina { background: #ebe8f8; border-radius: calc(var(--u) * 18);
+    box-shadow: calc(var(--sx) * 40) calc(var(--sy) * 40) calc(var(--u) * 80) rgba(0,0,0,.5);
+    background-image: linear-gradient(135deg, rgba(255,255,255,.35), rgba(255,255,255,0) 45%, rgba(40,30,110,.10)),
+      repeating-linear-gradient(0deg, transparent 0 calc(var(--u) * 86), #c7d2fe calc(var(--u) * 86) calc(var(--u) * 88)),
+      linear-gradient(90deg, transparent calc(var(--u) * 96), #a5b4fc calc(var(--u) * 96) calc(var(--u) * 99), transparent calc(var(--u) * 99));
+    color: #312e81; font-weight: 600; box-sizing: border-box; }
+  .linha { position: absolute; left: calc(var(--u) * 130); white-space: nowrap; }
+  .resp { position: relative; display: inline-block; margin-left: calc(var(--u) * 30); }
+  /* 3. impacto */
+  .fundo3 { background: repeating-radial-gradient(circle at 50% var(--cy), #241e6e 0 calc(var(--u) * 60), #1a1552 calc(var(--u) * 60) calc(var(--u) * 120)); }
+  .ponto { border-radius: 50%; background: radial-gradient(circle at 38% 32%, #FDBA74, #F97316 55%, #C2410C); }
+  .risco { background: linear-gradient(90deg, rgba(199,210,254,0), rgba(199,210,254,.6), rgba(199,210,254,0)); height: calc(var(--u) * 4); border-radius: 9px; }
+  /* 4. card */
+  .fundo4 { background: radial-gradient(ellipse 80% 60% at 40% 38%, #6d4ef0, #4F46E5 45%, #2e1f8a 100%); }
+  .card { background: #fff; border-radius: calc(var(--u) * 36);
+    box-shadow: calc(var(--sx) * 50) calc(var(--sy) * 50) calc(var(--u) * 100) rgba(20,10,70,.55);
+    color: #1e1b4b; box-sizing: border-box; padding: calc(var(--u) * 56); overflow: hidden; }
+  .card h3 { margin: 0 0 calc(var(--u) * 40); font-weight: 700; font-size: calc(var(--u) * 72); display: flex; align-items: center; gap: calc(var(--u) * 20); line-height: 1.2; }
+  .card h3 i { width: calc(var(--u) * 28); height: calc(var(--u) * 28); border-radius: 50%; background: var(--laranja); display: inline-block; flex: none; }
+  .item { margin-bottom: calc(var(--u) * 30); font-weight: 600; font-size: calc(var(--u) * 64); line-height: 1.2; }
+  .item .barra { margin-top: calc(var(--u) * 12); height: calc(var(--u) * 22); border-radius: 99px; background: #ede9fe; overflow: hidden; }
+  .item .barra b { display: block; height: 100%; border-radius: 99px; background: var(--indigo); }
+  .item.alerta { color: #c2410c; }
+  .item.alerta .barra b { background: var(--laranja); }
+  .brilho { position: absolute; inset: 0; pointer-events: none; }
+  /* 5. semana (a mesa vista de frente, embaixo do card) */
+  .fundo5 { background: radial-gradient(ellipse 75% 55% at 38% 30%, #3a2f9c 0%, #1d1960 50%, #100d34 100%); }
+  .quadroSemana { border-radius: calc(var(--u) * 40); background: linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    border: calc(var(--u) * 2) solid rgba(255,255,255,.14);
+    box-shadow: calc(var(--sx) * 40) calc(var(--sy) * 40) calc(var(--u) * 90) rgba(5,3,30,.55); }
+  .diaS { position: absolute; top: calc(var(--u) * 34); text-align: center; font-weight: 700; color: #c7d2fe; }
+  .bloco { position: absolute; border-radius: calc(var(--u) * 20); box-shadow: calc(var(--sx) * 10) calc(var(--sy) * 10) calc(var(--u) * 22) rgba(5,3,30,.45); }
+  .bloco::before, .bloco::after { content: ''; position: absolute; left: 14%; height: 12%; border-radius: 9px; background: rgba(255,255,255,.55); }
+  .bloco::before { top: 30%; width: 64%; } .bloco::after { top: 56%; width: 42%; opacity: .7; }
+  /* 6. plano */
+  .fundo6 { background: linear-gradient(165deg, #2a2580 0%, #3a2a8c 45%, #4b2f8e 80%, #5a3488 100%); }
+  .tela { background: #f4f2fb; border-radius: calc(var(--u) * 30); overflow: hidden; color: #1e1b4b;
+    box-shadow: calc(var(--sx) * 40) calc(var(--sy) * 40) calc(var(--u) * 90) rgba(10,6,40,.55), 0 0 0 calc(var(--u) * 2) rgba(255,255,255,.18); }
+  .tela .barraTopo { height: calc(var(--u) * 64); background: #fff; display: flex; align-items: center; gap: calc(var(--u) * 12); padding-left: calc(var(--u) * 28); }
+  .tela .barraTopo i { width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: 50%; background: #d4d0ee; }
+  .tela h4 { margin: calc(var(--u) * 34) calc(var(--u) * 40) calc(var(--u) * 24); font-size: calc(var(--u) * 72); font-weight: 700; line-height: 1.2; }
+  .linhaPlano { display: flex; align-items: center; gap: calc(var(--u) * 28); margin: 0 calc(var(--u) * 36) calc(var(--u) * 18);
+    background: #fff; border-radius: calc(var(--u) * 20); padding: calc(var(--u) * 24) calc(var(--u) * 30);
+    font-size: calc(var(--u) * 66); font-weight: 600; line-height: 1.2; box-shadow: calc(var(--sx) * 3) calc(var(--sy) * 3) calc(var(--u) * 8) rgba(40,30,120,.10); }
+  .linhaPlano .d { width: calc(var(--u) * 130); color: #5b57a0; font-weight: 700; flex: none; }
+  .linhaPlano.revisao { background: #fff1e4; color: #9a3412; }
+  .callout { border-radius: calc(var(--u) * 999); background: rgba(255,255,255,.14); border: calc(var(--u) * 2) solid rgba(255,255,255,.3);
+    font-weight: 600; white-space: nowrap; }
+  /* 7. final */
+  .mundo { background: radial-gradient(ellipse 70% 55% at 45% 40%, #5b45d6 0%, #3b2a9a 55%, #1d1660 100%); }
+  .lado { position: absolute; border-radius: calc(var(--u) * 18); background: rgba(255,255,255,.10); border: calc(var(--u) * 2) solid rgba(255,255,255,.15); }
+  .lado.aceso { background: rgba(255,186,120,.38); border-color: rgba(255,226,196,.6); }
+  .marca { font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="palco" class="palco-base"></div>
+<script src="edin-video.js"></script>
+<script src="edin-cam.js"></script>
+<script>
+(function () {
+  const { px, interp, ease, clamp, legenda, aleatorio, lerp, halo, poeira } = EdinVideo;
+  const { preset, mix, neutro } = EdinCam;
+  const V = EdinVideo.vertical;
+  const W = EdinVideo.w, H = EdinVideo.h, U = EdinVideo.u;
+  const yLeg = V ? 0.70 : 0.84;     // legenda: centro entre 0,55 e 0,75 da altura, abaixo do sujeito
+  const cy = V ? 0.37 : 0.42;       // centro dos sujeitos (terço de cima no vertical)
+
+  // anel aberto (arco de círculo) com progresso, em SVG
+  function arco(cx, cyy, r, larg, cor, extra = '') {
+    const C = 2 * Math.PI * r;
+    return `<circle cx="${cx}" cy="${cyy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round"
+      stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${C.toFixed(2)}" transform="rotate(-90 ${cx} ${cyy})" ${extra}/>`;
+  }
+  const progresso = (circ, p) => { const C = parseFloat(circ.getAttribute('stroke-dasharray')); circ.setAttribute('stroke-dashoffset', (C * (1 - p)).toFixed(2)); };
+
+  // poeira em duas profundidades, mesma semente em todas as cenas: continua no corte e emenda no loop
+  function cenario(el, depoisDe) {
+    const longe = poeira(el, { semente: 101, n: 22, z: 0.45, tamanho: [3, 7], opacidade: [0.12, 0.38] });
+    const perto = poeira(el, { semente: 202, n: 6, z: 1.7, desfoque: 10, tamanho: [70, 150], opacidade: [0.04, 0.10], subida: 1, balanco: 30 });
+    if (depoisDe) el.insertBefore(longe.el, depoisDe.nextSibling);
+    return { atualizar(tg) { longe.atualizar(tg); perto.atualizar(tg); } };
+  }
+
+  const v = EdinVideo.video({
+    fundo: '#0f0c2e', grao: 0.055, graoHz: 30, vinheta: 0.38,
+    luz: { angulo: 60 },                                              // sombra para baixo e à direita
+    grade: { luzes: '#ffb68a', sombras: '#1d2470', forca: 0.28 },     // índigo frio nas sombras, quente na luz
+  });
+
+  // ---------------------------------------------------------------- 1. relógio (também fecha o loop na cena 7)
+  const D1 = V ? 720 : 600;            // grande já no quadro 0: o primeiro quadro é a capa
+  const GLOW_ARCO = `drop-shadow(${halo(18, 0.25)})`;
+  function montarRelogio(el) {
+    const r = aleatorio(7);
+    let q = '';
+    for (let i = 0; i < 16; i++) {
+      const x = r() * 100, y = r() * 100, s = 40 + r() * 90;
+      q += `<div class="abs interroga" style="left:${x}%;top:${y}%;font-size:${px(s)};opacity:${0.25 + r() * 0.5}">?</div>`;
+    }
+    el.insertAdjacentHTML('beforeend', `
+      <div data-z="0.25" data-sobra="0.15" data-desfoque="2" class="cFundo"><div class="in fundo1"></div></div>
+      <div data-z="0.6" data-desfoque="3" data-decorativo class="cMeio"><div class="in">${q}</div></div>
+      <div data-z="1" class="cRelogio"><div class="in">
+        <div class="centro relogio" style="left:50%;top:${cy * 100}%;width:${px(D1)};height:${px(D1)};background:none;box-shadow:none">
+          <div class="disco relogio" style="position:absolute;inset:0"></div>
+          <svg viewBox="0 0 600 600">
+            <circle class="trilho" cx="300" cy="300" r="270" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="22"/>
+            <g class="gArco">${arco(300, 300, 270, 22, '#F97316', `data-match="anel" class="arco1" style="filter:${GLOW_ARCO}"`)}</g>
+          </svg>
+          <div class="centro hora" style="left:50%;top:47%;font-size:${px(D1 * 0.25)}">22:58</div>
+          <div class="centro rotulo" style="left:50%;top:65%;font-size:${px(68)}">estudando</div>
+        </div>
+      </div></div>
+      <div data-z="1.6" data-desfoque="9" class="cFrente"><div class="in">
+        <div class="abs bola" style="left:-6%;top:${V ? 82 : 70}%;width:${px(230)};height:${px(230)}"></div>
+        <div class="abs bola" style="left:88%;top:${V ? 8 : 6}%;width:${px(170)};height:${px(170)}"></div>
+      </div></div>`);
+    const $ = (s) => el.querySelector(s);
+    const ref = {
+      fundo: $('.cFundo'), meio: $('.cMeio > .in'), frente: $('.cFrente > .in'), relogio: $('.relogio'),
+      disco: $('.disco'), trilho: $('.trilho'), g: $('.gArco'), arco: $('.arco1'), hora: $('.hora'), rotulo: $('.rotulo'),
+    };
+    ref.poeira = cenario(el, ref.fundo);
+    return ref;
+  }
+  // estado do relógio no instante t da cena 1 (o quadro 0 é o estado em t = 0)
+  function horaEm(tql) {
+    const m = 22 * 60 + 58 + Math.floor(120 * ease.suave(clamp((tql - 0.4) / 2.6))); // 22:58 a 00:58
+    return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  }
+  const TXT1 = { texto: '3 horas estudando e não fixa?', destaque: '3 horas', y: yLeg };
+
+  v.cena({
+    id: 'relogio', duracao: 3.8,
+    camera: mix([
+      preset('crash-zoom-in', { inicio: 0.15, duracao: 0.3, intensidade: V ? 0.3 : 0.35, alvo: [0.5, cy] }),
+      preset('dolly-in', { intensidade: 0.5, de: 0.12, ate: 0.74 }),
+      preset('deriva', { intensidade: 1, zeroNoInicio: true, semente: 3 }),   // neutra no t = 0 (capa e loop)
+      // recuo que acelera no último 1 s: o anel encolhe até o tamanho do círculo do caderno e o caderno
+      // continua o mesmo recuo (velocidade de escala igual nos dois lados do match cut, ±10%)
+      (p, T) => { const s = neutro(); s.S = Math.exp(Math.log(0.45) * ease.easeInCubic((T - 2.8) / 1.0)); s.ids = ['dolly-out']; return s; },
+    ]),
+    montar(el) {
+      this.r = montarRelogio(el);
+      this.leg = legenda(el, TXT1);
+    },
+    atualizar(el, t, p, ctx) {
+      const r = this.r;
+      r.hora.textContent = horaEm(ctx.tql); // dígitos pelo tempo do quadro: com motion blur não sai número duplo
+      // dígitos e rótulo somem 0,25 s antes do match cut: só o anel faz a emenda com o caderno
+      const a = (1 - ease.smoothstep((t - 3.35) / 0.2)).toFixed(4);
+      r.hora.style.opacity = a; r.rotulo.style.opacity = a;
+      progresso(r.arco, interp(t, [0.3, 3.4], [0.12, 0.86], ease.suave)); // o anel nunca fecha
+      r.poeira.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0, 3.45); // visível desde o quadro 0 (capa)
+    },
+  });
+
+  // ---------------------------------------------------------------- 2. caderno: match-cut do anel
+  const PW = V ? 840 : 760, PH = V ? 760 : 640, py2 = V ? 0.37 : 0.44;
+  v.cena({
+    id: 'caderno', duracao: 3.6,
+    // página clara começa pouco maior que o normal (escalaMax) e dissolve: sem quadro branco, sem clarão
+    entrada: { tipo: 'match-cut', elemento: 'anel', duracao: 0.55, dissolve: 0.17, escalaMax: 1.5 },
+    camera: mix([preset('dolly-in', { intensidade: 0.7, alvo: [0.5, py2] }), preset('deriva', { intensidade: 1.1, semente: 5 })]),
+    montar(el) {
+      const L = (y, txt) => `<div class="linha" style="top:${px(y)};font-size:${px(64)}">${txt}</div>`;
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.2"><div class="in fundo2"></div></div>
+        <div data-z="1">
+          <div class="centro pagina" style="left:50%;top:${py2 * 100}%;width:${px(PW)};height:${px(PH)};transform:translate(-50%,-50%) rotate(-2deg)">
+            ${L(60, '<b style="font-weight:700">frações</b>')}
+            ${L(V ? 230 : 190, '3/4 + 1/2 = <span class="resp">4/6<svg class="abs" style="left:50%;top:50%;width:' + px(240) + ';height:' + px(240) + ';transform:translate(-50%,-50%);overflow:visible" viewBox="0 0 230 230">' + arco(115, 115, 100, 10, '#F97316', 'data-match="anel" class="arco2"') + '</svg></span>')}
+            ${L(V ? 400 : 330, '2/3 × 3/5 = 6/15')}
+            ${L(V ? 570 : 470, '1/2 ÷ 1/4 = 1/8 ?')}
+          </div>
+        </div>
+        <div data-z="1.6" data-desfoque="6" class="lapis">
+          <svg class="abs" style="left:${V ? 54 : 70}%;top:${V ? 50 : 66}%;width:${px(560)};height:${px(130)};transform:rotate(-32deg)" viewBox="0 0 520 120">
+            <rect x="0" y="30" width="420" height="60" rx="10" fill="#7C3AED"/><rect x="40" y="30" width="20" height="60" fill="#a78bfa"/>
+            <polygon points="420,30 520,60 420,90" fill="#f5d0a9"/><polygon points="490,51 520,60 490,69" fill="#1e1b4b"/>
+          </svg>
+        </div>`;
+      this.arco = el.querySelector('.arco2');
+      this.lapis = el.querySelector('.lapis svg');
+      this.p = cenario(el, el.firstElementChild);
+      this.leg = legenda(el, { texto: 'e nada fecha', destaque: 'nada', y: yLeg });
+    },
+    atualizar(el, t, p, ctx) {
+      progresso(this.arco, 0.86);
+      // o lápis hesita sobre a página (ação secundária, lenta)
+      this.lapis.style.transform = `rotate(-32deg) translate(${px(-30 * ease.suave(clamp(t / 3)))}, ${px(8 * Math.sin(t * 2.2))})`;
+      this.p.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.55, 3.25);
+    },
+  });
+
+  // ---------------------------------------------------------------- 3. impacto: whip pan com corte no borrão + dolly-zoom
+  const RP = 130; // raio do ponto (px de design)
+  v.cena({
+    id: 'impacto', duracao: 3.8,
+    entrada: { tipo: 'whip-pan', direcao: 'esquerda', duracao: 0.4, percurso: 60, blurMax: 200 * U },
+    camera: mix([
+      preset('dolly-zoom-out', { de: 0.12, ate: 0.85, alvo: [0.5, cy] }),
+      preset('deriva', { intensidade: 1.2, semente: 9 }),
+    ]),
+    montar(el) {
+      el.style.setProperty('--cy', `${cy * 100}%`);
+      let q = '';
+      for (let i = 0; i < 10; i++) q += `<div class="centro interroga q3" style="font-size:${px(70 + (i % 3) * 22)}">?</div>`;
+      let r = '';
+      for (let i = 0; i < 8; i++) r += `<div class="abs risco" style="left:${i % 2 ? 78 : -6}%;top:${10 + i * 11}%;width:${px(260 + (i % 3) * 80)}"></div>`;
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.2" data-desfoque="1.5"><div class="in fundo3"></div></div>
+        <div data-z="0.6" data-desfoque="2" data-decorativo>${q}</div>
+        <div data-z="1"><div class="centro ponto" style="left:50%;top:${cy * 100}%;width:${px(RP * 2)};height:${px(RP * 2)};
+          box-shadow:${halo(70, 0.25)}, calc(var(--sx) * 24) calc(var(--sy) * 24) ${px(50)} rgba(5,3,30,.5)"></div></div>
+        <div data-z="1.6" data-desfoque="6">${r}</div>`;
+      this.qs = [...el.querySelectorAll('.q3')];
+      this.p = cenario(el, el.firstElementChild);
+      this.leg = legenda(el, { texto: 'o problema não é você', destaque: 'não é você', y: yLeg });
+    },
+    atualizar(el, t, p, ctx) {
+      this.qs.forEach((q, i) => {
+        const a = (i / this.qs.length) * Math.PI * 2 + t * 0.25;
+        const rx = V ? 380 : 520, ry = V ? 400 : 300;
+        q.style.left = `${50 + (Math.cos(a) * rx * U / W) * 100}%`;
+        q.style.top = `${cy * 100 + (Math.sin(a) * ry * U / H) * 100}%`;
+      });
+      this.p.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.4, 3.05); // some antes do mergulho no ponto
+    },
+  });
+
+  // ---------------------------------------------------------------- 4. card 3D: zoom-through no ponto + arc
+  const CW = V ? 940 : 820, CH = V ? 700 : 600;
+  const movCard = mix([
+    preset('arc-right', { intensidade: 0.8, alvo: [0.5, cy] }),
+    preset('dolly-in', { intensidade: 0.5, alvo: [0.5, cy] }),
+    preset('deriva', { intensidade: 0.8, semente: 13 }),
+    preset('foco', { foco: 1, abertura: 5 }),                    // fundo e bolhas fora de foco
+  ]);
+  v.cena({
+    id: 'card', duracao: 4.4,
+    entrada: { tipo: 'zoom-through', alvo: [0.5, cy], raio: RP, duracao: 0.7 },
+    camera: movCard,
+    montar(el) {
+      const r = aleatorio(21);
+      let b = '';
+      for (let i = 0; i < 18; i++) {
+        const s = 20 + r() * 70;
+        b += `<div class="abs" style="left:${r() * 100}%;top:${r() * 100}%;width:${px(s)};height:${px(s)};border-radius:50%;background:rgba(255,255,255,${0.06 + r() * 0.12})"></div>`;
+      }
+      const item = (nome, cls) => `<div class="item ${cls}"><span data-texto>${nome}</span><div class="barra"><b></b></div></div>`;
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.3"><div class="in fundo4"></div></div>
+        <div data-z="0.6" data-sobra="0.1">${b}</div>
+        <div data-z="1">
+          <div class="centro card" style="left:50%;top:${cy * 100}%;width:${px(CW)};height:${px(CH)}">
+            <h3 data-texto><i></i>ponto de atenção</h3>
+            ${item('porcentagem', '')}${item('frações', 'alerta')}${item('regra de três', '')}
+            <div class="brilho"></div>
+          </div>
+        </div>`;
+      this.barras = [...el.querySelectorAll('.barra b')];
+      this.brilho = el.querySelector('.brilho');
+      this.p = cenario(el, el.firstElementChild);
+      this.leg = legenda(el, { texto: 'você não sabe onde trava', destaque: 'trava', y: yLeg });
+    },
+    atualizar(el, t, p, ctx) {
+      const alvos = [0.82, 0.38, 0.9];
+      this.barras.forEach((b, i) => { b.style.width = `${alvos[i] * 100 * ease.out(clamp((t - 0.5 - i * 0.12) / 0.8))}%`; });
+      const ang = movCard(p, t, ctx.duracao).orbita; // reflexo acompanha o giro (luz fixa na cena)
+      this.brilho.style.background = `linear-gradient(${105 + ang}deg, rgba(255,255,255,0) ${40 + ang}%, rgba(255,255,255,.22) ${50 + ang}%, rgba(255,255,255,0) ${60 + ang}%)`;
+      this.p.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.55, 3.75);
+    },
+  });
+
+  // ---------------------------------------------------------------- 5. semana: a câmera desce do card até a mesa (travessia)
+  const QW = V ? 1000 : 900, QH = V ? 800 : 620;
+  const COLS = ['seg', 'ter', 'qua', 'qui', 'sex'];
+  const BLOCOS = [[0, 0, '#6366f1'], [1, 0, '#8b5cf6'], [2, 0, '#6366f1'], [0, 1, '#8b5cf6'], [3, 0, '#a5b4fc'],
+    [2, 1, '#a5b4fc'], [1, 2, '#6366f1'], [3, 1, '#8b5cf6'], [4, 2, '#6366f1'], [4, 0, '#F97316']]; // o laranja (revisão) é o último
+  // truck para a esquerda no fim (acelera) que continua no começo do plano (desacelera): mesma velocidade no dissolve
+  const TRUCK = 4, TR_T = 0.8, VEL = (3 * TRUCK) / TR_T; // % do quadro e %/s no ponto de emenda
+  const truckSai = (T, D) => { const a = D - TR_T; return T <= D ? -TRUCK * ease.easeInCubic((T - a) / TR_T) : -TRUCK - VEL * (T - D); };
+  const truckEntra = (T) => (T >= 0 ? TRUCK * (1 - ease.easeOutCubic(T / TR_T)) : TRUCK - VEL * T);
+  v.cena({
+    id: 'semana', duracao: 3.6,
+    entrada: { tipo: 'travessia', direcao: 'cima', duracao: 0.9 },
+    camera: mix([
+      preset('dolly-in', { intensidade: 0.45, alvo: [0.78, cy] }),
+      preset('deriva', { intensidade: 0.9, semente: 17 }),
+      (p, T, D) => { const s = neutro(); s.tx = truckSai(T, D); s.ids = ['truck-right']; return s; },
+    ]),
+    montar(el) {
+      const cw = (QW - 60) / 5, top0 = 150, rh = (QH - top0 - 40) / 3;
+      const dias = COLS.map((d, i) => `<div class="diaS" style="left:${px(30 + i * cw)};width:${px(cw)};font-size:${px(64)}">${d}</div>`).join('');
+      const blocos = BLOCOS.map(([c, r, cor]) => `<div class="bloco" style="left:${px(30 + c * cw + 10)};top:${px(top0 + r * rh + 10)};width:${px(cw - 20)};height:${px(rh - 20)};background:${cor}"></div>`).join('');
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.3"><div class="in fundo5"></div></div>
+        <div data-z="1">
+          <div class="centro quadroSemana" style="left:50%;top:${cy * 100}%;width:${px(QW)};height:${px(QH)}">${dias}${blocos}</div>
+        </div>`;
+      const r = aleatorio(55);
+      this.blocos = [...el.querySelectorAll('.bloco')].map((b, i) => ({ b, dx: (r() - 0.5) * 700, dy: (r() - 0.3) * 600, rot: (r() - 0.5) * 30, t0: 0.35 + i * 0.13 }));
+      this.laranja = this.blocos[this.blocos.length - 1];
+      this.laranja.t0 += 0.15;
+      this.p = cenario(el, el.firstElementChild);
+      this.leg = legenda(el, { texto: 'e a semana se organiza', destaque: 'organiza', y: yLeg });
+    },
+    atualizar(el, t, p, ctx) {
+      // cada bloco vem de perto da câmera (grande, desfocado) e pousa no seu dia: rack focus por bloco
+      for (const o of this.blocos) {
+        const q = ease.outCubic(clamp((t - o.t0) / 0.65));
+        const s = lerp(2.2, 1, q), bl = 14 * (1 - q);
+        o.b.style.transform = `translate(${px(o.dx * (1 - q))}, ${px(o.dy * (1 - q))}) rotate(${(o.rot * (1 - q)).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+        o.b.style.opacity = ease.smoothstep(clamp((t - o.t0) / 0.25)).toFixed(3);
+        o.b.style.filter = bl > 0.2 ? `blur(${px(bl)})` : '';
+      }
+      const hl = ease.out(clamp((t - this.laranja.t0 - 0.5) / 0.4));
+      this.laranja.b.style.boxShadow = `0 0 0 ${px(4)} rgba(255,220,190,${(0.9 * hl).toFixed(3)}), ${halo(40, 0.25 * hl)}`;
+      this.p.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.6, 3.3);
+    },
+  });
+
+  // ---------------------------------------------------------------- 6. plano: dissolve no movimento + data-tela
+  const TW = V ? 980 : 860;
+  v.cena({
+    id: 'plano', duracao: 4.6,
+    entrada: { tipo: 'dissolve', duracao: 0.45 },
+    camera: mix([
+      (p, T) => { const s = neutro(); s.tx = truckEntra(T); s.ids = ['truck-right']; return s; },
+      preset('deriva', { intensidade: 0.5, semente: 21 }),
+    ]),
+    montar(el) {
+      const linhas = [['qua', 'leitura e resumo', ''], ['qui', 'questões', ''], ['sex', 'revisão: frações', 'revisao']];
+      const top = V ? 0.15 : 0.08;
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.2"><div class="in fundo6"></div></div>
+        <div data-tela data-z="0.5">
+          <div class="abs tela" style="left:${V ? 50 : 36}%;top:${top * 100}%;width:${px(TW)};transform:translateX(-50%)">
+            <div class="barraTopo"><i></i><i></i><i></i></div>
+            <h4>seu plano da semana</h4>
+            ${linhas.map(([d, x, c]) => `<div class="linhaPlano ${c}"><span class="d">${d}</span><span>${x}</span></div>`).join('')}
+            <div style="height:${px(22)}"></div>
+          </div>
+        </div>
+        <div data-z="1.1"><div class="centro callout" style="left:${V ? 50 : 79}%;top:${(V ? 0.585 : 0.42) * 100}%;font-size:${px(66)};padding:${px(22)} ${px(48)}">revisão na sexta</div></div>`;
+      this.rev = el.querySelector('.linhaPlano.revisao');
+      this.call = el.querySelector('.callout');
+      this.p = cenario(el, el.firstElementChild);
+      this.leg = legenda(el, { texto: 'um estudo feito pra você', destaque: 'pra você', y: yLeg });
+    },
+    atualizar(el, t, p, ctx) {
+      const hl = ease.out(clamp((t - 0.6) / 0.35));
+      const pulso = 0.75 + 0.25 * Math.sin(t * 2 * Math.PI * 1.1);
+      this.rev.style.boxShadow = `0 0 0 ${px(4)} rgba(249,115,22,${(hl * pulso).toFixed(3)}), ${halo(30, 0.25 * hl)}`;
+      const c = ease.out(clamp((t - 1.0) / 0.45));
+      this.call.style.opacity = c.toFixed(3);
+      this.call.style.transform = `translate(-50%, calc(-50% + ${px((1 - c) * 30)}))`;
+      this.p.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.45, 4.2);
+    },
+  });
+
+  // ---------------------------------------------------------------- 7. final: LoopEdu, o anel fecha e vira o relógio do quadro 0
+  // O último quadro é o primeiro: mesmas camadas do relógio (montarRelogio), câmera neutra no fim, anel em 12%,
+  // dígitos 22:58 e a legenda de abertura. Quando o Reel repete, não há emenda.
+  const R1 = 270, SC0 = 88 / (270 * D1 / 600);   // anel do logo (raio 88 px de design) dentro do relógio
+  const LOGO = 308 / 360;                         // o arco do logo é aberto em 308 graus
+  v.cena({
+    id: 'final', duracao: 5.4,
+    entrada: { tipo: 'dissolve', duracao: 0.5 },
+    camera: mix([
+      (p, T) => {
+        // aerial pullback curto (1,3 a 1 com inclinação) e volta ao neutro exato em 4,2 s
+        const s = neutro();
+        const pull = ease.outCubic(clamp(T / 3.0)), volta = 1 - ease.inOutCubic(clamp((T - 3.0) / 1.2));
+        s.S = 1 + 0.3 * (1 - pull);
+        s.rx = 12 * pull * volta; s.ty = -4 * pull * volta;
+        s.alvo = [0.5, cy]; s._alvo = true; s.ids = ['aerial-pullback'];
+        return s;
+      },
+      preset('deriva', { intensidade: 0.9, semente: 29, saida: 1.2 }),  // termina neutra: igual ao quadro 0
+    ]),
+    montar(el) {
+      this.r = montarRelogio(el);
+      const r = aleatorio(3);
+      let g = '';
+      const passo = 150;
+      for (let y = -6; y < 20; y++) for (let x = -5; x < 13; x++) {
+        const lx = 50 + ((x - 3.5) * passo * U / W) * 100, ly = cy * 100 + ((y - 6.5) * passo * U / H) * 100;
+        if (Math.abs(lx - 50) < 14 && Math.abs(ly - cy * 100) < 9) continue;
+        g += `<div class="lado ${r() < 0.16 ? 'aceso' : ''}" style="left:${(lx + 30) / 1.6}%;top:${(ly + 30) / 1.6}%;width:${px(passo - 26)};height:${px(passo - 26)}"></div>`;
+      }
+      // o mundo (a semana vista do alto) fica entre o fundo do relógio e o resto
+      this.r.fundo.insertAdjacentHTML('afterend', `<div data-z="0.25" data-sobra="0.3" class="cMundo"><div class="in mundo">${g}</div></div>`);
+      this.mundo = el.querySelector('.cMundo > .in');
+      // brilho quente pequeno atrás do anel (raio 108 px, opacidade 0,25: sem lavar a imagem)
+      this.r.relogio.insertAdjacentHTML('beforebegin', `<div class="centro brilhoAnel" style="left:50%;top:${cy * 100}%;width:${px(216)};height:${px(216)};border-radius:50%;
+        background:radial-gradient(circle, rgba(255,170,110,.25) 0%, rgba(255,170,110,0) 70%)"></div>`);
+      this.brilhoAnel = el.querySelector('.brilhoAnel');
+      this.r.relogio.parentElement.insertAdjacentHTML('beforeend',
+        `<div class="centro marca" style="left:50%;top:${(cy + (V ? 0.115 : 0.17)) * 100}%;font-size:${px(96)}">LoopEdu</div>`);
+      this.marca = el.querySelector('.marca');
+      this.leg = legenda(el, { texto: 'agora o ciclo fecha.', destaque: 'fecha', y: yLeg });
+      this.legVolta = legenda(el, TXT1);
+      this.C = parseFloat(this.r.arco.getAttribute('stroke-dasharray'));
+    },
+    atualizar(el, t, p, ctx) {
+      const r = this.r, C = this.C;
+      // 1) logo: arco branco de 308 graus; 2) fecha; 3) cresce até o anel do relógio e fica laranja;
+      // 4) o rabo corre a volta inteira e o anel recomeça em 12%, como no quadro 0
+      const desenho = interp(t, [0.3, 1.3], [0, LOGO], ease.inOut);
+      const cabeca = lerp(desenho, 1, ease.inOut(clamp((t - 2.3) / 0.7))) + 0.12 * ease.inOut(clamp((t - 3.9) / 1.0));
+      const rabo = ease.inOut(clamp((t - 3.9) / 1.0));
+      const k = ease.inOut(clamp((t - 3.0) / 0.9));
+      const fim = t >= 4.9;
+      if (fim) { // exatamente o estado da cena 1 em t = 0
+        r.g.removeAttribute('transform');
+        r.arco.setAttribute('stroke-width', '22'); r.arco.setAttribute('stroke', '#F97316');
+        r.arco.setAttribute('transform', 'rotate(-90 300 300)');
+        r.arco.setAttribute('stroke-dashoffset', (C * (1 - 0.12)).toFixed(2));
+        r.arco.style.opacity = '';
+      } else {
+        const sc = lerp(SC0, 1, k);
+        r.g.setAttribute('transform', `translate(300 300) scale(${sc.toFixed(5)}) translate(-300 -300)`);
+        r.arco.setAttribute('stroke-width', lerp(92, 22, k).toFixed(2));
+        const cor = [Math.round(lerp(255, 249, k)), Math.round(lerp(255, 115, k)), Math.round(lerp(255, 22, k))];
+        r.arco.setAttribute('stroke', `rgb(${cor.join(',')})`);
+        r.arco.setAttribute('transform', `rotate(${(-90 + 360 * rabo).toFixed(3)} 300 300)`);
+        const L = cabeca - rabo;
+        r.arco.setAttribute('stroke-dashoffset', (C * (1 - L)).toFixed(2));
+        r.arco.style.opacity = L > 0.002 ? '1' : '0';
+      }
+      // o mundo claro vai para a noite do começo (0,9 s: sem salto de brilho)
+      this.mundo.style.opacity = (1 - ease.smoothstep(clamp((t - 3.0) / 0.9))).toFixed(4);
+      this.brilhoAnel.style.opacity = (ease.smoothstep(clamp((t - 0.4) / 0.6)) * (1 - ease.smoothstep(clamp((t - 3.2) / 0.7)))).toFixed(4);
+      // o relógio volta: disco, trilho e interrogações; depois dígitos e a legenda de abertura
+      const rel = ease.smoothstep(clamp((t - 3.7) / 0.8));
+      r.disco.style.opacity = rel.toFixed(4); r.trilho.style.opacity = rel.toFixed(4);
+      r.meio.style.opacity = rel.toFixed(4); r.frente.style.opacity = rel.toFixed(4);
+      if (rel >= 1) { r.disco.style.opacity = ''; r.trilho.style.opacity = ''; r.meio.style.opacity = ''; r.frente.style.opacity = ''; }
+      r.hora.textContent = horaEm(0);
+      const dg = ease.smoothstep(clamp((t - 4.55) / 0.5));
+      r.hora.style.opacity = dg.toFixed(4); r.rotulo.style.opacity = dg.toFixed(4);
+      const m = ease.out(clamp((t - 1.1) / 0.4)) * (1 - ease.smoothstep(clamp((t - 2.9) / 0.4)));
+      this.marca.style.opacity = m.toFixed(3);
+      this.marca.style.transform = `translate(-50%, calc(-50% + ${px((1 - ease.out(clamp((t - 1.1) / 0.4))) * 20)}))`;
+      r.poeira.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.9, 3.4);
+      this.legVolta.atualizar(t, 4.9, 99);
+    },
+  });
+
+  v.iniciar();
+})();
+</script>
+</body>
+</html>

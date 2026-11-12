@@ -13,6 +13,9 @@ Narração (ElevenLabs, ELEVENLABS_API_KEY):
   edin tts roteiro.txt -o voz.mp3           -> voz.mp3 + alinhamento + tabela fala x tempo
   edin falas narracao.mp3 roteiro.txt       -> tabela fala x tempo de uma narração pronta
 
+Cena em código (HTML animado -> vídeo, ver docs/HTML.md):
+  edin html cena.html                       -> videos/cena.mp4 (quadro a quadro, determinístico)
+
 Montagem no beat (sem fala):
   edin montage clip1.mp4 clip2.mp4 --music musica.mp3 --duration 30 -o montagem.plan.json
 """
@@ -56,6 +59,10 @@ def cmd_doctor(_):
     el_key = bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()) or KEY_FILE.exists()
     print(f"{'OK ' if el_key else '-- '} narração ElevenLabs "
           f"{'(chave encontrada)' if el_key else f'(sem chave: ELEVENLABS_API_KEY ou {KEY_FILE})'}")
+    from .htmlrender import find_chrome
+
+    chrome = find_chrome()
+    print(f"{'OK ' if chrome else '-- '} Chrome para edin html {chrome or '(instale o Google Chrome ou use EDIN_CHROME)'}")
     try:
         import ctranslate2
 
@@ -366,6 +373,70 @@ def _add_enhance_parser(sp):
 # ---- fim enhance
 
 
+# ---- html (cena em código -> vídeo) ------------------------------------------------------ ver docs/HTML.md
+def html_output(page: str, draft: bool) -> str:
+    """Padrão: <pasta da página>/videos/<nome>.mp4 (rascunho em rascunhos/<nome>_rascunho.mp4, pode sobrescrever).
+    O final nunca sobrescreve: acrescenta _2, _3..."""
+    p = Path(page).resolve()
+    base = p.parent / ("rascunhos" if draft else "videos")
+    base.mkdir(parents=True, exist_ok=True)
+    name = p.stem + ("_rascunho" if draft else "")
+    out, k = base / f"{name}.mp4", 2
+    while out.exists() and not draft:
+        out, k = base / f"{name}_{k}.mp4", k + 1
+    return str(out)
+
+
+def cmd_html(a):
+    from .htmlrender import PageError, html_to_video
+
+    try:
+        w, h = (int(x) for x in a.size.lower().split("x"))
+    except ValueError:
+        sys.exit(f"[edin] --size inválido: {a.size} (use LARGURAxALTURA, ex.: 1080x1920)")
+    if a.motion_blur < 1:
+        sys.exit("[edin] --motion-blur precisa ser 1 ou mais")
+    if a.audio and not Path(a.audio).exists():
+        sys.exit(f"[edin] {a.audio} não existe")
+    out = a.out or html_output(a.page, a.draft)
+    try:
+        html_to_video(a.page, out, (w, h), a.fps, a.duration, a.start, a.workers, a.motion_blur, a.shutter, a.audio,
+                      a.audio_start, a.silent_audio, a.frames_dir, a.crf, a.draft, a.mode, a.timeout, a.preset)
+    except PageError as e:
+        sys.exit(f"\n[edin] ERRO na página: {e}")
+    except (OSError, RuntimeError) as e:
+        sys.exit(f"\n[edin] ERRO: {e}")
+    except KeyboardInterrupt:
+        sys.exit("\n[edin] Cancelado.")
+
+
+def _add_html_parser(sp):
+    s = sp.add_parser("html", help="página HTML animada -> vídeo quadro a quadro (cena em código, ver docs/HTML.md)")
+    s.add_argument("page", help="cena.html (modo contrato: window.EDIN = {duration, seek(t)}; senão modo livre)")
+    s.add_argument("-o", "--out", help="padrão: <pasta da página>/videos/<nome>.mp4 (rascunho em rascunhos/)")
+    s.add_argument("--size", default="1080x1920", help="viewport LARGURAxALTURA (padrão 1080x1920)")
+    s.add_argument("--fps", type=float, default=30)
+    s.add_argument("--duration", type=float, help="segundos a renderizar a partir de --start (obrigatório no modo "
+                                                  "livre; no contrato o padrão é EDIN.duration)")
+    s.add_argument("--start", type=float, default=0, help="começa neste tempo da página (s)")
+    s.add_argument("--workers", type=int, help="Chromes em paralelo (padrão: metade dos núcleos, limitado pela RAM)")
+    s.add_argument("--motion-blur", type=int, default=1, metavar="K",
+                   help="K subquadros por quadro dentro do obturador, com média (4 a 8 para whip pan/crash zoom)")
+    s.add_argument("--shutter", type=float, default=180, help="ângulo do obturador do motion blur (padrão 180)")
+    s.add_argument("--audio", help="música/narração: mux AAC 48 kHz cortado (ou completado) na duração")
+    s.add_argument("--audio-start", type=float, help="começa o áudio neste ponto (padrão: o mesmo --start)")
+    s.add_argument("--silent-audio", action="store_true", help="sem --audio: põe trilha AAC estéreo silenciosa")
+    s.add_argument("--frames-dir", help="também guarda a sequência PNG numerada (000000.png...) nesta pasta")
+    s.add_argument("--crf", type=int, default=18)
+    s.add_argument("--preset", help="preset do x264 (padrão medium; veryfast no --draft)")
+    s.add_argument("--draft", action="store_true", help="meia resolução (deviceScaleFactor 0.5), rápido, para conferir")
+    s.add_argument("--mode", choices=["auto", "contract", "free"], default="auto",
+                   help="auto: contrato se a página definir window.EDIN, senão livre (precisa de --duration)")
+    s.add_argument("--timeout", type=float, default=30, help="espera máxima (s) por carregar, EDIN e cada quadro")
+    s.set_defaults(fn=cmd_html)
+# ---- fim html
+
+
 # ---- narração (ElevenLabs) ------------------------------------------------------- ver edin/elevenlabs.py
 def cmd_voices(a):
     from . import elevenlabs as el
@@ -552,6 +623,7 @@ def main(argv=None):
     _add_broll_parser(sp)
     _add_enhance_parser(sp)
     _add_narration_parser(sp)
+    _add_html_parser(sp)
 
     a = p.parse_args(argv)
     if a.cmd not in ("doctor", "sfx", "text", "voices"):

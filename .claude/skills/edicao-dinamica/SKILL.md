@@ -1,6 +1,6 @@
 ---
 name: edicao-dinamica
-description: Edita vídeos de forma dinâmica com IA, de graça e local (cortes de silêncio que não comem palavras, punch-ins, reenquadramento 9:16 pelo rosto, legendas animadas, b-roll, efeitos sonoros, música, cortes de vídeo longo em shorts, montagem no ritmo da música, motion design por cima com Remotion, roteiro e narração com voz do ElevenLabs e Reel tutorial de app a partir de gravação de tela). Dispara sempre os agentes do repositório (roteirista, cacador-de-cortes, reenquadrador-vertical, critico-de-edicao). Use sempre que Rafael pedir para editar, cortar, legendar, deixar dinâmico, transformar em Reels/Shorts/TikTok, narrar ou montar um vídeo.
+description: Edita vídeos de forma dinâmica com IA, de graça e local (cortes de silêncio que não comem palavras, punch-ins, reenquadramento 9:16 pelo rosto, legendas animadas, b-roll, efeitos sonoros, música, cortes de vídeo longo em shorts, montagem no ritmo da música, motion design por cima com Remotion, vídeo contínuo gerado de cenas HTML quadro a quadro (milhares de quadros, câmera no vocabulário do Higgsfield feita em código), roteiro e narração com voz do ElevenLabs e Reel tutorial de app a partir de gravação de tela). Dispara sempre os agentes do repositório (roteirista, cacador-de-cortes, reenquadrador-vertical, critico-de-edicao). Use sempre que Rafael pedir para editar, cortar, legendar, deixar dinâmico, transformar em Reels/Shorts/TikTok, narrar ou montar um vídeo.
 ---
 
 # Edição dinâmica de vídeo (edin)
@@ -54,6 +54,8 @@ Agentes independentes podem rodar em paralelo (ex.: `roteirista` escrevendo enqu
 | Vídeo que já vem editado (legenda, cards ou lower third gravados na imagem) | **E. Refazer a edição** (+ D) |
 | Vídeo 16:9 pronto (promo, motion, demo de app ou tela) que precisa virar 9:16 | **F. Horizontal para vertical** |
 | Reel tutorial de app a partir de gravação de tela, com narração | **G. Reel tutorial de app** (`roteirista` + montagem) |
+| Reel narrativo sem voz (fotos/cenas + telas do app + texto na tela), inclusive com imagens faltando | **H.** [references/reel-narrativo-sem-voz.md](references/reel-narrativo-sem-voz.md): cenas que faltam feitas em código (SVG/Remotion), nunca Canva/IA |
+| Vídeo inteiro (ou cenas que faltam) feito em código a partir de HTML: cenas desenhadas, câmera com movimento de cinema, transições contínuas, milhares de quadros | **I. Vídeo contínuo de HTML** (`edin html` + kit `references/html-video/`) |
 | Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` (narração pelo agente `roteirista`) |
 
 ## A. Vídeo falado
@@ -167,6 +169,29 @@ Detalhes, roteiro modelo e o briefing completo de Rafael: [references/reel-tutor
 8. **Dado pessoal da conta de teste** (nome na barra lateral, saudação "Boa noite, Fulano", nome no cartão de nível): tape no quadro (lista `HIDE` em `cenas.py`), mesmo que só apareça por meio segundo.
 9. **Áudio:** voz em -14 LUFS, pico até -1,5 dBTP, estéreo (`loudnorm` + ganho, `-ac 2`). O primeiro saiu em -25 LUFS e mono.
 10. **Conferência** (folhas a cada 3 a 4 s, quadros dos momentos críticos, tabela de silêncio do final, duração abaixo de 2 min) e depois o agente `critico-de-edicao`.
+
+## I. Vídeo contínuo a partir de HTML (milhares de quadros)
+
+Quando o vídeo (ou as cenas que faltam) é desenhado em código, prefira este fluxo ao Remotion para cenas novas: é JS puro, abre no navegador para pré-visualizar e o `edin html` renderiza em paralelo, quadro a quadro, sem engasgo. Leia antes [references/html-video/LEIAME.md](references/html-video/LEIAME.md) (API do kit), [references/higgsfield-camera.md](references/higgsfield-camera.md) (direção de câmera e continuidade) e `docs/HTML.md` do repositório (flags e armadilhas do renderizador). Modelo pronto: `references/html-video/exemplo.html` (Reel de 20,6 s, 6 cenas; renderizado em `~/Área de trabalho/videos editados/demo_html_video_2026-11-12/`).
+
+**Padrão de Rafael (12/11): "as gerações das imagens têm que ser milhares para ficar como se fosse um filme realmente".** Vídeo de HTML sai em **60 fps** com `--motion-blur 8` (obturador de 180°, como câmera de cinema): 30 s = 1.800 quadros no vídeo e ~14.400 imagens renderizadas. Câmera nunca parada (sempre um movimento lento por baixo, parallax entre camadas), profundidade de campo, luz de um ângulo só, color grade e grão de película únicos no vídeo todo. Nada de slideshow: cada cena nasce do movimento da anterior.
+
+1. **Copie o kit** (`references/html-video/*` com `fontes/`) para a pasta do vídeo e escreva `cenas.html` lá. Imagens e fontes sempre locais, nunca da web.
+2. **Planeje numa ficha de plano por cena** (seção 3 do `higgsfield-camera.md`): sujeito, ação, câmera (preset), duração, transição de entrada e saída. Regras que valem sempre:
+   - Um movimento por plano; no `EdinCam.mix` no máximo 2, nunca opostos. Nunca o mesmo preset em dois planos seguidos; cada corte muda o tamanho do plano e o tipo de câmera.
+   - Gancho de 0 a 2 s com o movimento mais forte; planos de 1,5 a 3 s; movimento violento (crash, whip, super-dolly) no máximo 1 a cada 4 planos.
+   - Câmera que anda (dolly, crane, arc, drone) tem parallax entre camadas `data-z`; câmera que gira (pan, tilt, zoom) não. Tudo escalado igual parece slide.
+   - Continuidade: mesmo sentido de tela no vídeo todo; corte no movimento com velocidade igual ±20% dos dois lados; whip pan cortando no borrão máximo (4 a 6 quadros por lado); match cut com a forma comum no mesmo centro ±2% e escala ±10%.
+   - Transições, lições do demo de 12/11: no `push` a borda entre os dois fundos aparece como faixa lisa (já reprovada); prefira `whip-pan` ou `dissolve`, ou deixe o topo do fundo novo igual à base do antigo. No `zoom-through` o conteúdo da cena de destino aparece cortado dentro do portal: deixe os textos dela invisíveis até o portal passar de ~60% do quadro. No `match-cut` só a forma comum faz a emenda: apague o resto da cena A (dígitos, rótulos) 0,2 s antes, senão os textos das duas cenas se sobrepõem. Brilho/halo desfocado nunca acima de ~10% da tela nem com opacidade acima de 0,25 (deixa tudo lavado).
+   - Consistência: um tema só (paleta, ângulo da luz, grão 4 a 6%, vinheta), o mesmo "set" reaproveitado com câmera nova a cada ângulo, nunca um desenho novo por cena.
+3. **Legível no celular:** legenda 86 px, a de baixo em y ≈ 0,68 (a base de 450 px é coberta pela interface do Instagram), até 5 palavras em linhas equilibradas, uma palavra de destaque em laranja por cena. Texto desenhado de tela de app com no mínimo ~45 px de altura de maiúscula: mostre menos coisa (3 dias em vez de 5) em vez de encolher. O quadro 0 é a capa: gancho escrito já visível e sujeito grande. Nada de clarão (brilho médio saltando mais de ~60 níveis num quadro; escuro para página branca em tela cheia): dissolve curto ou a cena clara começa menor. O final emenda com o início (Reel em loop).
+4. **Tudo é função do tempo.** `seek(t)` fora de ordem tem que dar o mesmo quadro (o render é paralelo): nada de CSS animation, `setTimeout`, rAF ou `Math.random` sem semente (use `EdinVideo.ruido`/`aleatorio`). Tudo que é discreto (dígitos, contagem, texto que troca) usa o tempo do quadro (`EdinVideo.quadro(t)` / `ctx.tq`), senão o motion blur mistura dois valores. Telas de app vão em `data-tela` (o kit impede zoom, giro e corte; regra das telas de app do fluxo F).
+5. **Pré-visualize** abrindo o HTML no navegador (barra de tempo; `?t=5.2` abre num instante) e confira quadros com `edin html cenas.html --draft`.
+6. **Renderize:** `edin html cenas.html -o videos/AAAA-MM-DD_vertical.mp4 --fps 60 --motion-blur 8 [--audio voz.mp3 | --silent-audio]`. Horizontal: `--size 1920x1080` (o kit se adapta). **Motion blur 0 ou no mínimo 8, nunca 2 a 4:** com poucas amostras o texto em movimento sai em duas cópias nítidas (match cut, zoom-through, push) e o primeiro demo foi reprovado por isso. Custa K vezes o tempo; para iterar use `--draft` sem blur. `--frames-dir` só se Rafael quiser a sequência PNG (~1 MB por quadro). Medido: ~30 quadros/s em 1080x1920 com 8 workers numa cena pesada, no exemplo de 20 s, 8,6 quadros/s com motion blur 2 e 2,4 quadros/s (4 min) com motion blur 8; 4200 quadros sem vazar memória; 1, 4 ou 8 workers dão quadros idênticos.
+7. **Narração:** agente `roteirista` antes de fixar as durações; a duração de cada cena sai da tabela fala x tempo.
+8. **Confira:** folha de quadros (`edin sheet ... -n 16`, mova para `rascunhos/`) procurando controles de pré-visualização no quadro, texto cortado, anel/destaque em cima da informação, emendas piscando; recorte 1:1 do menor texto; depois o agente `critico-de-edicao` (passe o HTML no lugar do plano).
+
+O Higgsfield de verdade (IA) só entra quando Rafael pedir ângulos gerados em filmagem real de pessoa (skill `camera-dinamica`, resumo na seção 4 do `higgsfield-camera.md`). Para cenas que faltam, código.
 
 ## 2. Revisar e entregar
 
