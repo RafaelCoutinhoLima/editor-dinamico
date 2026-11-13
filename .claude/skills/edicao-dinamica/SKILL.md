@@ -56,6 +56,7 @@ Agentes independentes podem rodar em paralelo (ex.: `roteirista` escrevendo enqu
 | Reel tutorial de app a partir de gravação de tela, com narração | **G. Reel tutorial de app** (`roteirista` + montagem) |
 | Reel narrativo sem voz (fotos/cenas + telas do app + texto na tela), inclusive com imagens faltando | **H.** [references/reel-narrativo-sem-voz.md](references/reel-narrativo-sem-voz.md): cenas que faltam feitas em código (SVG/Remotion), nunca Canva/IA |
 | Vídeo inteiro (ou cenas que faltam) feito em código a partir de HTML: cenas desenhadas, câmera com movimento de cinema, transições contínuas, milhares de quadros | **I. Vídeo contínuo de HTML** (`edin html` + kit `references/html-video/`) |
+| Vídeo manifesto de marca com pessoas (silhuetas, multidão, closes de mãos/olhos/pés), tensão, virada e convite em 30 a 45 s | **I** + [references/manifesto.md](references/manifesto.md) (atos com tempos, texto, pessoas do `edin-pessoas.js`, transições); modelo: [references/manifesto-loopedu-roteiro.md](references/manifesto-loopedu-roteiro.md) |
 | Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` (narração pelo agente `roteirista`) |
 
 ## A. Vídeo falado
@@ -192,7 +193,23 @@ Quando o vídeo (ou as cenas que faltam) é desenhado em código, prefira este f
 7. **Narração:** agente `roteirista` antes de fixar as durações; a duração de cada cena sai da tabela fala x tempo.
 8. **Confira:** folha de quadros (`edin sheet ... -n 16`, mova para `rascunhos/`) procurando controles de pré-visualização no quadro, texto cortado, anel/destaque em cima da informação, emendas piscando; recorte 1:1 do menor texto; depois o agente `critico-de-edicao` (passe o HTML no lugar do plano).
 
-O Higgsfield de verdade (IA) só entra quando Rafael pedir ângulos gerados em filmagem real de pessoa (skill `camera-dinamica`, resumo na seção 4 do `higgsfield-camera.md`). Para cenas que faltam, código.
+### Pessoas no vídeo (estilizadas em código ou realistas por IA local)
+
+Rafael (12/11): "quero que gere [pessoas] realísticas também". Duas fontes, misturáveis no mesmo filme:
+
+| Quero | Use | Detalhes |
+|---|---|---|
+| Pessoa estilizada animada (silhueta em contraluz, ilustração chapada, traço), poses, multidão, closes de mão/olho/pé | `edin-pessoas.js` do kit | 12 poses (`em-pe, andando, correndo, sentado-estudando, cabeca-baixa, olhando-celular, punho-erguido, bracos-abertos, apontando, olhando-horizonte, comemorando, subindo`), `mistura`, `ciclo`, `multidao` (60 pessoas ≈ 18 quadros/s com 8 workers), `detalhe`; respira e pisca sempre. Seção "Pessoas" do LEIAME |
+| Pessoa REALISTA (fotografia) | `edin imagem "prompt" -o foto.png --size 1080x1920 --n 4` (SDXL + Lightning na RTX 4050, ~5 s por imagem em lote, local e grátis) e `edin profundidade foto.png` | Anime a foto com `edin-foto3d.js`: parallax real por profundidade com os presets de câmera do kit. `docs/IMAGEM.md` para prompts, limites e instalação (`./install.sh --imagem`) |
+
+Regras para fotos realistas:
+- Gere 4 por plano e **abra todas**; descarte mão deformada, pessoa duplicada, duas cabeças, rosto pequeno estranho em multidão (na 1ª rodada, 8 de 25 foram descartadas).
+- Rosto muda entre planos (consistência só por descrição + seed): prefira costas, perfil, contraluz, silhueta e mãos. Mesmo personagem = mesma descrição física e `--personagem`.
+- Câmera sobre foto: `dolly-in/out`, `crane`, `push` e arc pequeno (`orbita` ≤ 0,08). Arc grande revela atrás do sujeito uma mancha borrada (o fundo preenchido não inventa textura), pior em fundo nítido; em bokeh não aparece.
+- `edin html` liga a GPU sozinho quando a página usa `edin-foto3d.js` (5,5x mais rápido).
+- Nunca Canva, Higgsfield nem gerador pelo navegador: só o gerador local.
+
+O Higgsfield de verdade (IA) só entra quando Rafael pedir ângulos gerados em filmagem real de pessoa (skill `camera-dinamica`, resumo na seção 4 do `higgsfield-camera.md`).
 
 ## 2. Revisar e entregar
 

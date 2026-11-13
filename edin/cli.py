@@ -16,6 +16,10 @@ Narração (ElevenLabs, ELEVENLABS_API_KEY):
 Cena em código (HTML animado -> vídeo, ver docs/HTML.md):
   edin html cena.html                       -> videos/cena.mp4 (quadro a quadro, determinístico)
 
+Fotos realistas com profundidade (venv separado, ver docs/IMAGEM.md):
+  edin imagem "prompt" -o foto.png          -> foto 1080x1920 (SDXL + Lightning 4 passos)
+  edin profundidade foto.png                -> foto.depth.png + foto.fundo.png + foto.foto3d.js (kit HTML)
+
 Montagem no beat (sem fala):
   edin montage clip1.mp4 clip2.mp4 --music musica.mp3 --duration 30 -o montagem.plan.json
 """
@@ -63,6 +67,12 @@ def cmd_doctor(_):
 
     chrome = find_chrome()
     print(f"{'OK ' if chrome else '-- '} Chrome para edin html {chrome or '(instale o Google Chrome ou use EDIN_CHROME)'}")
+    from .imagem import estado as estado_imagem
+
+    ei = estado_imagem()
+    mods = ", ".join(f"{n} {'OK' if m['ok'] else 'falta'}" for n, m in ei["modelos"].items())
+    print(f"{'OK ' if ei['venv'] and all(m['ok'] for m in ei['modelos'].values()) else '-- '} edin imagem/profundidade "
+          f"{'(venv ' + ei['pasta'] + '; ' + mods + ')' if ei['venv'] else '(opcional: ./install_imagem.sh, ver docs/IMAGEM.md)'}")
     try:
         import ctranslate2
 
@@ -387,6 +397,29 @@ def html_output(page: str, draft: bool) -> str:
     return str(out)
 
 
+EGL_NVIDIA = "/usr/share/glvnd/egl_vendor.d/10_nvidia.json"
+GPU_FLAGS = "--use-gl=angle --use-angle=gl-egl --ignore-gpu-blocklist --enable-gpu"
+
+
+def _html_gpu(a):
+    """WebGL na GPU NVIDIA (ANGLE sobre EGL). Sem isso o Chrome headless faz WebGL no SwiftShader (CPU), que
+    funciona mas é ~5x mais lento no edin-foto3d.js. `auto`: liga quando a página carrega o edin-foto3d.js."""
+    import os
+
+    modo = a.gpu
+    if modo == "auto":
+        try:
+            usa = "edin-foto3d.js" in Path(a.page).read_text(errors="ignore")
+        except OSError:
+            usa = False
+        modo = "sim" if usa and Path(EGL_NVIDIA).exists() and not os.environ.get("EDIN_CHROME_FLAGS") else "nao"
+    if modo == "sim":
+        if Path(EGL_NVIDIA).exists():
+            os.environ.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES", EGL_NVIDIA)
+        os.environ["EDIN_CHROME_FLAGS"] = (os.environ.get("EDIN_CHROME_FLAGS", "") + " " + GPU_FLAGS).strip()
+        print("[edin] WebGL na GPU (ANGLE/EGL); --gpu nao para usar o SwiftShader na CPU")
+
+
 def cmd_html(a):
     from .htmlrender import PageError, html_to_video
 
@@ -399,6 +432,7 @@ def cmd_html(a):
     if a.audio and not Path(a.audio).exists():
         sys.exit(f"[edin] {a.audio} não existe")
     out = a.out or html_output(a.page, a.draft)
+    _html_gpu(a)
     try:
         html_to_video(a.page, out, (w, h), a.fps, a.duration, a.start, a.workers, a.motion_blur, a.shutter, a.audio,
                       a.audio_start, a.silent_audio, a.frames_dir, a.crf, a.draft, a.mode, a.timeout, a.preset)
@@ -433,6 +467,8 @@ def _add_html_parser(sp):
     s.add_argument("--mode", choices=["auto", "contract", "free"], default="auto",
                    help="auto: contrato se a página definir window.EDIN, senão livre (precisa de --duration)")
     s.add_argument("--timeout", type=float, default=30, help="espera máxima (s) por carregar, EDIN e cada quadro")
+    s.add_argument("--gpu", choices=["auto", "sim", "nao"], default="auto",
+                   help="WebGL na GPU NVIDIA (auto: liga se a página usa edin-foto3d.js; ~5x mais rápido)")
     s.set_defaults(fn=cmd_html)
 # ---- fim html
 
@@ -624,9 +660,12 @@ def main(argv=None):
     _add_enhance_parser(sp)
     _add_narration_parser(sp)
     _add_html_parser(sp)
+    from .imagem import add_parsers as _add_imagem_parsers
+
+    _add_imagem_parsers(sp)
 
     a = p.parse_args(argv)
-    if a.cmd not in ("doctor", "sfx", "text", "voices"):
+    if a.cmd not in ("doctor", "sfx", "text", "voices", "imagem", "profundidade"):
         check_tools()
     a.fn(a)
 

@@ -1,0 +1,54 @@
+{
+  "_comentario": "Modelos do `edin imagem` e do `edin profundidade`. Lido pelo install_imagem.sh (baixa só estes arquivos, nesta revisão) e pelo edin/imagem_worker.py. Os pesos ficam em ~/.local/share/edin/imagem/modelos/<pasta>, nunca no git.",
+  "modelos": {
+    "sdxl": {
+      "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+      "revisao": "462165984030d82259a11f4367a4eed129e94a7b",
+      "pasta": "sdxl-base-1.0",
+      "licenca": "CreativeML Open RAIL++-M (uso comercial permitido, com as restrições de uso da licença)",
+      "uso": "gerar a foto (variante fp16)",
+      "arquivos": {
+        "model_index.json": 609,
+        "scheduler/scheduler_config.json": 479,
+        "text_encoder/config.json": 565,
+        "text_encoder/model.fp16.safetensors": 246144152,
+        "text_encoder_2/config.json": 575,
+        "text_encoder_2/model.fp16.safetensors": 1389382176,
+        "tokenizer/merges.txt": 524619,
+        "tokenizer/special_tokens_map.json": 472,
+        "tokenizer/tokenizer_config.json": 737,
+        "tokenizer/vocab.json": 1059962,
+        "tokenizer_2/merges.txt": 524619,
+        "tokenizer_2/special_tokens_map.json": 460,
+        "tokenizer_2/tokenizer_config.json": 725,
+        "tokenizer_2/vocab.json": 1059962,
+        "unet/config.json": 1680,
+        "unet/diffusion_pytorch_model.fp16.safetensors": 5135149760,
+        "vae/config.json": 642,
+        "vae/diffusion_pytorch_model.fp16.safetensors": 167335342
+      }
+    },
+    "lightning": {
+      "repo": "ByteDance/SDXL-Lightning",
+      "revisao": "c9a24f48e1c025556787b0c58dd67a091ece2e44",
+      "pasta": "sdxl-lightning",
+      "licenca": "CreativeML Open RAIL++-M",
+      "uso": "LoRA de 4 passos (destilação do SDXL: 4 passos em vez de 30)",
+      "arquivos": {
+        "sdxl_lightning_4step_lora.safetensors": 393854592
+      }
+    },
+    "profundidade": {
+      "repo": "depth-anything/Depth-Anything-V2-Small-hf",
+      "revisao": "5426e4f0f36572d16453bbda7a8389317b1bef99",
+      "pasta": "depth-anything-v2-small",
+      "licenca": "Apache 2.0",
+      "uso": "mapa de profundidade relativa (disparidade) para o parallax",
+      "arquivos": {
+        "config.json": 950,
+        "model.safetensors": 99173660,
+        "preprocessor_config.json": 775
+      }
+    }
+  }
+}

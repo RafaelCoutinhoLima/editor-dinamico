@@ -76,6 +76,7 @@ determinísticas: no contrato, posicione tudo no `seek`.
 | `--crf 18`, `--preset` | qualidade/velocidade do x264 (padrão `medium`; `veryfast` no `--draft`) |
 | `--draft` | `deviceScaleFactor` 0.5: o layout continua 1080x1920 mas a captura sai 540x960 (JPEG), bem mais rápido |
 | `--timeout 30` | espera máxima por carregar, pelo `EDIN` e por cada `seek` |
+| `--gpu auto` | WebGL na GPU NVIDIA (ANGLE sobre EGL). `auto` liga quando a página carrega o `edin-foto3d.js` (fotos com profundidade, ver [IMAGEM.md](IMAGEM.md)): ~5x mais rápido que o SwiftShader; `sim` força, `nao` desliga. Sem isso o Chrome headless já tem WebGL 2 na CPU |
 
 Saída: H.264 `yuv420p` BT.709, fps constante, `+faststart`; sem áudio não há trilha (a não ser com
 `--silent-audio`). Erros de JS da página (`exceptions`, `console.error`/`warn`, recurso que não carregou)

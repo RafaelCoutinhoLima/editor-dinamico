@@ -23,6 +23,8 @@
  *   data-giro         gira no próprio eixo no lazy-susan
  *   data-tela         tela de app: nunca amplia além de 1,0, nunca corta, sem rotação nem blur
  *   data-desfoque="6" profundidade de campo fixa da camada (px de design de blur), somada ao foco da câmera
+ *   data-foto3d       foto com mapa de profundidade (edin-foto3d.js): recebe o estado da câmera e desenha o
+ *                     parallax em WebGL; o CSS não transforma esta camada
  *
  * Tudo em segundos, nada em quadros: o mesmo vídeo a 30 ou 60 fps tem o mesmo movimento. O blur de
  * movimento é o deslocamento durante o obturador (180 graus = meio intervalo entre quadros), dividido pelos
@@ -362,7 +364,7 @@
         const tela = el.hasAttribute('data-tela');
         const cobreAttr = el.getAttribute('data-cobre');
         return {
-          el, k, tela, sobra, desfoque: parseFloat(el.getAttribute('data-desfoque') || '0') * U,
+          el, k, tela, sobra, foto: el.hasAttribute('data-foto3d'), desfoque: parseFloat(el.getAttribute('data-desfoque') || '0') * U,
           gira: el.hasAttribute('data-gira') ? parseFloat(el.getAttribute('data-gira') || '1') : (Math.abs(k - 1) <= 0.25 ? 1 : 0),
           giro: el.hasAttribute('data-giro'),
           cobre: !tela && (cobreAttr != null ? cobreAttr !== '0' : k < 1),
@@ -486,6 +488,19 @@
             el.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(5)})`;
             el.style.filter = '';
             el.style.opacity = '';
+            return;
+          }
+          if (c.foto) {
+            // ---- foto com profundidade (edin-foto3d.js): a própria foto faz a câmera em 3D (parallax real pela
+            // profundidade, cobertura e rotação); aqui só o blur de movimento de transições rápidas (whip pan)
+            el.style.transform = 'none';
+            el.style.opacity = '';
+            if (el.__foto3d) el.__foto3d.desenhar(st, T);
+            const ob = (st.obturador / 0.5) / MB, bm = st.blurMax;
+            const lx = Math.min(bm, ob * Math.abs(L1.tx - L0.tx)), ly = Math.min(bm, ob * Math.abs(L1.ty - L0.ty));
+            // o rastro normal vem do --motion-blur do renderizador; o blur CSS (que escurece a borda do canvas)
+            // só entra no whip pan, onde o borrão cobre tudo
+            el.style.filter = Math.max(lx, ly) > 24 * U ? c.blur.valor(lx / 2, ly / 2) : '';
             return;
           }
           if (c.cobre) L.s = Math.max(L.s, cobertura(L, g, O, Pp));

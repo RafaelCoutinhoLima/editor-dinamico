@@ -45,6 +45,11 @@ Pesquisa de 2026-11-08: o que OpusClip, CapCut, Premiere Auto Reframe, DaVinci S
    - `--motion-blur K` (média de K subquadros no obturador de 180°), `--audio`/`--silent-audio`, `--frames-dir`, `--draft`.
    - Medido em 1080x1920 numa página pesada: 6,0 q/s com 1 worker, 21,2 com 4 e 31,8 com 8 (60 s de cena em 57 s); 4200 quadros sem crescer memória; quadros idênticos pixel a pixel com 1, 4 ou 8 workers.
 
+10. ✅ **Fotos realistas com profundidade** (feito: `edin imagem`, `edin profundidade`, `edin-foto3d.js` no kit HTML, ver [IMAGEM.md](IMAGEM.md)).
+   - Venv separado (`install_imagem.sh`, `requirements-imagem.txt`, `edin/modelos_imagem.json` com revisões fixas): PyTorch 2.15 + diffusers, SDXL base 1.0 fp16 + LoRA SDXL-Lightning de 4 passos (Open RAIL++-M), Depth Anything V2 Small (Apache 2.0). Pesos fora do git.
+   - Cabe em 6 GB de VRAM rodando em estágios (text encoders, depois só a UNet, depois o VAE em fp32), lote numa carga só.
+   - Parallax por ray casting no relevo em WebGL 2, com camada de fundo preenchida nas bordas de oclusão (sem rasgo nem borracha) e os presets do Higgsfield mapeados para uma câmera 3D; GPU no Chrome headless por ANGLE/EGL (`edin html --gpu`).
+
 ## Lições de reenquadramento 16:9 → 9:16
 
 - Os profissionais remontam o layout de motion e texto para o vertical em vez de recortar. Usam "Fill" com rastreio para live-action e "Fit" com fundo da própria cena, nunca faixa sólida.

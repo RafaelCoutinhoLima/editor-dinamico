@@ -33,6 +33,7 @@ Tudo roda no seu computador com ferramentas open source, sem assinatura e sem AP
 | **numpy** | cálculos de áudio e imagem | automático |
 | **CUDA (cuBLAS/cuDNN)** | opcional: transcrição até ~13x mais rápida em GPU NVIDIA | automático se houver GPU |
 | **Node.js 20+ e Remotion** | opcional: só para o motion design (`edin motion`) | `./install.sh --motion` |
+| **PyTorch + diffusers + SDXL/Lightning + Depth Anything V2** | opcional: fotos realistas geradas na máquina (`edin imagem`) e parallax 3D por profundidade (`edin profundidade` + `edin-foto3d.js`). Precisa de GPU NVIDIA com 6 GB de VRAM ou mais, driver 580+, 12 GB de RAM e ~20 GB de disco | `./install.sh --imagem` (ou `./install_imagem.sh`): venv separado em `~/.local/share/edin/imagem` com as versões de `requirements-imagem.txt` e os modelos de `edin/modelos_imagem.json` (7,4 GB, revisões fixas). Ver [docs/IMAGEM.md](docs/IMAGEM.md) |
 | **Claude Code** | opcional, mas recomendado: é quem toma as decisões criativas | [claude.com/claude-code](https://claude.com/claude-code) |
 
 Na primeira transcrição o modelo do Whisper é baixado (uns 500 MB para o `small`).
@@ -44,6 +45,7 @@ git clone https://github.com/RafaelCoutinhoLima/editor-dinamico.git
 cd editor-dinamico
 ./install.sh            # Linux/macOS
 ./install.sh --motion   # opcional: + Remotion para motion design
+./install.sh --imagem   # opcional: + fotos realistas e profundidade (GPU NVIDIA 6 GB+, ~13 GB de download)
 ```
 
 O `install.sh` não precisa de `pip` nem de `sudo`. Ele cria um ambiente Python próprio em `~/.local/share/edin/venv`, coloca o comando `edin` em `~/.local/bin` e liga as skills e os agentes em `~/.claude`, para funcionarem no Claude Code em qualquer pasta. No fim roda `edin doctor` para conferir tudo.
@@ -89,6 +91,8 @@ edin render video.plan.json                # vídeo final -> videos/2026-11-06_v
 
 edin auto video.mp4 --preset reels         # tudo de uma vez, sem refinar
 edin enhance video.mp4 --mode fast         # fonte 720p mole -> 2x com denoise e nitidez (ou --mode esrgan)
+edin imagem "student by the window at night" -o foto.png --seed 7   # foto realista 1080x1920 (docs/IMAGEM.md)
+edin profundidade foto.png                 # profundidade + fundo + foto.foto3d.js para o parallax no kit HTML
 ```
 
 Presets: `reels`, `podcast`, `youtube` e `aula`. Veja todos os comandos com `edin --help`.
@@ -100,7 +104,8 @@ Sem `-o`, os vídeos saem organizados: finais em `videos/AAAA-MM-DD_formato.mp4`
 - [docs/PLANO.md](docs/PLANO.md): todos os campos do plano de edição.
 - [docs/REGRAS.md](docs/REGRAS.md): regras de edição (o que nunca fazer).
 - [docs/MOTION.md](docs/MOTION.md): motion design com Remotion.
+- [docs/IMAGEM.md](docs/IMAGEM.md): fotos realistas (SDXL + Lightning), profundidade e parallax 3D no kit HTML; requisitos, modelos e licenças.
 
 ## Licenças
 
-Código: MIT. Skill `cinematic-motion-director`: MIT, Fabio Fernandes. Emojis: gráficos do [Twemoji](https://github.com/jdecked/twemoji), Copyright 2019 Twitter, Inc and other contributors, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (baixados só os usados, para `~/.local/share/edin/emoji`). B-roll: vídeos do [Pexels](https://www.pexels.com/license/), créditos de cada clipe em `broll/CREDITOS.txt`. Fontes (Anton, Montserrat, Archivo Black, Poppins, Bebas Neue, Plus Jakarta Sans): SIL Open Font License. Modelo YuNet: MIT. O Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas.
+Código: MIT. Skill `cinematic-motion-director`: MIT, Fabio Fernandes. Emojis: gráficos do [Twemoji](https://github.com/jdecked/twemoji), Copyright 2019 Twitter, Inc and other contributors, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (baixados só os usados, para `~/.local/share/edin/emoji`). B-roll: vídeos do [Pexels](https://www.pexels.com/license/), créditos de cada clipe em `broll/CREDITOS.txt`. Fontes (Anton, Montserrat, Archivo Black, Poppins, Bebas Neue, Plus Jakarta Sans): SIL Open Font License. Modelo YuNet: MIT. O Remotion tem licença própria: grátis para pessoa física e empresas de até 3 pessoas. Modelos do `edin imagem` (baixados pelo instalador, fora do git): SDXL base 1.0 e SDXL-Lightning, [CreativeML Open RAIL++-M](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md); Depth Anything V2 Small, Apache 2.0.

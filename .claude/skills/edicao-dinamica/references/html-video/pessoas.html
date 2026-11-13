@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>edin-pessoas: folha de teste (poses x estilos, multidão, closes)</title>
+<style>
+  @font-face { font-family: Sora; src: url(fontes/Sora-700.ttf) format('truetype'); font-weight: 700; }
+  @font-face { font-family: Sora; src: url(fontes/Sora-600.ttf) format('truetype'); font-weight: 600; }
+  .palco-base { font-family: Sora, system-ui, sans-serif; color: #fff; }
+  .in { position: absolute; inset: 0; }
+  .abs { position: absolute; }
+  .painel { position: absolute; top: -6%; bottom: -6%; }
+  .p-silhueta { background: linear-gradient(180deg, #1b1446 0%, #4a2a6e 38%, #c0607a 72%, #f6a35b 100%); }
+  .p-ilustracao { background: linear-gradient(180deg, #f1eefc, #e3def8); }
+  .p-traco { background: #f4efe6; }
+  .rotulo { position: absolute; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+  .cab { position: absolute; font-weight: 700; text-transform: lowercase; text-align: center; }
+  .ceu { background: linear-gradient(180deg, #120c38 0%, #3b1f6b 34%, #b0457a 62%, #f7934c 82%, #ffd08a 100%); }
+  .sol { position: absolute; border-radius: 50%; background: radial-gradient(circle, #fff3d6 0%, #ffd08a 45%, rgba(255,190,120,0) 72%); }
+  .chao { background: linear-gradient(180deg, #2a1640, #0b0820); }
+  .tile { position: absolute; overflow: hidden; }
+  .tile .nome { position: absolute; left: 0; right: 0; bottom: 0; padding: calc(var(--u) * 14) calc(var(--u) * 20); font-weight: 600; z-index: 3;
+    background: linear-gradient(0deg, rgba(10,6,30,.55), rgba(10,6,30,0)); }
+</style>
+</head>
+<body>
+<div id="palco" class="palco-base"></div>
+<script src="edin-video.js"></script>
+<script src="edin-cam.js"></script>
+<script src="edin-pessoas.js"></script>
+<script>
+(function () {
+  const { px, interp, ease, clamp } = EdinVideo;
+  const { preset, mix } = EdinCam;
+  const P = EdinPessoas;
+  const W = EdinVideo.w, H = EdinVideo.h, U = EdinVideo.u;
+  const RIM = { cor: '#ffc27a', angulo: -38, largura: 5 * U };
+
+  const v = EdinVideo.video({ fundo: '#0f0c2e', grao: 0.04, vinheta: 0.25, luz: { angulo: 60 } });
+
+  // ---------------------------------------------------------------- páginas de poses: 3 poses x 3 estilos
+  const ESTILOS = ['silhueta', 'ilustracao', 'traco'];
+  const NOMES = { silhueta: 'silhueta', ilustracao: 'ilustração', traco: 'traço' };
+  const PAGINAS = [
+    ['em-pe', 'andando', 'correndo'],
+    ['sentado-estudando', 'cabeca-baixa', 'olhando-celular'],
+    ['punho-erguido', 'bracos-abertos', 'apontando'],
+    ['olhando-horizonte', 'comemorando', 'subindo'],
+  ];
+  // posição e tamanho por pose (fração da célula)
+  const AJUSTE = { 'sentado-estudando': { x: 0.2, a: 0.66 }, 'bracos-abertos': { x: 0.5, a: 0.5 }, 'apontando': { x: 0.3, a: 0.7 },
+    'subindo': { x: 0.32, a: 0.7 }, 'correndo': { x: 0.42, a: 0.72 }, 'andando': { x: 0.45, a: 0.74 }, 'comemorando': { x: 0.5, a: 0.66 } };
+  const CW = W / 3, TOPO = 150 * U, RH = (H - TOPO - 70 * U) / 3;
+
+  PAGINAS.forEach((pag, ip) => {
+    v.cena({
+      id: `poses${ip + 1}`, duracao: 2.2,
+      entrada: ip === 0 ? null : { tipo: 'travessia', direcao: 'esquerda', duracao: 0.6 },
+      camera: mix([preset('dolly-in', { intensidade: 0.35 }), preset('deriva', { intensidade: 0.8, semente: 11 + ip, zeroNoInicio: ip === 0 })]),
+      montar(el) {
+        el.innerHTML = `<div data-z="0.3" data-sobra="0.3"><div class="in" style="background:#0f0c2e"></div></div>
+          <div data-z="1" class="folha">${ESTILOS.map((e, i) => `<div class="painel p-${e}" style="left:${i * 33.3333 - (i === 0 ? 8 : 0)}%;width:${33.3333 + (i === 0 ? 8 : 0) + (i === 2 ? 8 : 0)}%"></div>`).join('')}
+            ${ESTILOS.map((e, i) => `<div class="cab" data-decorativo style="left:${i * CW}px;width:${CW}px;top:${px(40)};font-size:${px(54)};color:${e === 'silhueta' ? '#fff' : '#1e1b4b'}">${NOMES[e]}</div>`).join('')}
+            ${pag.map((n, r) => ESTILOS.map((e, i) => `<div class="rotulo" data-decorativo style="left:${i * CW + 18 * U}px;top:${TOPO + r * RH + 10 * U}px;font-size:${px(30)};color:${e === 'silhueta' ? 'rgba(255,255,255,.75)' : 'rgba(30,27,75,.6)'}">${n}</div>`).join('')).join('')}
+          </div>`;
+        const folha = el.querySelector('.folha');
+        // uma coluna por estilo, recortada por clipPath do SVG (a escada não invade a coluna vizinha).
+        // Recorte vetorial, não overflow:hidden: o recorte de HTML dava costuras que mudavam com a ordem do render.
+        const svg = P.palco(folha), NS = 'http://www.w3.org/2000/svg';
+        const defs = svg.appendChild(document.createElementNS(NS, 'defs'));
+        const svgs = ESTILOS.map((e, i) => {
+          const cp = defs.appendChild(document.createElementNS(NS, 'clipPath'));
+          cp.id = `col-${ip}-${i}`;
+          const r = cp.appendChild(document.createElementNS(NS, 'rect'));
+          Object.entries({ x: i * CW, y: 0, width: CW, height: H }).forEach(([k, val]) => r.setAttribute(k, val));
+          const g = svg.appendChild(document.createElementNS(NS, 'g'));
+          g.setAttribute('clip-path', `url(#col-${ip}-${i})`);
+          return g;
+        });
+        this.figs = [];
+        pag.forEach((n, r) => ESTILOS.forEach((e, i) => {
+          const aj = AJUSTE[n] || { x: 0.45, a: 0.72 };
+          const fig = P.pessoa(svgs[i], {
+            estilo: e, semente: 3 + ip * 7 + r * 3, altura: RH * aj.a, x: i * CW + CW * aj.x, y: TOPO + (r + 1) * RH - 34 * U,
+            halo: e === 'silhueta' ? 0.35 : false, rim: RIM, escalaFixa: true, espessura: 4.6,
+          });
+          this.figs.push({ fig, n });
+        }));
+      },
+      atualizar(el, t, p, ctx) {
+        for (const { fig, n } of this.figs) fig.atualizar(ctx.tg, { pose: n });
+      },
+    });
+  });
+
+  // ---------------------------------------------------------------- multidão: 60 silhuetas em profundidade, onda de punhos
+  v.cena({
+    id: 'multidao', duracao: 3.4,
+    entrada: { tipo: 'dissolve', duracao: 0.4 },
+    camera: mix([preset('dolly-in', { intensidade: 0.6, alvo: [0.5, 0.62] }), preset('deriva', { intensidade: 1, semente: 21 })]),
+    montar(el) {
+      el.innerHTML = `<div data-z="0.25" data-sobra="0.2"><div class="in ceu"></div>
+          <div class="sol" style="left:50%;top:58%;width:${px(760)};height:${px(760)};transform:translate(-50%,-50%)"></div></div>
+        <div data-z="0.5" data-sobra="0.2"><div class="abs chao" style="left:0;right:0;top:63%;bottom:-20%"></div></div>`;
+      this.m = P.multidao(el, {
+        n: 60, semente: 4, estilo: 'silhueta', faixas: 4, profundidade: [0.55, 1.2], horizonte: 0.64, base: 1.0,
+        alturas: [H * 0.09, H * 0.4], rim: { cor: '#ffc27a', angulo: -70, largura: 4 * U }, corNevoa: '#5a2f6e',
+        onda: { pose: 'punho-erguido', inicio: 1.0, duracao: 0.55, espalhamento: 1.3 }, desfoque: [2, 0, 0, 3],
+      });
+    },
+    atualizar(el, t) { this.m.atualizar(t); },
+  });
+
+  // ---------------------------------------------------------------- closes de detalhe
+  const CLOSES = [
+    ['mao-escrevendo', 'ilustracao', 'mão escrevendo'],
+    ['mao-celular', 'silhueta', 'mão no celular'],
+    ['punho', 'silhueta', 'punho'],
+    ['perfil', 'silhueta', 'perfil'],
+    ['pes-andando', 'traco', 'pés andando'],
+    ['perfil', 'ilustracao', 'perfil'],
+  ];
+  const TW = W / 2, TH = H / 3;
+  v.cena({
+    id: 'closes', duracao: 3.4,
+    entrada: { tipo: 'whip-pan', direcao: 'esquerda', duracao: 0.4 },
+    camera: mix([preset('dolly-in', { intensidade: 0.3 }), preset('deriva', { intensidade: 0.8, semente: 31 })]),
+    montar(el) {
+      el.innerHTML = `<div data-z="0.3" data-sobra="0.3"><div class="in" style="background:#0f0c2e"></div></div>
+        <div data-z="1" class="grade">${CLOSES.map((c, i) => `<div class="tile p-${c[1]}" style="left:${(i % 2) * TW}px;top:${Math.floor(i / 2) * TH}px;width:${TW}px;height:${TH}px">
+          <div class="nome" data-decorativo style="font-size:${px(34)}">${c[2]} · ${NOMES[c[1]]}</div></div>`).join('')}</div>`;
+      const tiles = [...el.querySelectorAll('.tile')];
+      this.d = CLOSES.map((c, i) => P.detalhe(tiles[i], c[0], { w: TW, h: TH, estilo: c[1], semente: 5 + i * 2, rim: Object.assign({}, RIM, { largura: 9 * U }), zoom: 1 }));
+    },
+    atualizar(el, t, p, ctx) { for (const d of this.d) d.atualizar(ctx.tg); },
+  });
+
+  v.iniciar();
+})();
+</script>
+</body>
+</html>

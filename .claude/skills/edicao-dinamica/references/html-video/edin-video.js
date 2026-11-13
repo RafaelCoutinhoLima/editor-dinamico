@@ -291,6 +291,9 @@
   // um número inteiro de voltas, então o último quadro emenda com o primeiro. Use o tempo GLOBAL
   // (ctx.inicio + t) em atualizar, e a mesma semente em cenas vizinhas para a poeira continuar no corte.
   let _durVideo = 0;
+  // recursos assíncronos de componentes (EdinFoto3D: imagens e texturas): o seek só roda depois deles
+  const _pendentes = [];
+  const esperar = (pr) => { _pendentes.push(Promise.resolve(pr)); return pr; };
   function poeira(pai, { semente = 1, n = 18, z = 0.6, desfoque = 0, tamanho = [3, 7], opacidade = [0.15, 0.45],
     cor = '255,236,214', sobra = 0.1, subida = 1, balanco = 18 } = {}) {
     const camada = criar('div', { 'data-z': String(z), 'data-sobra': String(sobra), 'data-cobre': '0', 'data-decorativo': '' }, pai);
@@ -653,6 +656,7 @@
       const imgs = [...palco.querySelectorAll('img')];
       await Promise.all(imgs.map((im) => (im.decode ? im.decode() : Promise.resolve()).catch(() => v.avisar(`imagem não carregou: ${im.getAttribute('src')}`))));
       if (op.precarregar) await precarregar(op.precarregar);
+      await Promise.all(_pendentes.map((pr) => pr.catch((e) => v.avisar(`recurso não carregou: ${e && e.message || e}`))));
       // animações CSS que existirem ficam presas ao relógio do vídeo
       v._animacoesCSS = document.getAnimations ? document.getAnimations() : [];
       if (v._animacoesCSS.length) v.avisar(`${v._animacoesCSS.length} animação(ões) CSS encontradas; elas serão pausadas e sincronizadas com t, mas prefira atualizar()`);
@@ -848,7 +852,7 @@
     w: W, h: H, fps: FPS, u: U, render: RENDER, vertical: H > W, mb: MB, obturador: OBT,
     luz: LUZ, sombra, halo, poeira,
     video, quadro, ease, bezier, mola, interp, interpLog, chaves, clamp, lerp, mix,
-    ruido, aleatorio, hash, px, estilo, criar, legenda, precarregar, svgDefs, filtroBlur,
+    ruido, aleatorio, hash, px, estilo, criar, legenda, precarregar, svgDefs, filtroBlur, esperar,
     transicoes: TRANSICOES,
   };
 })();

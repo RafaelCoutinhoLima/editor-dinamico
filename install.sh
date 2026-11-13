@@ -3,6 +3,8 @@
 #   ./install.sh            instala
 #   ./install.sh --motion   também instala o Remotion (motion design por cima do vídeo)
 #   ./install.sh --esrgan   também baixa o Real-ESRGAN (upscale na GPU, 47 MB; senão baixa no 1º uso)
+#   ./install.sh --imagem   também instala o edin imagem/profundidade (install_imagem.sh: venv separado com PyTorch,
+#                           SDXL + Lightning + Depth Anything V2; GPU NVIDIA 6 GB+, ~13 GB; ver docs/IMAGEM.md)
 set -euo pipefail
 cd "$(dirname "$0")"
 REPO="$(pwd)"
@@ -88,6 +90,14 @@ if [[ " $* " == *" --motion "* ]]; then
   # skill de motion design (MIT, fabiofernandesss/skills), versionada neste repositório
   ln -sfn "$REPO/.claude/skills/cinematic-motion-director" "$HOME/.claude/skills/cinematic-motion-director"
   say "Skill cinematic-motion-director ligada em ~/.claude/skills"
+fi
+
+# ---------------------------------------------------------------- fotos realistas + profundidade, opcional
+if [[ " $* " == *" --imagem "* ]]; then
+  say "Instalando o edin imagem (venv separado, ver docs/IMAGEM.md)..."
+  "$REPO/install_imagem.sh" || say "install_imagem.sh falhou; veja as mensagens acima e docs/IMAGEM.md."
+else
+  say "Opcional: fotos realistas e parallax 3D (edin imagem): ./install.sh --imagem (GPU NVIDIA 6 GB+, ver docs/IMAGEM.md)"
 fi
 
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *)

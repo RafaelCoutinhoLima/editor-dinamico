@@ -19,3 +19,11 @@ remotion/out/
 remotion/public/*
 !remotion/public/.gitkeep
 .claude/worktrees/
+
+# edin imagem: pesos de modelos nunca vão para o git (o install_imagem.sh baixa em ~/.local/share/edin/imagem)
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.gguf

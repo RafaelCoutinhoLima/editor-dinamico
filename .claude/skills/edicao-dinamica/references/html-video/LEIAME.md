@@ -2,7 +2,7 @@
 
 JavaScript puro, sem build e sem dependências. Abra `exemplo.html` no navegador (file://) para ver e arrastar a barra de tempo; o `edin html` abre a mesma página com `?w=1080&h=1920&fps=60&render=1` (e `&mb=K&obturador=180` com `--motion-blur K`), chama `EDIN.seek(t)` quadro a quadro e captura. `?w=1920&h=1080` gera a versão horizontal. `?t=5.2` abre já nesse instante.
 
-Arquivos: `edin-video.js` (linha do tempo, transições, easings, ruído, grão de película, luz, grade de cor, poeira), `edin-cam.js` (câmera 2.5D com os presets do Higgsfield, valores de `../higgsfield-camera.md`, deriva, profundidade de campo), `exemplo.html` (Reel de 29,2 s em 7 planos, feito para 60 fps com `--motion-blur 8`; o último quadro é o primeiro), `fontes/` (Sora 600 e 700).
+Arquivos: `edin-video.js` (linha do tempo, transições, easings, ruído, grão de película, luz, grade de cor, poeira), `edin-cam.js` (câmera 2.5D com os presets do Higgsfield, valores de `../higgsfield-camera.md`, deriva, profundidade de campo), `edin-foto3d.js` (foto com parallax real pela profundidade em WebGL, ver "Fotos realistas com profundidade"), `exemplo.html` (Reel de 29,2 s em 7 planos, feito para 60 fps com `--motion-blur 8`; o último quadro é o primeiro), `edin-pessoas.js` (pessoas estilizadas em código: rig, 3 estilos, poses, multidão, closes; seção "Pessoas"), `pessoas.html` (folha de teste de 15,6 s: cada pose nos 3 estilos, multidão e closes), `fontes/` (Sora 600 e 700).
 
 Render de filme (o padrão para entregar): `edin html exemplo.html --fps 60 --motion-blur 8 -o videos/final.mp4`. Rascunho para iterar: `--draft --fps 60` sem motion blur; trecho: `--start S --duration D`.
 
@@ -102,6 +102,61 @@ Tudo é em segundos, nada em quadros: o mesmo HTML sai igual a 24, 30 ou 60 fps.
 
 Na prévia (ou com `?checar=1` no render) o kit avisa no console `[edin] texto pequeno na cena ...` quando um texto visível fica com **altura de maiúscula abaixo de 45 px** no quadro de 1080 (Sora: maiúscula = 0,7 da fonte, então fonte mínima ~64 px), já contando a escala de câmera e de `transform`. Vale para tudo que precisa ser lido (dias, chips, callout, marca); enfeite vai com `data-decorativo`. Não confere durante as transições. Tela de app com a deriva fica 0,6% menor: use 66 px nela.
 
+## Fotos realistas com profundidade (`edin-foto3d.js`)
+
+Para plano de filme com pessoa de verdade (manifesto, campanha): foto gerada na máquina pelo `edin imagem`
+(SDXL + Lightning, ver `docs/IMAGEM.md` do repositório) ou foto própria, mais o mapa de profundidade do
+`edin profundidade`. A foto vira um relevo e a câmera anda de verdade na frente dele: o sujeito se descola do
+fundo, o fundo anda menos que a frente, e os presets do Higgsfield valem sobre a foto.
+
+```bash
+edin imagem --lote fotos.lote.json            # fotos/01_janela.png ... (abra todas: descarte mão/rosto deformado)
+edin profundidade fotos/01_janela.png         # -> .depth.png (16 bits), .fundo.png e .foto3d.js (tudo embutido)
+```
+
+```html
+<script src="edin-video.js"></script><script src="edin-cam.js"></script><script src="edin-foto3d.js"></script>
+<script src="fotos/01_janela.foto3d.js"></script>   <!-- registra EDIN_FOTOS['01_janela'] -->
+<script>
+v.cena({ id: 'janela', duracao: 4,
+  camera: EdinCam.mix([EdinCam.preset('dolly-in', { intensidade: 1.3, easing: 'linear' }), EdinCam.preset('deriva', { zeroNoInicio: true })]),
+  montar(el, ctx) {
+    el.innerHTML = `<div data-z="1" data-foto3d></div>`;
+    EdinFoto3D.criar(el.querySelector('[data-foto3d]'), { foto: '01_janela', abertura: 7, rim: { de: 'direita' } }, ctx);
+    this.p = EdinVideo.poeira(el, { z: 1.7, n: 7, desfoque: 10, tamanho: [50, 110], opacidade: [0.04, 0.12] });
+  },
+  atualizar(el, t, p, ctx) { this.p.atualizar(ctx.tg); },
+});
+</script>
+```
+
+- **Como desenha:** WebGL 2, um raio por pixel anda pelo relevo até bater na superfície (busca em disparidade +
+  bisseção). Duas superfícies: a frente (foto e profundidade originais) e o fundo (bordas de oclusão preenchidas
+  pelo `edin profundidade` só com cor de profundidade parecida, nunca com a cor do sujeito). Onde a frente
+  estica (a parede de um degrau de profundidade: a "borracha"), o pixel vem do fundo. Câmera neutra = a foto
+  original pixel a pixel. A cobertura é automática: a câmera se afasta da borda sozinha (avisa acima de 1,35x).
+- **Mapa dos presets:** `S` (dolly) = a câmera anda até o alvo; `tx/ty` (truck, crane, deriva, handheld) = a
+  câmera desliza; `orbita` (arc, orbit, bullet-time) = gira em volta do alvo, **x 0,12** (30 graus do arc viram
+  3,6: uma foto só aguenta poucos graus antes de mostrar o que não existe); `rx` (crane, tilt) x 0,25; `vertigo`
+  (dolly-zoom) é dolly-zoom de verdade x 0,35; `zoom`, `px/py` e `rz` são lente, pan e roll no plano da imagem.
+  Fatores em `orbita`, `giro`, `vertigo` nas opções.
+- **Opções:** `forca` 0,6 (separação dos planos), `foco` 'auto' (o sujeito), `abertura` px de desfoque fora do
+  foco (6 a 10), `rim` (luz de recorte do lado da luz: `de: 'direita'|'esquerda'|'cima'|graus`), `flare`
+  `{ x, y }` na fonte de luz da foto (anda com o fundo e some atrás do sujeito), `vida` (respiração: ~0,6% de
+  escala local no tronco, 4,2 s), `grao` 0,035.
+- **Poeira na frente:** `EdinVideo.poeira` normal, camada `data-z` 1,7 por cima da foto (a câmera CSS move ela
+  com o mesmo estado).
+- **Render:** `edin html` liga a GPU sozinho quando a página carrega o `edin-foto3d.js` (`--gpu auto`: ANGLE
+  sobre EGL na NVIDIA, ~5x mais rápido que o SwiftShader da CPU; `--gpu nao` força a CPU). Determinístico: 0
+  pixels diferentes entre 1 e 4 workers. Filme: `--fps 60 --motion-blur 8` (o rastro vem dos subquadros; o
+  blur CSS só entra em whip pan).
+- **O que evitar:** arc acima de ~5 graus efetivos, dolly-zoom forte, truck que atravessa o quadro (a `travessia`
+  de 100% do quadro não serve para foto: use `dissolve` com as duas câmeras andando), sujeito colado na borda
+  da foto, cabelo solto contra fundo claro (a profundidade erra os fios e eles grudam no fundo). O fundo
+  preenchido não tem textura: revelar mais de ~30 px atrás do sujeito em fundo nítido (degraus, tijolo) mostra
+  uma mancha borrada; em fundo de bokeh não aparece. Teste de referência: `videos editados/manifesto_2026-11-12/teste_foto3d.html`
+  (dolly-in na janela, dissolve, arc na escada; 480 quadros a 60 fps com motion blur 8 em 104 s).
+
 ## Presets de câmera (`EdinCam.preset(id, { intensidade, easing, alvo, de, ate, inicio, duracao })`)
 
 `intensidade` multiplica a amplitude (1 = valor do catálogo). `de`/`ate` limitam a um trecho de p; `inicio`/`duracao` (s) fazem o preset rodar por tempo real (padrão dos rápidos: crash, rapid, yoyo, whip, super-dolly, through-object). `alvo` = ponto de origem da escala. `EdinCam.mix([...])` soma presets (escalas multiplicam, deslocamentos e ângulos somam).
@@ -152,6 +207,48 @@ Na prévia (ou com `?checar=1` no render) o kit avisa no console `[edin] texto p
 - **Produto/card:** `arc-right` + `dolly-in` 0,5; o reflexo do card lê `mov(p, t, D).orbita`.
 - **Tela de app:** entra por `dissolve` no movimento ou `travessia` (nunca `push`), `data-tela` (com `data-z="0.5"` a deriva e o truck movem metade e não encostam na borda), destaque com borda laranja pulsando e callout separado (sem lupa na tela). Texto da tela com 66 px.
 - **Fim e loop:** a última cena monta as mesmas camadas da primeira (uma função `montarRelogio` usada nas duas). Marca aparece e sai, o anel fecha, cresce até o anel do relógio, o rabo corre a volta inteira e o anel recomeça em 12%; disco, dígitos e a legenda de abertura voltam com fade; a câmera termina neutra (`deriva` com `saida`, pullback que volta a zero) e a da cena 1 começa neutra (`zeroNoInicio`). O último quadro difere do primeiro só pelo grão (diferença média 0,7 nível sem o grão, menor que a de dois quadros vizinhos).
+
+## Pessoas (`edin-pessoas.js`)
+
+Pessoas feitas em código para vídeo manifesto (nada de Canva nem imagem gerada): rig 2D por esqueleto com proporção de 7,5 cabeças, membros afunilados com volume, mãos com dedos, pés e cabeça que giram de perfil (`giro: 0`) para de frente (`giro: 1`). Três estilos com a mesma pose: `silhueta` (índigo profundo, luz de recorte numa borda vinda de `rim.angulo`, halo opcional atrás; o celular acende o rosto), `ilustracao` (cores chapadas, 8 tons de pele, cabelo `curto`, `crespo`, `cacheado`, `longo`, `coque`, `careca`, roupa `camiseta`, `moletom` com capuz, `camisa`, mochila e óculos opcionais; braço e perna de longe um tom mais escuros) e `traco` (linha de caneta que engrossa do lado da sombra, recheio cor de papel, bloco de cor fora de registro opcional). Abra `pessoas.html` para ver tudo.
+
+```html
+<script src="edin-video.js"></script><script src="edin-cam.js"></script><script src="edin-pessoas.js"></script>
+<script>
+const P = EdinPessoas;
+v.cena({ duracao: 4, camera: EdinCam.preset('deriva', {}),
+  montar(el) {
+    el.innerHTML = `<div data-z="0.3" data-sobra="0.2"><div class="in ceu"></div></div><div data-z="1" class="sujeito"></div>`;
+    const svg = P.palco(el.querySelector('.sujeito'));            // <svg> com viewBox do quadro (px de design)
+    this.p = P.pessoa(svg, { estilo: 'silhueta', semente: 7, altura: 1100, x: 540, y: 1650, halo: 0.35,
+      rim: { cor: '#ffc27a', angulo: -40, largura: 6 } });
+    this.m = P.multidao(el, { n: 60, semente: 4, onda: { pose: 'punho-erguido', inicio: 2, espalhamento: 1.3 } });
+  },
+  atualizar(el, t, p, ctx) {
+    const q = P.mistura(P.pose('cabeca-baixa', t), P.pose('punho-erguido', t), (t - 1.5) / 0.8);   // ergue o punho
+    this.p.atualizar(ctx.tg, { pose: q, olhar: [900, 300] });
+    this.m.atualizar(t);
+  } });
+</script>
+```
+
+| função | o que faz |
+|---|---|
+| `pessoa(alvo, op)` | cria uma pessoa num `<svg>` (ou num elemento, que ganha um `palco`). `op`: `estilo`, `altura` (px, ×0,92 a 1,06 pela semente; `escalaFixa: true` desliga), `x`, `y` (pés), `dir` (-1 olha para a esquerda), `semente` (sorteia pele, cabelo, roupa, corpo), qualquer campo da aparência (`pele`, `cabelo`, `corCabelo`, `roupa`, `corRoupa`, `corCalca`, `corSapato`, `mochila`, `oculos`, `corpoTipo: 'a'/'b'`), silhueta: `rim { angulo, cor, largura, suave }`, `halo` (true ou opacidade), `corSilhueta`; traço: `papel`, `tinta`, `espessura`, `destaque` (cor ou `null`); ilustração: `nevoa`, `corNevoa`, `detalhe: false` (sem rosto), `sombraChao: false` |
+| `p.atualizar(t, { pose, x, y, altura, dir, olhar, vivo, opacidade })` | desenha o instante t. `pose`: nome, objeto de pose ou função de t. `olhar: [x, y]` (px do svg): a cabeça procura o alvo (de frente, vira para o perfil). `vivo: 0` desliga respiração e balanço |
+| `p.J`, `p.ponto(q)` | juntas da última pose (cabeças) e conversão para px (ex.: `p.ponto(p.J.bracos.P.Wr)` para ancorar um objeto na mão) |
+| `pose(nome, t, { fase, velocidade })` | pose pelo nome; ciclos animam com t. Nomes: `em-pe`, `andando`, `correndo`, `sentado-estudando` (cadeira, mesa, caderno, luminária, mão escrevendo), `cabeca-baixa`, `olhando-celular`, `punho-erguido`, `bracos-abertos`, `apontando`, `olhando-horizonte`, `comemorando` (pulo em ciclo), `subindo` (com degraus) |
+| `mistura(a, b, k, easing)` | mistura duas poses (k é limitado a 0..1; easing padrão `suave`). Móveis e celular aparecem pelo peso (`mesa`, `cadeira`, `degraus`, `celular`, `caneta` de 0 a 1) |
+| `ciclo('andando' / 'correndo' / 'comemorando', t, { velocidade, fase })` | ciclos procedurais; `pose.avanco` = cabeças andadas (`EdinPessoas.avanco` por volta, medido pelo pé de apoio: o pé não escorrega se você mover a pessoa por `avanco × altura/7,5`) |
+| `multidao(el, op)` | N pessoas em `faixas` camadas `data-z` (de `profundidade[0]` longe a `[1]` perto) para o parallax da câmera; `n`, `semente`, `estilo`, `horizonte`/`base` (fração da altura dos pés longe/perto), `alturas: [longe, perto]` px, `poses` (sorteadas; uma só = todos iguais), `sobra` (quem anda dá a volta fora do quadro), `nevoa`/`corNevoa`/`nevoaSilhueta` (perspectiva atmosférica), `desfoque: [px por faixa]`, `onda: { pose, inicio, duracao, espalhamento, ordem: 'aleatoria' }` (a multidão muda de pose em onda da esquerda para a direita e quem andava freia) |
+| `detalhe(el, tipo, op)` | close em escala grande com o mesmo rig: `mao-escrevendo` (papel pautado de frente, a escrita é o rastro da ponta da caneta), `mao-celular` (tela rolando), `punho`, `perfil` (rosto de perfil; na silhueta a luz de recorte desenha o rosto), `pes-andando`. `op`: `estilo`, `semente`, `zoom`, `cx`/`cy`, `w`/`h`, `ajuste` (campos de pose), aparência e luz |
+| `vivo(pose, t, semente)`, `piscar(t, semente)`, `aparencia(semente)`, `rig(pose, corpo)` | camadas internas expostas (respiração, balanço, piscar determinístico, aparência sorteada, esqueleto) |
+
+Pose é um objeto de números (ângulos em graus): `giro`, `tronco`, `peito`, `pescoco`, `cabeca` (positivo inclina para a frente), braço `oP/cP/mP` (ombro, cotovelo, punho; `P` = lado de perto, `L` = de longe; 0 = pendurado, positivo = para a frente), perna `qP/jP/tP` (quadril, joelho, tornozelo), mão `fechaP`, `apontaP`, `abreP`, `vistaP` (0 de lado, 1 de frente), IK da mão `ikP: 1, ikPx, ikPy` (cabeças a partir do quadril, y para cima), `mAbsP/mAngP` (ângulo absoluto da mão), `sentado`/`alt`, `voo`, `olhos`, `boca`. Crie a sua com `EdinPessoas.pose({ ...EdinPessoas.poses['em-pe'], oP: 40 })`.
+
+Medido (Chrome 157, 16 núcleos): 1 pessoa 0,2 ms por `seek` em qualquer estilo; multidão de 60 pessoas 11 ms (silhueta) a 13 ms (traço) de JS por `seek`; render de 60 pessoas em 1080x1920: 4,3 q/s com 1 worker e 18 q/s com 8 (a rasterização domina, não o JS). Seek fora de ordem dá o mesmo quadro (conferido pelo DOM e pelos PNG do render).
+
+Regras: a pessoa inteira nunca é cortada sem motivo (pés, mãos e cabelo dentro do quadro, ou corte assumido de close); silhueta pede fundo claro atrás (céu, pôr do sol, halo) para a luz de recorte ler; `traco` pede fundo de papel igual ao `papel`; numa multidão, as camadas `data-z` são transparentes (`data-cobre="0"`), então ponha céu e chão em camadas próprias.
 
 ## Checklist antes de renderizar
 
