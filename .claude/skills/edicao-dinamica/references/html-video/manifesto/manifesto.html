@@ -22,7 +22,7 @@
     fotos/novas/p12_rua_s4243.foto3d.js       plano 12 (lu em passada larga para a direita, perfil em contraluz)
     fotos/novas/p13_escada_s4243.foto3d.js    plano 13 (lu de costas com a mochila na escadaria)
     fotos/02_caderno_s2203.png                plano 14 (insert de 0,6 s: imagem plana, poupa um contexto WebGL)
-    fotos/novas/p15_mao2_s1523.foto3d.js      plano 15 (mão aberta, 5 dedos contados, 0,60 da largura)
+    fotos/novas/p15_mao5_s1552.foto3d.js      plano 15 (mão jovem de pele morena, costas da mão, 5 dedos contados, 0,52 da largura, luz quente)
     fotos/novas/p16_patio_s3413.foto3d.js     plano 16 (multidão de costas, sem pessoa semitransparente)
     fotos/novas/p17_morro_s1711.foto3d.js     plano 17 (grupo de costas no morro ao nascer do sol; céu livre para a legenda)
   Planos 10 (tela do app) e 18 (o sol vira o anel da logo) são desenhados em código. A protagonista (lu) é sempre a
@@ -98,7 +98,7 @@
 <script src="fotos/novas/p11_pes_s1100.foto3d.js"></script>
 <script src="fotos/novas/p12_rua_s4243.foto3d.js"></script>
 <script src="fotos/novas/p13_escada_s4243.foto3d.js"></script>
-<script src="fotos/novas/p15_mao2_s1523.foto3d.js"></script>
+<script src="fotos/novas/p15_mao5_s1552.foto3d.js"></script>
 <script src="fotos/novas/p16_patio_s3413.foto3d.js"></script>
 <script src="fotos/novas/p17_morro_s1711.foto3d.js"></script>
 <script>
@@ -113,7 +113,7 @@
     janela: 'p01_janela_s4245', mao: 'p02_mao_s2302', celular: 'p03_celular2_s4242', pes: 'p04_pes_s4401',
     sala: 'p05_sala_s5503', cabeca: 'p06_cabeca_s4242', respiro: 'p07_respiro_s7701', olho: 'p08_olho2_s8820',
     alvorada: 'p09_alvorada_s4245', pesRua: 'p11_pes_s1100', rua: 'p12_rua_s4243', escada: 'p13_escada_s4243',
-    maoCeu: 'p15_mao2_s1523', multidao: 'p16_patio_s3413', morro: 'p17_morro_s1711',
+    maoCeu: 'p15_mao5_s1552', multidao: 'p16_patio_s3413', morro: 'p17_morro_s1711',
   };
   const CADERNO_PNG = 'fotos/02_caderno_s2203.png';
   // medidas tiradas das fotos escolhidas (fração do quadro)
@@ -121,7 +121,7 @@
     pupila: [0.30, 0.31],               // plano 8: o olho no perfil em sombra (atrás da ponte do nariz); o reflexo laranja nasce aqui e o zoom-through entra por ele
     sol9: [0.90, 0.50],                 // plano 9: o brilho do sol no horizonte à direita, que vira o ponto do card no match cut
     maoCaderno: [0.43, 0.55],           // plano 14: centro da mão que escreve (palma + dedos de x 0,21 a 0,65: largura 0,44)
-    maoCeu: [0.58, 0.55],               // plano 15: centro da mão aberta (5 dedos, de x 0,28 a 0,88: largura 0,60)
+    maoCeu: [0.53, 0.44],               // plano 15: centro da mão aberta (5 dedos, de x 0,27 a 0,79: largura 0,52; pontas em y 0,22, pulso em 0,66)
     horizonte7: [0.80, 0.47],           // plano 7: o ponto laranja mínimo no horizonte
     sol17: [0.55, 0.57],                // plano 17: o sol atrás do grupo (horizonte em 0,68)
     leg17: 0.45,                        // plano 17: legenda sobre o céu, acima do brilho do sol
@@ -192,13 +192,13 @@
       dollyLin(1.08, [0.45, 0.55]),
       preset('deriva', { semente: 3, zeroNoInicio: true }),
     ]),
-    legs: [{ texto: 'mais uma hora.', ini: 0, fim: 2.25 }],
+    legs: [{ texto: 'mais uma hora.', ini: 0, fim: 2.25, tamanho: 96 }],
   });
   // 2. 2,4 a 4,6: a mão que escreve e reescreve (truck-left lento)
   cenaFoto({
     id: 'p02_mao', duracao: 2.2, foto: FOTO.mao, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
     camera: mix([truck(9), preset('deriva', { semente: 5 })]),
-    legs: [{ texto: 'mais um resumo.', ini: 0.15, fim: 2.05, y: 0.6, classe: 'contraste' }],
+    legs: [{ texto: 'mais um resumo.', ini: 0.15, fim: 2.05, y: 0.6, tamanho: 96, classe: 'contraste' }],
     // véu radial suave atrás do texto (o papel do caderno é claro): acompanha a opacidade da legenda
     montarExtra(el) {
       el.insertAdjacentHTML('beforeend', `<div data-z="1" data-decorativo><div class="in veu" style="opacity:0;
@@ -211,25 +211,25 @@
   cenaFoto({
     id: 'p03_celular', duracao: 2.2, foto: FOTO.celular, entrada: { tipo: 'dissolve', duracao: 0.15 },  op: { abertura: 3 },
     camera: mix([preset('dolly-out', { intensidade: 0.8, alvo: [0.42, 0.45] }), preset('handheld', { intensidade: 0.35, semente: 7 }), preset('deriva', { semente: 6 })]),
-    legs: [{ texto: 'mais um vídeo no 2x.', ini: 0.15, fim: 2.05, y: 0.6 }],
+    legs: [{ texto: 'mais um vídeo no 2x.', ini: 0.15, fim: 2.05, y: 0.6, tamanho: 96 }],
   });
   // 4. 6,8 a 9,0: pés embaixo da mesa (desce devagar até eles)
   cenaFoto({
     id: 'p04_pes', duracao: 2.2, foto: FOTO.pes,
     camera: mix([preset('crane-down', { intensidade: 0.35 }), preset('deriva', { semente: 8, intensidade: 1.2 })]),
-    legs: [{ texto: 'e a nota não mexe.', ini: 0.15, fim: 1.95 }],
+    legs: [{ texto: 'e a nota não mexe.', ini: 0.15, fim: 1.95, tamanho: 96 }],
   });
   // 5. 9,0 a 11,8: a sala enorme, todos iguais (crane-up revela a escala)
   cenaFoto({
     id: 'p05_sala', duracao: 2.8, foto: FOTO.sala, entrada: { tipo: 'dissolve', duracao: 0.3 },
     camera: mix([preset('crane-up', { intensidade: 0.5 }), preset('deriva', { semente: 9 })]),
-    legs: [{ texto: 'todo mundo estudando tudo.', ini: 0.3, fim: 2.7 }],
+    legs: [{ texto: 'todo mundo estudando tudo.', ini: 0.3, fim: 2.7, tamanho: 96 }],
   });
   // 6. 11,8 a 14,2: a protagonista de cabeça baixa (dolly-in que encontra ela)
   cenaFoto({
     id: 'p06_cabeca', duracao: 2.4, foto: FOTO.cabeca, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
     camera: mix([preset('dolly-in', { intensidade: 1.0, alvo: [0.45, 0.32] }), preset('deriva', { semente: 10 })]),
-    legs: [{ texto: 'do mesmo jeito.', ini: 0.15, fim: 2.15 }],   // some em 13,95: antes da janela do dissolve (14,0)
+    legs: [{ texto: 'do mesmo jeito.', ini: 0.15, fim: 2.15, tamanho: 96 }],   // some em 13,95: antes da janela do dissolve (14,0)
   });
 
   // ================================================================ ATO 2: RESPIRO (sem texto)
@@ -281,9 +281,13 @@
   });
 
   // ================================================================ ATO 4: SUBIDA (quente; a marca entra como ato)
-  // 10. 22,4 a 25,0: a única tela do app. O sol vira o ponto do card (match cut); a câmera só translada
+  // 10. 22,4 a 24,9: a única tela do app. O sol vira o ponto do card (match cut); a câmera só translada.
+  //     O card nasce do ponto laranja (escala 0,2 a 1 com origem no ponto, que fica do tamanho certo): durante o
+  //     dissolve do match cut (0,17 s) ele ainda é pequeno, nada de retângulo branco leitoso sobre a foto.
+  //     Dura 2,5 s (e o plano 11, 1,9 s): o dissolve para os pés começa em 24,75, enquanto o card ainda sai
+  //     (24,7 a 24,9), sem o vão roxo de 0,1 s entre os dois.
   v.cena({
-    id: 'p10_app', duracao: 2.6,
+    id: 'p10_app', duracao: 2.5,
     entrada: { tipo: 'match-cut', elemento: 'ponto', duracao: 0.5, dissolve: 0.17, escalaMax: 1.2 },
     camera: mix([(p) => { const s = neutro(); s.ty = -9 * ease.suave(p); s.ids = ['crane-down']; return s; }, preset('deriva', { semente: 21, intensidade: 0.9 })]),
     montar(el) {
@@ -317,8 +321,14 @@
         l.style.opacity = sm((t - 0.45 - i * 0.22) / 0.2).toFixed(3);
         l.style.transform = `translateY(${px(-36 * (1 - q))}) scale(${lerp(1.04, 1, q).toFixed(4)})`;
       });
-      // entrada: os textos do card só aparecem depois do match cut (a foto do plano 9 ainda some até ~0,3 s)
-      const entra = sm((t - 0.25) / 0.2);
+      // entrada: o card cresce a partir do ponto laranja (origem no centro do ponto; o ponto não encolhe junto)
+      const cresce = lerp(0.2, 1, ease.inOutCubic(clamp((t - 0.08) / 0.42)));
+      const ox = this.ponto.offsetLeft + this.ponto.offsetWidth / 2, oy = this.ponto.offsetTop + this.ponto.offsetHeight / 2;
+      this.tela.style.transformOrigin = `${ox}px ${oy}px`;
+      this.tela.style.transform = `translateX(-50%) scale(${cresce.toFixed(4)})`;
+      this.ponto.style.transform = `scale(${(1 / cresce).toFixed(4)})`;
+      // os textos do card só aparecem com o card quase inteiro (a foto do plano 9 já sumiu)
+      const entra = sm((t - 0.4) / 0.2);
       for (const e of this.textosCard) e.style.opacity = entra.toFixed(3);
       // saída: o card inteiro (fundo branco incluído) some antes do dissolve para o plano 11, sem retângulo fantasma
       const fora = 1 - sm((t - 2.3) / 0.2);
@@ -329,12 +339,13 @@
       this.leg.atualizar(t, 0.2, 2.5);
     },
   });
-  // 11. 25,0 a 26,8: pés andando na calçada ao sol (rima com o plano 4)
+  // 11. 24,9 a 26,8: pés andando na calçada ao sol (rima com o plano 4). O dissolve (24,75 a 25,05) cruza a saída
+  //     do card; a legenda entra em 24,95, depois que a do plano 10 sumiu (24,9), e sai em 26,72 como antes.
   cenaFoto({
-    id: 'p11_pes', duracao: 1.8, foto: FOTO.pesRua, quente: true, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
+    id: 'p11_pes', duracao: 1.9, foto: FOTO.pesRua, quente: true, entrada: { tipo: 'dissolve', duracao: 0.3 }, 
     op: { flare: { x: 0.57, y: 0.02, intensidade: 0.25 } },
     camera: mix([actionRun(1), preset('handheld', { intensidade: 0.9, semente: 23 }), preset('deriva', { semente: 24 })]),
-    legs: [{ texto: 'menos horas no *escuro*.', ini: -0.05, fim: 1.72, classe: 'contraste claro' }],
+    legs: [{ texto: 'menos horas no *escuro*.', ini: 0.05, fim: 1.82, classe: 'contraste claro' }],
   });
   // 12. 26,8 a 28,4: a protagonista correndo para a direita em contraluz, rua ao nascer do sol (foto: ela já está na rua)
   cenaFoto({
@@ -351,7 +362,7 @@
     legs: [{ texto: 'mais tempo lá *fora*.', ini: 0.1, fim: 1.72 }],
   });
   // 14. 30,2 a 30,8: insert, a mão para de escrever (imagem plana, a mão já no lugar da mão do plano 15)
-  const MC = MEDIDAS.maoCaderno, MCEU = MEDIDAS.maoCeu, SC14 = 1.40;   // escala da foto do caderno para a mão dele casar com a do plano 15 (medida no comentário do plano 15)
+  const MC = MEDIDAS.maoCaderno, MCEU = MEDIDAS.maoCeu, SC14 = 1.36;   // escala da foto do caderno para a mão dele casar com a do plano 15 (medida no comentário do plano 15)
   v.cena({
     id: 'p14_caderno', duracao: 0.6, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
     camera: mix([dollyLin(1.02, MCEU), preset('deriva', { semente: 30, intensidade: 0.6 })]),
@@ -364,13 +375,19 @@
   // 15. 30,8 a 31,6: a mesma mão, aberta contra o céu (match cut na mão)
   cenaFoto({
     id: 'p15_mao', duracao: 0.8, foto: FOTO.maoCeu, quente: true,
-    // corte seco na mão: no rascunho a mão do caderno mede 0,66 da largura com centro (0,55; 0,53) e a do céu 0,61
-    // com centro (0,58; 0,53): centro dentro de 2% e escala +8% (regra: ±2% e ±10%). Sem dissolve: a forma muda
+    // corte seco na mão (foto de 13/11: mão jovem de pele morena, p15_mao5_s1552): no trecho a resolução cheia a mão
+    // do caderno (punho, sem o antebraço) mede ~0,57 da largura e a do céu ~0,59; centros a ~2,5% da diagonal (x 0,56 e 0,51).
+    // O corte cai na fronteira do quadro 1848 (kit), sem a caneta transparente sobre a mão. Sem dissolve: a forma muda
     // (caneta para mão aberta) e qualquer mistura deixava a caneta fantasma sobre a palma.
     entrada: { tipo: 'match-cut', elemento: 'mao', duracao: 0 },
     op: { flare: { x: 0.62, y: 0.2, intensidade: 0.3 } },
-    camera: mix([dollyLin(1.035, MCEU), preset('deriva', { semente: 31, intensidade: 0.6 })]),
-    match: { nome: 'mao', x: MCEU[0], y: MCEU[1], r: 150 },
+    // a foto entra 1,2x mais perto, em volta da mão (a mão de 0,52 da largura vira ~0,62): assim o caderno do plano 14
+    // casa com SC14 1,36, que ainda cobre o quadro inteiro (abaixo de ~1,25 sobrava borda escura à esquerda e embaixo)
+    camera: mix([(p) => { const s = neutro(); s.S = lerp(1.2, 1.24, p); s.alvo = MCEU; s._alvo = true; s.ids = ['dolly-in']; return s; },
+      preset('deriva', { semente: 31, intensidade: 0.6 })]),
+    match: { nome: 'mao', x: MCEU[0], y: MCEU[1], r: 125 },   // 150 / 1,2 do zoom: o marcador mede o mesmo que o do plano 14
+    // saturação da foto 32 (SATAVG) dava 22,8 no quadro do corte; 0,9 deixa dentro de 15 a 22, perto do plano 14
+    montarExtra() { this.f.canvas.style.filter = 'saturate(0.9)'; },   // no canvas: o filtro da camada data-z é da câmera
   });
 
   // ================================================================ ATO 5: CONVITE (rally)

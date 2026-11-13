@@ -691,6 +691,13 @@
       }
     };
 
+    // corte seco (entrada com duração 0: `corte`, match-cut seco ou sem entrada): acontece na fronteira do
+    // quadro, como no cinema. A cena ativa é decidida pelo número do quadro (o mesmo em todos os subtempos
+    // do motion blur), com o instante do corte arredondado para o quadro mais próximo (a soma das durações
+    // dá 30,800000000000008 e não 30,8: sem isso o 1º subtempo do quadro mostrava a cena antiga por cima).
+    const corteSeco = (c) => c.i > 0 && (!c.trEntrada || c.trEntrada.duracao === 0);
+    const quadroDoCorte = (c) => Math.round(c.inicio * FPS);
+
     function desenhar(tIn) {
       const t = clamp(tIn, 0, Math.max(0, duracao - 1e-6));
       const nq = Math.round(quadro(t) * FPS); // mesmo número em todos os subtempos do quadro
@@ -701,7 +708,9 @@
         let a = c.inicio, z = c.fim;
         if (jE && i > 0) a = Math.min(a, jE.a);
         if (prox) z = jS ? (jS.tr.tipo === 'match-cut' ? prox.inicio : jS.z) : prox.inicio;
-        c.visivel = t >= a && (t < z || (i === cenas.length - 1 && t <= z));
+        const depoisDoInicio = corteSeco(c) ? nq >= quadroDoCorte(c) : t >= a;
+        const antesDoFim = prox && corteSeco(prox) ? nq < quadroDoCorte(prox) : (t < z || (i === cenas.length - 1 && t <= z));
+        c.visivel = depoisDoInicio && antesDoFim;
         const w = c.wrap;
         w.style.display = c.visivel ? '' : 'none';
         w.style.opacity = ''; w.style.transform = ''; w.style.filter = ''; w.style.clipPath = '';
@@ -725,7 +734,9 @@
         let emTransicao = false;
       cenas.forEach((B, i) => {
         const j = janela(B);
-        if (!j || t < j.a || t >= j.z) return;
+        if (!j) return;
+        // match-cut seco: a janela é exatamente o quadro do corte (todos os subtempos dele)
+        if (j.tr.duracao === 0 ? nq !== quadroDoCorte(B) : (t < j.a || t >= j.z)) return;
         emTransicao = true;
         const q = clamp((t - j.a) / (j.z - j.a));
         if (i === 0) { B.wrap.style.opacity = ease.smoothstep(q).toFixed(4); return; }

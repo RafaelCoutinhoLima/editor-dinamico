@@ -82,6 +82,8 @@ Transição para cena com fundo muito mais claro (página branca, tela de app cl
 
 Com `--motion-blur K` o `edin html` chama `seek` em K subtempos dentro do mesmo quadro e tira a média, e passa `?mb=K&obturador=180` para a página: o blur sintético do kit (câmera, whip, zoom-through) cobre só 1/K do obturador, porque a média dos subtempos já faz o rastro inteiro (sem isso o rastro saía dobrado). Um valor discreto que muda entre os subtempos (relógio 23:07 virando 23:08, contador, texto que troca) sai como dois textos sobrepostos. Por isso dígitos, contagens e trocas de texto usam `ctx.tq`/`ctx.tql` (ou `EdinVideo.quadro(t)`), que é o mesmo em todos os subtempos do quadro. O grão já usa o número do quadro.
 
+**Corte seco acontece na fronteira do quadro.** Em toda entrada com duração 0 (`corte`, `match-cut` com `duracao: 0` ou cena sem `entrada`) o kit decide a cena ativa pelo número do quadro, não pelo subtempo, e arredonda o instante do corte para o quadro mais próximo (a soma das durações dá 30,800000000000008 e não 30,8). Assim os K subtempos de um quadro mostram todos a cena antiga ou todos a nova; antes, o 1º subtempo do quadro do corte caía na cena antiga e ela aparecia transparente por cima da nova (a caneta do plano 14 sobre a mão do 15 no manifesto). Transições com duração continuam pelo tempo contínuo (o dissolve é a própria mistura). Para conferir: `seek` nos K subtempos do quadro do corte (`t + j/K × 0,5/fps`) e a lista de cenas visíveis tem de ser a mesma em todos.
+
 K = 2 é estroboscópico: em match cut, zoom-through e push o texto vira duas cópias nítidas, não rastro. **Use 0 (sem a opção) ou K ≥ 8**, de preferência só no trecho de movimento rápido (`--start/--duration`).
 
 ## Independente de fps

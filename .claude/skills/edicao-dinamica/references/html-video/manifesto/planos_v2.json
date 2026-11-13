@@ -117,6 +117,30 @@
    "n": 8,
    "seed": 1520,
    "prompt": "close-up of one raised open hand, palm facing camera, five fingers spread, dark silhouette against the bright morning sky, beige sleeve, backlit, centered"
+  },
+  {
+   "id": "p15_mao3",
+   "lente": "50",
+   "n": 8,
+   "seed": 1530,
+   "negativo": "old hand, wrinkled skin, elderly, pale skin, extra fingers, six fingers, missing fingers, fused fingers, deformed hands, bad anatomy, two hands, face, black and white, monochrome, desaturated, grey sky, overcast, text, watermark, logo, cartoon, illustration, 3d render, cgi, lowres",
+   "prompt": "close-up of the raised open hand of a young Brazilian woman, 18, brown skin, palm facing camera, five fingers spread, beige hoodie sleeve, against a warm golden sunrise sky, orange haze, backlit"
+  },
+  {
+   "id": "p15_mao4",
+   "lente": "50",
+   "n": 8,
+   "seed": 1540,
+   "negativo": "face, head, eyes, hair, portrait, person, body, old hand, wrinkled skin, pale skin, extra fingers, six fingers, missing fingers, fused fingers, closed fist, deformed hands, bad anatomy, two hands, black and white, monochrome, grey sky, text, watermark, logo, cartoon, illustration, 3d render, cgi, lowres",
+   "prompt": "extreme close-up of a young woman's raised open hand, brown skin, palm facing camera, five fingers spread wide, hand fills the frame, beige hoodie cuff at the bottom, warm golden sunrise sky behind, orange haze"
+  },
+  {
+   "id": "p15_mao5",
+   "lente": "50",
+   "n": 8,
+   "seed": 1550,
+   "negativo": "face, head, eyes, hair, portrait, person, body, shoulder, old hand, wrinkled skin, pale skin, extra fingers, six fingers, missing fingers, fused fingers, closed fist, deformed hands, bad anatomy, two hands, black and white, monochrome, grey sky, text, watermark, logo, cartoon, illustration, 3d render, cgi, lowres",
+   "prompt": "close-up of one raised open hand, young smooth brown skin, palm facing camera, five fingers spread, filling the frame, beige sleeve at the bottom, against a warm golden sunrise sky, backlit, sun flare, centered"
   }
  ]
 }
