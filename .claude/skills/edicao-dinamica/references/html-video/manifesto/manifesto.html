@@ -380,7 +380,7 @@
     // O corte cai na fronteira do quadro 1848 (kit), sem a caneta transparente sobre a mão. Sem dissolve: a forma muda
     // (caneta para mão aberta) e qualquer mistura deixava a caneta fantasma sobre a palma.
     entrada: { tipo: 'match-cut', elemento: 'mao', duracao: 0 },
-    op: { flare: { x: 0.62, y: 0.2, intensidade: 0.3 } },
+    op: {},   // sem flare: na foto nova não há fonte de luz no alto e o reflexo virava um risco dourado sobre a mão
     // a foto entra 1,2x mais perto, em volta da mão (a mão de 0,52 da largura vira ~0,62): assim o caderno do plano 14
     // casa com SC14 1,36, que ainda cobre o quadro inteiro (abaixo de ~1,25 sobrava borda escura à esquerda e embaixo)
     camera: mix([(p) => { const s = neutro(); s.S = lerp(1.2, 1.24, p); s.alvo = MCEU; s._alvo = true; s.ids = ['dolly-in']; return s; },
