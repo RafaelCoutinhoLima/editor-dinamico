@@ -4,6 +4,8 @@ Manifesto de marca é um filme curto que diz **no que a marca acredita**, não o
 
 Roteiro modelo pronto: [manifesto-loopedu-roteiro.md](manifesto-loopedu-roteiro.md).
 
+> **Atualização de 13/11 (preferência de Rafael):** o manifesto de 12/11 feito por este guia foi reprovado ("ruim"; a referência boa é "bem melhor, mais dinâmica"). Para manifesto com pessoas realistas e narração, o modelo agora é [referencia-atletia.md](referencia-atletia.md): rostos visíveis com expressão, pessoas interagindo, clipes com ação dentro do plano, luz dura ou contraluz dourado, corte seco no ataque da fala, texto = a fala em blocos de 2 a 4 palavras. Onde este guia contradiz aquele arquivo, vale aquele. As regras de rosto anônimo abaixo estão **superadas**.
+
 ## 1. O que a pesquisa mostrou (e virou regra aqui)
 
 - **Forma em U** (a mais usada em manifesto de marca): queda, virada, subida. A metade negativa precisa ser substancial; a virada é curta (uma palavra, uma frase, um silêncio) e cai perto do meio; a subida espelha a queda. Ficar repetindo exemplos do mesmo tipo no meio mata o filme.
@@ -60,7 +62,7 @@ Regras dos atos:
 ## 4. Gramática visual com pessoas em código
 
 ### Princípios
-- **Pessoas anônimas.** Rosto nunca detalhado: silhueta, de costas, perfil em contraluz, closes de mãos, olhos de perfil e pés. Quanto menos rosto, mais o espectador se põe no lugar. Expressão facial desenhada em código vira caricatura.
+- ~~**Pessoas anônimas.** Rosto nunca detalhado: silhueta, de costas, perfil em contraluz, closes de mãos, olhos de perfil e pés. Quanto menos rosto, mais o espectador se põe no lugar.~~ **Superada em 13/11 pela preferência de Rafael:** ele quer rostos e expressões como na referência ([referencia-atletia.md](referencia-atletia.md), seções 2 e 3): rosto em ≥ 50% do tempo, close em ≥ 20%, expressão que conta a história (cansaço, sorriso, riso, euforia), pessoas interagindo. O manifesto de 12/11 tinha 0% de quadros com rosto grande e foi reprovado. O que continua valendo daqui: expressão facial **desenhada em código** vira caricatura, então pessoa com rosto vem do `edin imagem` (SDXL) e do gerador de vídeo local, não do `edin-pessoas.js`.
 - **Um protagonista com silhueta reconhecível** (ex.: coque alto + mochila de uma alça + moletom com capuz baixado). Ele aparece em pelo menos 5 planos e é o único que muda de pose ao longo do filme. Mesma proporção, mesmo perfil, mesmo objeto (mochila), como o "Element" do Higgsfield.
 - **Multidão = contexto; indivíduo = emoção.** Multidão na tensão (todos iguais, todos na mesma pose: o problema é coletivo); indivíduo na virada (a mudança é pessoal); multidão de novo no convite, agora variada e em poses diferentes (o convite é coletivo). Multidão com 3 profundidades (`data-z` 0,4 / 0,7 / 1) e desfoque crescente para trás; variar altura, cabelo (crespo, trançado, liso, raspado), boné, óculos, mochila; nunca clones lado a lado.
 - **Proporção adulta**: 7 a 7,5 cabeças de altura, ombros mais largos que a cabeça, mãos com dedos. Cabeça grande, olho de desenho e cor primária saturada = ilustração infantil (reprovado).
@@ -71,7 +73,7 @@ Regras dos atos:
 ### Estilo por momento (um estilo dominante por filme)
 | estilo | quando | por quê |
 |---|---|---|
-| `silhueta` (rim light) | **dominante, 70 a 100% dos planos** | anônimo por definição, funciona em contraluz, o rim light carrega a virada de cor (azul frio para laranja) |
+| `silhueta` (rim light) | ~~dominante, 70 a 100% dos planos~~ (superado em 13/11: só para pessoas em código; com fotos/clipes realistas, silhueta vira exceção, ver [referencia-atletia.md](referencia-atletia.md)) | anônimo por definição, funciona em contraluz, o rim light carrega a virada de cor (azul frio para laranja) |
 | `traco` | secundário, só com motivo: o que é escrito, pensado ou lembrado (mão escrevendo cujo traço vira a pessoa; a semana se desenhando) | liga a pessoa ao estudo (caneta, caderno); nunca mais de 25% dos planos |
 | `ilustracao` (chapada) | só se o filme inteiro for nesse estilo (versão clara, de dia) ou num plano de memória com moldura | misturar chapado com silhueta no mesmo trecho parece dois filmes |
 
@@ -133,7 +135,7 @@ Não use em manifesto: `whip-pan` em sequência (vira clipe de esporte), `crash-
 - [ ] Cartelas de 2 a 6 palavras, ≤ 13 caracteres/s, 40 a 65 palavras no total, minúsculas, uma palavra laranja no máximo (nenhuma na tensão).
 - [ ] Pelo menos 1 série paralela de 3 na tensão e 1 de 2 no convite.
 - [ ] Pelo menos 1 plano em 3 sugere em vez de ilustrar; pelo menos 1 imagem do contrário do óbvio (ex.: "estude melhor" sobre gente que não está estudando).
-- [ ] Rostos sem detalhe; protagonista reconhecível pela silhueta em todos os planos dele; multidão variada, sem clones.
+- [ ] ~~Rostos sem detalhe~~ (superado em 13/11): rosto visível em ≥ 50% do tempo e close em ≥ 20%, protagonista com o mesmo rosto e figurino na cor da marca em todos os planos dele, ≥ 1 em 3 planos com pessoas interagindo ([referencia-atletia.md](referencia-atletia.md)); multidão variada, sem clones.
 - [ ] Um estilo dominante (`silhueta`), no máximo um secundário com motivo escrito na ficha.
 - [ ] Toda pessoa parada só respira; cada gesto tem motivo; `comemorando`/`punho-erguido` no máximo 1 vez, longe e curto.
 - [ ] Sentido de tela: progresso para a direita da virada em diante; contraluz sempre do mesmo lado.

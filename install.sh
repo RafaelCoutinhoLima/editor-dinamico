@@ -3,8 +3,12 @@
 #   ./install.sh            instala
 #   ./install.sh --motion   também instala o Remotion (motion design por cima do vídeo)
 #   ./install.sh --esrgan   também baixa o Real-ESRGAN (upscale na GPU, 47 MB; senão baixa no 1º uso)
+#   ./install.sh --voz      também instala a narração local grátis (install_voz.sh: venv separado com Kokoro-82M
+#                           em CPU, ~400 MB; o `edin tts` usa sozinho quando não há chave do ElevenLabs)
 #   ./install.sh --imagem   também instala o edin imagem/profundidade (install_imagem.sh: venv separado com PyTorch,
 #                           SDXL + Lightning + Depth Anything V2; GPU NVIDIA 6 GB+, ~13 GB; ver docs/IMAGEM.md)
+#   ./install.sh --video    também instala o edin animar (install_video.sh: foto -> clipe com FastWan/Wan2.2-TI2V-5B, usa o
+#                           venv do edin imagem; GPU NVIDIA 6 GB+, ~60 GB em disco; ver docs/VIDEO_IA.md)
 set -euo pipefail
 cd "$(dirname "$0")"
 REPO="$(pwd)"
@@ -98,6 +102,22 @@ if [[ " $* " == *" --imagem "* ]]; then
   "$REPO/install_imagem.sh" || say "install_imagem.sh falhou; veja as mensagens acima e docs/IMAGEM.md."
 else
   say "Opcional: fotos realistas e parallax 3D (edin imagem): ./install.sh --imagem (GPU NVIDIA 6 GB+, ver docs/IMAGEM.md)"
+fi
+
+# ---------------------------------------------------------------- vídeo de IA a partir de foto, opcional
+if [[ " $* " == *" --video "* ]]; then
+  say "Instalando o edin animar (vídeo de IA, ver docs/VIDEO_IA.md)..."
+  "$REPO/install_video.sh" || say "install_video.sh falhou; veja as mensagens acima e docs/VIDEO_IA.md."
+else
+  say "Opcional: vídeo de IA a partir de foto (edin animar): ./install.sh --video (GPU NVIDIA 6 GB+, ~60 GB, ver docs/VIDEO_IA.md)"
+fi
+
+# ---------------------------------------------------------------- narração local (Kokoro, CPU), opcional
+if [[ " $* " == *" --voz "* ]]; then
+  say "Instalando a narração local (Kokoro-82M na CPU)..."
+  "$REPO/install_voz.sh" || say "install_voz.sh falhou; veja as mensagens acima."
+else
+  say "Opcional: narração local grátis sem chave do ElevenLabs: ./install.sh --voz (~400 MB, só CPU)"
 fi
 
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *)

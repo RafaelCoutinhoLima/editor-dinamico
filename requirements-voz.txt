@@ -1,0 +1,21 @@
+# Pacotes do venv SEPARADO da narração local (~/.local/share/edin/voz/venv), instalados pelo ./install_voz.sh.
+# Versões exatas do ambiente testado em 2026-11-13 (Python 3.12, só CPU; onnxruntime CPU, sem PyTorch).
+#
+# Pedidos diretos: kokoro-onnx (MIT; roda o Kokoro-82M, Apache 2.0) e soundfile. O kokoro-onnx fonemiza o
+# português com o espeak-ng embutido no espeakng-loader (não precisa do espeak-ng do sistema).
+# Piper (opcional, ./install_voz.sh --piper): piper-tts==1.8.0 (GPL-3.0, OHF-Voice/piper1-gpl), fica fora daqui.
+cffi==2.1.1
+cloudpickle==3.1.2
+dlinfo==2.0.0
+espeakng-loader==0.2.4
+flatbuffers==25.12.19
+joblib==1.6.0
+kokoro-onnx==0.6.1
+numpy==2.5.4
+onnxruntime==1.32.0
+packaging==26.3
+phonemizer==3.6.0
+protobuf==7.36.2
+pycparser==3.12
+soundfile==0.14.0
+typing-extensions==4.16.0

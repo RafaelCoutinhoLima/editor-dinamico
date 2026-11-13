@@ -1,0 +1,49 @@
+{
+  "_comentario": "Modelos do `edin animar` (foto -> clipe). Lido pelo install_video.sh (baixa só estes arquivos, nesta revisão, com o mesmo 'baixar' do imagem_worker.py) e pelo edin/animar.py. Pesos em ~/.local/share/edin/video/modelos/<pasta>, nunca no git. O motor padrão é o fastwan; o transformer oficial (motor wan, --qualidade) vem em fp32 (20 GB): o install_video.sh grava uma cópia bf16 (10 GB) em <pasta>/transformer_bf16.",
+  "modelos": {
+    "wan22_ti2v_5b": {
+      "repo": "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
+      "revisao": "b8fff7315c768468a5333511427288870b2e9635",
+      "pasta": "wan2.2-ti2v-5b",
+      "licenca": "Apache 2.0 (uso comercial permitido)",
+      "autor": "Wan-AI (Alibaba)",
+      "uso": "UMT5-XXL (texto), VAE Wan2.2 (16x16x4) e scheduler para os dois motores; o transformer 5 B oficial (fp32, 20 GB, convertido para bf16) é o motor wan (`edin animar --qualidade`, 50 passos com CFG). `install_video.sh --sem-qualidade` pula os shards do transformer",
+      "mb": 34201,
+      "arquivos": {
+        "model_index.json": 499,
+        "scheduler/scheduler_config.json": 820,
+        "text_encoder/config.json": 855,
+        "text_encoder/model-00001-of-00003.safetensors": 4935812536,
+        "text_encoder/model-00002-of-00003.safetensors": 4983103192,
+        "text_encoder/model-00003-of-00003.safetensors": 1442935480,
+        "text_encoder/model.safetensors.index.json": 22476,
+        "tokenizer/special_tokens_map.json": 7079,
+        "tokenizer/spiece.model": 4548313,
+        "tokenizer/tokenizer.json": 16837459,
+        "tokenizer/tokenizer_config.json": 61758,
+        "transformer/config.json": 495,
+        "transformer/diffusion_pytorch_model-00001-of-00005.safetensors": 4978254344,
+        "transformer/diffusion_pytorch_model-00002-of-00005.safetensors": 4846784976,
+        "transformer/diffusion_pytorch_model-00003-of-00005.safetensors": 4972658392,
+        "transformer/diffusion_pytorch_model-00004-of-00005.safetensors": 4846785080,
+        "transformer/diffusion_pytorch_model-00005-of-00005.safetensors": 354751840,
+        "transformer/diffusion_pytorch_model.safetensors.index.json": 73297,
+        "vae/config.json": 1701,
+        "vae/diffusion_pytorch_model.safetensors": 2818777808
+      }
+    },
+    "fastwan": {
+      "repo": "FastVideo/FastWan2.2-TI2V-5B-FullAttn-Diffusers",
+      "revisao": "3e187042a324f6f5fb68fd22110a78725253de8f",
+      "pasta": "fastwan2.2-ti2v-5b",
+      "licenca": "Apache 2.0 (uso comercial permitido)",
+      "autor": "FastVideo / Hao AI Lab (UCSD)",
+      "uso": "motor fastwan (padrão do `edin animar`): o Wan2.2-TI2V-5B destilado por DMD para 3 passos sem CFG (só o transformer, bf16)",
+      "mb": 10000,
+      "arquivos": {
+        "transformer/config.json": 503,
+        "transformer/diffusion_pytorch_model.safetensors": 9999660080
+      }
+    }
+  }
+}

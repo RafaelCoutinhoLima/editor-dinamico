@@ -321,6 +321,124 @@
     };
   }
 
+  // ------------------------------------------------------------------ clipes de vídeo
+  // EdinVideo.clipe(el, { src: 'clipes/x.mp4' | quadros: 'clipes/x/%05d.jpg', fps, inicio, velocidade,
+  //   ajuste: 'cover'|'contain', foco: [x, y], interp: 'auto'|'mistura'|'nenhum' })
+  // Toca um clipe (mp4 de IA, 2 a 5 s) a partir da sequência de quadros extraída pelo `edin quadros`
+  // (pasta clipes/x/ com 00000.jpg... e quadros.js). Determinístico: no seek(t) mostra exatamente o
+  // quadro do clipe daquele instante e o seek só resolve depois da imagem decodificada. Só um pool pequeno
+  // de <img> fica na memória (padrão 6), nunca o clipe inteiro.
+  // Tempo: tc = inicio + velocidade * t (s do clipe); antes do 0 mostra o 1º quadro, depois do fim congela
+  // no último. Com --motion-blur os K subtempos de um quadro mostram o mesmo quadro do clipe (o clipe já
+  // traz o próprio rastro; a câmera do kit continua borrando nos subtempos). `subquadro: true` desliga isso.
+  // interp: 'mistura' = mistura linear dos dois quadros vizinhos (24 fps em 60 sem o degrau 3:2);
+  // 'nenhum' = quadro inteiro; 'auto' (padrão) = 'nenhum' se o fps do vídeo for múltiplo do fps do clipe x
+  // velocidade, senão 'mistura'. O ideal é o clipe já interpolado: `edin quadros x.mp4 --fps 60`.
+  const _quadroPend = [];
+  // recurso que o quadro atual precisa (o seek espera por ele antes de resolver)
+  const esperarQuadro = (pr) => { _quadroPend.push(Promise.resolve(pr)); return pr; };
+  const _scripts = {};
+  function carregarScript(url) {
+    if (!_scripts[url]) _scripts[url] = new Promise((ok, erro) => {
+      const s = document.createElement('script'); s.src = url; s.onload = ok;
+      s.onerror = () => erro(new Error(`não carregou ${url}`)); document.head.appendChild(s);
+    });
+    return _scripts[url];
+  }
+  const nomeQuadro = (padrao, i) => padrao.replace(/%0?(\d*)d/, (m, n) => String(i).padStart(+n || 0, '0'));
+  function clipe(pai, opcoes = {}) {
+    const op = Object.assign({ fps: null, inicio: 0, velocidade: 1, ajuste: 'cover', foco: [0.5, 0.5], interp: 'auto',
+      pool: 6, adiante: 2, subquadro: false, n: null, primeiro: null, fundo: 'transparent' }, opcoes);
+    let pasta, padraoOp = null;
+    if (op.quadros) { const i = op.quadros.lastIndexOf('/'); pasta = i >= 0 ? op.quadros.slice(0, i) : '.'; padraoOp = op.quadros.slice(i + 1); }
+    else if (op.src) pasta = op.src.replace(/\.[^./]+$/, '');
+    else throw new Error('EdinVideo.clipe: passe src ou quadros');
+    const base = new URL(pasta.replace(/\/?$/, '/'), location.href).href;
+    const raiz = criar('div', { class: 'edin-clipe', 'data-decorativo': '', style: { position: 'absolute', inset: '0', overflow: 'hidden', background: op.fundo } }, pai);
+    const pos = `${(op.foco[0] * 100).toFixed(3)}% ${(op.foco[1] * 100).toFixed(3)}%`;
+    const slots = [];
+    for (let i = 0; i < Math.max(3, op.pool); i++) {
+      const img = criar('img', { 'data-edin-clipe': '', alt: '', style: { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%',
+        objectFit: op.ajuste === 'contain' ? 'contain' : 'cover', objectPosition: pos, display: 'none' } }, raiz);
+      slots.push({ img, idx: -1, uso: 0, pr: null, ok: false });
+    }
+    let info = null, modo = 'nenhum', relogio = 0, pedido = 0;
+    const url = (i) => base + nomeQuadro(info.padrao, (info.primeiro || 0) + i);
+    function slot(i, protegidos) {
+      let s = slots.find((x) => x.idx === i);
+      if (!s) {
+        s = slots.filter((x) => !protegidos.includes(x)).sort((a, b) => a.uso - b.uso)[0];
+        s.idx = i; s.ok = false; s.img.src = url(i);
+        const este = s;
+        s.pr = s.img.decode().then(() => { if (este.idx === i) este.ok = true; },
+          () => { if (este.idx === i && este.img.src === url(i)) console.warn(`[edin] clipe: quadro não carregou: ${url(i)}`); });
+      }
+      s.uso = ++relogio;
+      return s;
+    }
+    function mostrar(a, b, w) {
+      for (const s of slots) {
+        const on = s === a || (b && s === b);
+        s.img.style.display = on ? '' : 'none';
+        s.img.style.zIndex = s === b ? '2' : '1';
+        s.img.style.opacity = s === b ? w.toFixed(4) : '';
+      }
+    }
+    const pronto = (async () => {
+      if (!(op.n && op.fps && padraoOp)) {
+        const u = base + 'quadros.js';
+        try { await carregarScript(u); } catch (e) {
+          throw new Error(`clipe ${pasta}: falta ${pasta}/quadros.js; rode: edin quadros ${op.src || pasta + '.mp4'}`);
+        }
+        info = Object.assign({}, (window.EDIN_CLIPES || {})[u]);
+      } else info = {};
+      if (op.n) info.n = op.n; if (op.fps) info.fps = op.fps; if (padraoOp) info.padrao = padraoOp;
+      if (op.primeiro != null) info.primeiro = op.primeiro;
+      if (!info.n || !info.fps || !info.padrao) throw new Error(`clipe ${pasta}: faltam n/fps/padrao`);
+      const taxa = info.fps * Math.abs(op.velocidade), r = FPS / taxa;
+      modo = op.interp === 'auto' ? (Math.abs(r - Math.round(r)) < 1e-3 && r >= 1 ? 'nenhum' : 'mistura') : op.interp;
+      if (op.interp === 'nenhum' && Math.abs(r - Math.round(r)) > 1e-3)
+        console.warn(`[edin] clipe ${pasta}: ${info.fps} fps x ${op.velocidade} em ${FPS} fps sem mistura vai engasgar (cadência irregular); use interp 'mistura' ou edin quadros --fps ${FPS}`);
+      const s = slot(0, []); await s.pr; mostrar(s, null, 0);
+    })();
+    esperar(pronto);
+    const obj = {
+      el: raiz,
+      get info() { return info; },
+      get modo() { return modo; },
+      // posição no clipe (em quadros, fracionária) para o tempo t
+      posicao(t) {
+        let x = (op.inicio + op.velocidade * t) * info.fps;
+        x = Math.round(x * 1e6) / 1e6;
+        return clamp(x, 0, info.n - 1);
+      },
+      // t: tempo local (o mesmo do atualizar da cena, com o deslocamento que quiser); ctx: o da cena,
+      // para todos os subtempos do motion blur caírem no mesmo quadro do clipe
+      atualizar(t, ctx) {
+        if (!info) return;
+        if (ctx && !op.subquadro && ctx.tg != null && ctx.tq != null) t -= ctx.tg - ctx.tq;
+        const x = obj.posicao(t);
+        let f0 = Math.floor(x), w = x - f0;
+        if (modo !== 'mistura' || w < 1 / 512) w = 0;
+        else if (w > 1 - 1 / 512) { f0 += 1; w = 0; }
+        if (f0 >= info.n - 1) { f0 = info.n - 1; w = 0; }
+        const a = slot(f0, []), b = w > 0 ? slot(f0 + 1, [a]) : null;
+        // adiante: decodifica os próximos sem esperar (render em ordem fica mais rápido)
+        const dir = op.velocidade < 0 ? -1 : 1;
+        for (let k = 1; k <= op.adiante; k++) {
+          const j = f0 + (b ? 1 : 0) + dir * k;
+          if (j >= 0 && j < info.n && slots.length > 2 + k) slot(j, b ? [a, b] : [a]);
+        }
+        a.uso = ++relogio; if (b) b.uso = ++relogio;
+        const meu = ++pedido;
+        if (a.ok && (!b || b.ok)) mostrar(a, b, w);
+        // no render o seek espera esta promessa; na prévia a troca acontece quando a imagem chega
+        esperarQuadro(Promise.all([a.pr, b && b.pr]).then(() => { if (meu === pedido) mostrar(a, b, w); }));
+      },
+    };
+    return obj;
+  }
+
   // ------------------------------------------------------------------ CSS base
   const CSS = `
   html,body{margin:0;padding:0;background:#111;overflow:hidden}
@@ -653,7 +771,7 @@
         await Promise.all(fs);
         await document.fonts.ready;
       } catch (e) { /* sem FontFaceSet */ }
-      const imgs = [...palco.querySelectorAll('img')];
+      const imgs = [...palco.querySelectorAll('img:not([data-edin-clipe])')];
       await Promise.all(imgs.map((im) => (im.decode ? im.decode() : Promise.resolve()).catch(() => v.avisar(`imagem não carregou: ${im.getAttribute('src')}`))));
       if (op.precarregar) await precarregar(op.precarregar);
       await Promise.all(_pendentes.map((pr) => pr.catch((e) => v.avisar(`recurso não carregou: ${e && e.message || e}`))));
@@ -700,6 +818,7 @@
 
     function desenhar(tIn) {
       const t = clamp(tIn, 0, Math.max(0, duracao - 1e-6));
+      _quadroPend.length = 0; // pedidos de imagem deste quadro (clipes); o seek espera por eles
       const nq = Math.round(quadro(t) * FPS); // mesmo número em todos os subtempos do quadro
       // 1) quem aparece
       cenas.forEach((c, i) => {
@@ -755,7 +874,7 @@
         g.el.style.display = vis ? '' : 'none';
         if (!vis) return;
         g.el.style.opacity = fd > 0 ? String(clamp((t - ini) / fd) * clamp((fi - t) / fd)) : '';
-        g.ctx.tq = quadro(t);
+        g.ctx.tq = quadro(t); g.ctx.tg = t;
         if (c.atualizar) c.atualizar(g.el, t, clamp((t - ini) / ((fi - ini) || 1)), g.ctx);
       });
       if (grao) grao(nq);
@@ -803,7 +922,8 @@
       window.EDIN = {
         duration: duracao,
         fps: FPS, width: W, height: H,
-        seek: (t) => pronto.then(() => { desenhar(t); }),
+        // o seek resolve depois das imagens que o quadro precisa (clipes de vídeo) estarem decodificadas
+        seek: (t) => pronto.then(() => { desenhar(t); const ps = _quadroPend.splice(0); return ps.length ? Promise.all(ps).then(() => {}) : undefined; }),
         ready: () => pronto,
       };
     }
@@ -863,7 +983,7 @@
     w: W, h: H, fps: FPS, u: U, render: RENDER, vertical: H > W, mb: MB, obturador: OBT,
     luz: LUZ, sombra, halo, poeira,
     video, quadro, ease, bezier, mola, interp, interpLog, chaves, clamp, lerp, mix,
-    ruido, aleatorio, hash, px, estilo, criar, legenda, precarregar, svgDefs, filtroBlur, esperar,
+    ruido, aleatorio, hash, px, estilo, criar, legenda, precarregar, svgDefs, filtroBlur, esperar, esperarQuadro, clipe,
     transicoes: TRANSICOES,
   };
 })();

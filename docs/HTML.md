@@ -57,6 +57,38 @@ No modo contrato o relógio virtual é desligado assim que o `EDIN` aparece (tim
 `Math.random` continua com semente). Animações CSS que o `seek` não controla rodam em tempo real e **não** são
 determinísticas: no contrato, posicione tudo no `seek`.
 
+## Clipes de vídeo (`edin quadros` + `EdinVideo.clipe`)
+
+```bash
+edin quadros clipes/x.mp4 --fps 60      # clipes/x/00000.jpg... + quadros.js + quadros.json (interpolado, minterpolate mci)
+edin quadros clipes/x.mp4               # mantém o fps do clipe
+```
+
+Opções: `--fps N` (acima do fps do clipe interpola; `--interp mci` padrão, `blend`, `dup` ou `rife` se o
+`rife-ncnn-vulkan` estiver instalado), `--largura` (padrão: a do clipe, lado menor no máximo 1080, nunca
+amplia; lanczos), `--formato jpg|webp`, `--qualidade` (jpg `-q:v`, padrão 2; webp 0 a 100, padrão 92),
+`--inicio`/`--duracao` (só um trecho), `-o pasta`. O `quadros.js` registra n, fps, tamanho e padrão do nome e é
+carregado pelo kit com `<script>` (por `file://` o Chrome não deixa `fetch` de JSON na prévia).
+
+No kit (`html-video/edin-video.js`): `EdinVideo.clipe(el, { src: 'clipes/x.mp4', fps, inicio, velocidade,
+ajuste: 'cover'|'contain', foco: [x, y], interp })` e, no `atualizar`, `clipe.atualizar(t, ctx)`. Um pool de 6
+`<img>` com `decode()`: cada `seek` calcula o quadro do clipe (com velocidade e congelamento no último), troca
+o `src` de um `<img>` livre e o `EDIN.seek` só resolve depois de `img.decode()` (o kit junta as promessas do
+quadro em `EdinVideo.esperarQuadro`). Nunca carrega o clipe inteiro. Detalhes, opções e medidas no LEIAME do
+kit, seção "Clipes de vídeo".
+
+Medido (clipe 1920x1080 de 3 s, página 1080x1920 com cover, push-in, deriva, legenda e corte seco):
+
+| Teste | Resultado |
+|---|---|
+| seek em ordem x embaralhado x invertido (56 quadros, Chrome novo a cada ordem) | **0 diferentes** (md5 do PNG) |
+| rascunho 360 quadros, 1 x 4 workers | **0 diferentes** |
+| `--motion-blur 8` em resolução cheia, 1 x 4 workers (15 quadros em volta do corte seco) | **0 diferentes**; 2,1 q/s com 4 workers |
+| subtempos do motion blur (K = 8, 19 quadros) | o mesmo quadro do clipe nos 8 subtempos em todos |
+| cadência 24 fps num vídeo de 60: cru / `mistura` / `--fps 60` mci | 107 de 178 quadros repetidos (3:2) / 0 repetidos / 0 repetidos |
+| memória por Chrome | ~0,8 GB com clipe em 1920x1080 (0,3 sem), estável: 1500 quadros com 4 workers entre 3,1 e 3,3 GB |
+| velocidade, rascunho 1080x1920 a 60 fps, 4 workers | 30 a 37 q/s |
+
 ## Opções
 
 | Opção | O que faz |
@@ -137,9 +169,10 @@ Sem o aquecimento (ver abaixo) 1 em 900 quadros saía com o brilho de um `drop-s
   um gerador com semente derivada de `t`/índice. `crypto.getRandomValues` não tem semente.
 - **`seek` puro**: nada de estado que dependa do quadro anterior (`x += 5` dentro do `seek`). Calcule tudo a
   partir de `t`. Física/partículas: simule de 0 até `t` com passo fixo, ou pré-calcule a trajetória.
-- **`<video>` dentro da página** não acompanha o relógio: no `seek`, faça `video.currentTime = t` e espere
-  o evento `seeked` (devolva a Promise). No modo livre o `<video>` toca em tempo real (não use). Prefira
-  sequência de imagens ou recorte o vídeo depois no `edin render`.
+- **`<video>` dentro da página** não acompanha o relógio e não é usado: `seeked` não garante que o quadro já
+  foi pintado, `currentTime` na fronteira entre dois quadros cai em um ou outro conforme o decodificador, e o
+  `<video>` toca em tempo real no modo livre. Para clipe (mp4 de IA etc.) use a sequência de quadros: veja
+  "Clipes de vídeo" abaixo.
 - **Lottie/GSAP/anime.js no contrato**: use o seek da própria biblioteca (`anim.goToAndStop(t*1000)`,
   `timeline.seek(t)`, `tl.pause()`), não deixe tocando sozinha.
 - **Imagens**: `<img>` são esperadas e decodificadas; imagens de fundo CSS e `new Image()` não. Pré-carregue no

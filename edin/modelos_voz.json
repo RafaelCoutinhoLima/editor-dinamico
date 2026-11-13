@@ -1,0 +1,39 @@
+{
+  "_sobre": "Pesos da narração local (edin tts --local). Baixados pelo install_voz.sh em ~/.local/share/edin/voz/modelos, conferidos pelo sha256. Nunca vão para o git.",
+  "modelos": {
+    "kokoro-v1.0.onnx": {
+      "motor": "kokoro",
+      "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx",
+      "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+      "bytes": 325532387,
+      "licenca": "Apache-2.0 (Kokoro-82M, hexgrad/Kokoro-82M no Hugging Face; exportado para ONNX pelo projeto kokoro-onnx, MIT)"
+    },
+    "voices-v1.0.bin": {
+      "motor": "kokoro",
+      "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin",
+      "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d",
+      "bytes": 28214398,
+      "licenca": "Apache-2.0 (vozes do Kokoro-82M, inclui pm_alex, pm_santa, pf_dora)"
+    },
+    "pt_BR-faber-medium.onnx": {
+      "motor": "piper",
+      "opcional": true,
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx",
+      "bytes": 63221984,
+      "licenca": "MIT (rhasspy/piper-voices); dados da voz faber CC0",
+      "sha256": "75e913eb463db0b6ac7ddf68d3e4c9ac19ace36dc3b710a81039b448352b8ffc"
+    },
+    "pt_BR-faber-medium.onnx.json": {
+      "motor": "piper",
+      "opcional": true,
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx.json",
+      "bytes": 5466,
+      "licenca": "MIT (rhasspy/piper-voices)",
+      "sha256": "fa8a8fecb01ae198bc416381e368d3206f85bad1449a0f11e1f6a9edf85a32f1"
+    }
+  },
+  "pronuncia": {
+    "_sobre": "Troca só no texto que vai para a voz (a legenda e os .json mantêm a grafia do roteiro). Chave: palavra exata do roteiro.",
+    "LoopEdu": "Lup Edú"
+  }
+}

@@ -99,23 +99,26 @@ def _espera_gpu_livre(limite_mb: int = 600, timeout: float = 30.0):
         time.sleep(0.5)
 
 
-def _roda_worker(cmd: str, job: dict, on_evento=None) -> list[dict]:
+def _roda_worker(cmd: str, job: dict, on_evento=None, worker: Path | None = None) -> list[dict]:
     """Roda uma etapa no venv de imagem. Se o cuDNN falhar ao carregar kernels (a GPU acabou de ser liberada
     pelo processo anterior e a falha fica presa no processo), repete a etapa num processo novo."""
     for tentativa in range(3):
         try:
-            return _roda_worker_1(cmd, job, on_evento)
+            return _roda_worker_1(cmd, job, on_evento, worker)
         except _ErroCudnn:
             print(f"[edin] {cmd}: cuDNN não carregou (GPU recém-liberada); repetindo num processo novo", flush=True)
             time.sleep(5 + 5 * tentativa)
-    return _roda_worker_1(cmd, job, on_evento)
+    return _roda_worker_1(cmd, job, on_evento, worker)
 
 
 class _ErroCudnn(Exception):
     pass
 
 
-def _roda_worker_1(cmd: str, job: dict, on_evento=None) -> list[dict]:
+def _roda_worker_1(cmd: str, job: dict, on_evento=None, worker: Path | None = None) -> list[dict]:
+    """Roda `worker` (padrão: imagem_worker.py) no venv de imagem; eventos JSON do stdout vão para on_evento."""
+    worker = worker or WORKER
+    rotulo = "imagem" if worker == WORKER else worker.stem.replace("_worker", "")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(job, f)
         jp = f.name
@@ -129,11 +132,11 @@ def _roda_worker_1(cmd: str, job: dict, on_evento=None) -> list[dict]:
     eventos = []
     from .utils import TravaPesada
 
-    trava = TravaPesada(f"edin imagem ({cmd})").__enter__()
+    trava = TravaPesada(f"edin {rotulo} ({cmd})").__enter__()
     _espera_gpu_livre()
     time.sleep(3)  # o driver ainda termina de soltar o contexto do processo anterior
     try:
-        p = subprocess.Popen([str(VENV_PY), "-I", str(WORKER), cmd, jp], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        p = subprocess.Popen([str(VENV_PY), "-I", str(worker), cmd, jp], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              text=True, env=env)
         err: list[str] = []
         import threading
@@ -151,16 +154,16 @@ def _roda_worker_1(cmd: str, job: dict, on_evento=None) -> list[dict]:
         p.wait()
         th.join(timeout=2)
         if p.returncode != 0:
-            log_erro = Path.home() / ".cache" / "edin" / "imagem_erro.log"
+            log_erro = Path.home() / ".cache" / "edin" / f"{rotulo}_erro.log"
             log_erro.parent.mkdir(parents=True, exist_ok=True)
             log_erro.write_text(f"etapa: {cmd}\n" + "".join(err))
-            shutil.copy(jp, log_erro.with_name(f"imagem_erro_job_{cmd}.json"))
+            shutil.copy(jp, log_erro.with_name(f"{rotulo}_erro_job_{cmd}.json"))
             if "CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED" in "".join(err):
                 raise _ErroCudnn()
             tail = "".join(err[-25:]) + f"\n[edin] log completo da etapa '{cmd}': {log_erro}"
             if "OutOfMemoryError" in tail or "out of memory" in tail:
                 tail += "\n[edin] faltou VRAM: feche outros programas que usam a GPU (nvidia-smi) e tente de novo."
-            raise SystemExit(f"[edin] o worker de imagem falhou ({p.returncode}):\n{tail}")
+            raise SystemExit(f"[edin] o worker de {rotulo} falhou ({p.returncode}):\n{tail}")
     finally:
         trava.__exit__(None, None, None)
         os.unlink(jp)

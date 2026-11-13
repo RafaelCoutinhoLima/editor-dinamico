@@ -2,7 +2,7 @@
 
 JavaScript puro, sem build e sem dependências. Abra `exemplo.html` no navegador (file://) para ver e arrastar a barra de tempo; o `edin html` abre a mesma página com `?w=1080&h=1920&fps=60&render=1` (e `&mb=K&obturador=180` com `--motion-blur K`), chama `EDIN.seek(t)` quadro a quadro e captura. `?w=1920&h=1080` gera a versão horizontal. `?t=5.2` abre já nesse instante.
 
-Arquivos: `edin-video.js` (linha do tempo, transições, easings, ruído, grão de película, luz, grade de cor, poeira), `edin-cam.js` (câmera 2.5D com os presets do Higgsfield, valores de `../higgsfield-camera.md`, deriva, profundidade de campo), `edin-foto3d.js` (foto com parallax real pela profundidade em WebGL, ver "Fotos realistas com profundidade"), `exemplo.html` (Reel de 29,2 s em 7 planos, feito para 60 fps com `--motion-blur 8`; o último quadro é o primeiro), `edin-pessoas.js` (pessoas estilizadas em código: rig, 3 estilos, poses, multidão, closes; seção "Pessoas"), `pessoas.html` (folha de teste de 15,6 s: cada pose nos 3 estilos, multidão e closes), `fontes/` (Sora 600 e 700).
+Arquivos: `edin-video.js` (linha do tempo, transições, easings, ruído, grão de película, luz, grade de cor, poeira), `edin-cam.js` (câmera 2.5D com os presets do Higgsfield, valores de `../higgsfield-camera.md`, deriva, profundidade de campo), `edin-foto3d.js` (foto com parallax real pela profundidade em WebGL, ver "Fotos realistas com profundidade"), `EdinVideo.clipe` dentro do `edin-video.js` (clipe mp4 de IA quadro a quadro, ver "Clipes de vídeo"), `exemplo.html` (Reel de 29,2 s em 7 planos, feito para 60 fps com `--motion-blur 8`; o último quadro é o primeiro), `edin-pessoas.js` (pessoas estilizadas em código: rig, 3 estilos, poses, multidão, closes; seção "Pessoas"), `pessoas.html` (folha de teste de 15,6 s: cada pose nos 3 estilos, multidão e closes), `fontes/` (Sora 600 e 700).
 
 Render de filme (o padrão para entregar): `edin html exemplo.html --fps 60 --motion-blur 8 -o videos/final.mp4`. Rascunho para iterar: `--draft --fps 60` sem motion blur; trecho: `--start S --duration D`.
 
@@ -159,6 +159,52 @@ v.cena({ id: 'janela', duracao: 4,
   uma mancha borrada; em fundo de bokeh não aparece. Teste de referência: `videos editados/manifesto_2026-11-12/teste_foto3d.html`
   (dolly-in na janela, dissolve, arc na escada; 480 quadros a 60 fps com motion blur 8 em 104 s).
 
+## Clipes de vídeo (`EdinVideo.clipe`)
+
+Para manifesto com clipes de IA (2 a 5 s, mp4 de ~24 fps, 720p a 1080p, do `edin animar` ou do Higgsfield) com cortes secos, texto e câmera do kit por cima. O clipe não toca como `<video>`: o `edin quadros` extrai a sequência de quadros e o kit mostra, em cada `seek(t)`, exatamente o quadro do clipe daquele instante, e o `seek` só resolve depois da imagem decodificada. Seek fora de ordem, 1 ou 4 workers e os subtempos do motion blur dão o mesmo quadro.
+
+```bash
+edin quadros clipes/corrida.mp4 --fps 60      # -> clipes/corrida/00000.jpg ... + quadros.js (interpolado a 60, minterpolate mci)
+edin quadros clipes/corrida.mp4               # sem --fps: mantém os 24 fps (o kit mistura os vizinhos)
+```
+
+```html
+<script src="edin-video.js"></script><script src="edin-cam.js"></script>
+<script>
+v.cena({ id: 'corrida', duracao: 3, entrada: 'corte',
+  camera: EdinCam.mix([EdinCam.preset('dolly-in', { intensidade: 0.8, easing: 'linear' }), EdinCam.preset('deriva')]),
+  montar(el, ctx) {
+    el.innerHTML = '<div data-z="1" data-sobra="0.05" class="clipe"></div>';   // sobra: a deriva encolhe e desloca
+    this.c = EdinVideo.clipe(el.querySelector('.clipe'), { src: 'clipes/corrida.mp4', ajuste: 'cover', foco: [0.35, 0.5] });
+    this.leg = EdinVideo.legenda(el, { texto: 'cada passo *conta*' });
+  },
+  atualizar(el, t, p, ctx) { this.c.atualizar(t, ctx); this.leg.atualizar(t, 0, 3); },   // passe o ctx
+});
+</script>
+```
+
+| opção | o que faz |
+|---|---|
+| `src: 'clipes/x.mp4'` | usa a pasta `clipes/x/` que o `edin quadros` criou ao lado do mp4 (lê `clipes/x/quadros.js`: n, fps, padrão do nome). Sem a pasta, o render para com `falta clipes/x/quadros.js; rode: edin quadros ...` |
+| `quadros: 'clipes/x/%05d.jpg'` | sequência própria; com `n` e `fps` nas opções não precisa do `quadros.js` (`primeiro` = número do 1º arquivo, padrão 0) |
+| `fps` | fps do clipe (padrão: o do `quadros.js`) |
+| `inicio` | segundo do clipe que aparece no t = 0 da cena (padrão 0) |
+| `velocidade` | 0,5 = câmera lenta, 2 = dobro, negativa = de trás para frente (com `inicio` no fim). Antes do começo mostra o 1º quadro; depois do fim **congela no último** |
+| `ajuste` | `cover` (padrão, preenche o quadro e corta) ou `contain` (inteiro, com `fundo`) |
+| `foco: [x, y]` | ponto do clipe que fica no quadro quando o `cover` corta (0 a 1; 16:9 num quadro 9:16 corta os lados: `[0.35, 0.5]` mantém quem está um pouco à esquerda) |
+| `interp` | `'auto'` (padrão): `'nenhum'` se o fps do vídeo for múltiplo de fps do clipe × velocidade (60 fps de clipe em vídeo de 60, 30 em 60), senão `'mistura'` (mistura linear dos dois quadros vizinhos). `'nenhum'` força o quadro inteiro |
+| `subquadro` | `true` deixa o clipe andar nos subtempos do motion blur (padrão `false`: os K subtempos de um quadro mostram o mesmo quadro do clipe, porque o clipe já traz o próprio rastro; a câmera do kit continua borrando) |
+| `pool`, `adiante` | `<img>` em memória (padrão 6) e quantos quadros à frente decodificar sem esperar (padrão 2) |
+
+- `this.c.atualizar(t, ctx)`: `t` é o tempo local que quiser (some ou subtraia para o clipe começar depois); o `ctx` da cena faz todos os subtempos do motion blur caírem no mesmo quadro do clipe. Numa camada global (`v.camada`) também passe o `ctx`.
+- Câmera: ponha o clipe dentro de uma camada `data-z` (sujeito `1`) **com `data-sobra="0.05"`**; push-in, deriva e os presets do Higgsfield valem sobre ele. Sem a sobra a `deriva` (escala até 0,988 e deslocamento de 1,2%) mostra faixa preta de até ~45 px em cima e embaixo (visto no teste). Truck, pan e handheld: `data-sobra="0.1"` ou mais.
+- Corte seco entre clipes: `entrada: 'corte'` (o corte cai na fronteira do quadro; ver "Motion blur"). Texto e efeitos do kit por cima como em qualquer cena.
+- **Fluidez a 60 fps.** Clipe de 24 fps cru num vídeo de 60 engasga: o mesmo quadro fica 3, 2, 3, 2 quadros na tela (medido: 107 de 178 quadros repetidos). `interp: 'mistura'` tira o degrau (nenhum repetido), mas mistura dois quadros: o que anda rápido (pé, mão) vira duas cópias semitransparentes. **O ideal é gerar o clipe já interpolado:** `edin quadros x.mp4 --fps 60` (minterpolate `mi_mode=mci`, `mc_mode=aobmc`, `me_mode=bidir`, `vsbmc=1`, com detecção de corte): o quadro intermediário mostra o pé no meio do caminho, nítido (`videos editados/manifesto_2026-11-12/teste_clipe/comparacao_interp.jpg`: real, mistura, mci, real). Custo: ~18 s por segundo de clipe 1920x1080 na CPU (3 s em 53 s), pico de 1,2 GB. `--interp rife` usa o `rife-ncnn-vulkan` se estiver instalado (não está nesta máquina); `--interp blend` é a mistura do próprio ffmpeg. Confira o clipe interpolado: mci pode deformar bordas em movimento muito rápido ou com oclusão (mão passando na frente do rosto); nesses, prefira `mistura` no kit.
+- **Disco e memória.** JPG de qualidade alta (`-q:v 2`, 4:4:4) dá ~270 KB por quadro em 1920x1080: 3 s a 60 fps = 49 MB. No render cada Chrome sobe para ~0,8 GB com clipe em 1920x1080 (sem clipe ~0,3 GB) e **estabiliza**: 1500 quadros diferentes com 4 workers ficaram em 3,1 a 3,3 GB do começo ao fim. Com `--workers 4` cabe no `seguro 6000`.
+- **Velocidade.** Rascunho 1080x1920 a 60 fps com 4 workers: 30 a 37 q/s (360 quadros em ~10 s); a decodificação dos quadros é feita adiantada e quase não pesa.
+- **Medido no teste** (clipe 1920x972 de 3 s): seek em ordem, embaralhado e invertido em Chromes novos, 56 quadros: 0 diferentes por md5; rascunho de 360 quadros com 1 e 4 workers: 0 diferentes; `--motion-blur 8` em resolução cheia com 1 e 4 workers, 15 quadros em volta do corte seco: 0 diferentes (2,1 q/s com 4 workers); K = 8 subtempos: o mesmo quadro do clipe em todos. Cadência medida pelo fluxo óptico entre quadros vizinhos: cru 3:2 (0; 2,6; 0; 2,3; 0; 0 px), `mistura` e mci sem quadro parado (variação do passo 18% e 22%, a da própria corrida); a mistura subestima o passo (0,69 contra 0,78 px) porque o que anda vira fantasma, o mci não.
+- Página de teste: `videos editados/manifesto_2026-11-12/teste_clipe/teste.html` (clipe de 24 fps com mistura, corte seco, o mesmo clipe interpolado a 60; cover, push-in, deriva e legenda), `cadencia.html` (os 4 modos lado a lado no tempo, sem câmera) e `longo.html` (1500 quadros, para medir memória).
+
 ## Presets de câmera (`EdinCam.preset(id, { intensidade, easing, alvo, de, ate, inicio, duracao })`)
 
 `intensidade` multiplica a amplitude (1 = valor do catálogo). `de`/`ate` limitam a um trecho de p; `inicio`/`duracao` (s) fazem o preset rodar por tempo real (padrão dos rápidos: crash, rapid, yoyo, whip, super-dolly, through-object). `alvo` = ponto de origem da escala. `EdinCam.mix([...])` soma presets (escalas multiplicam, deslocamentos e ângulos somam).
@@ -256,6 +302,7 @@ Regras: a pessoa inteira nunca é cortada sem motivo (pés, mãos e cabelo dentr
 
 - [ ] Tudo é função de `t`: nada de CSS animation/transition, `setTimeout`, `requestAnimationFrame` ou estado acumulado entre quadros (cada `atualizar` define tudo de novo).
 - [ ] Nada aleatório sem semente: `EdinVideo.aleatorio(semente)` só em `montar`; em `atualizar` use `EdinVideo.ruido(semente)` ou `hash`. (O kit troca `Math.random` por um gerador com semente e avisa.)
+- [ ] Clipes de vídeo: `edin quadros` rodado (pasta ao lado do mp4), `this.c.atualizar(t, ctx)` com o ctx, clipe de 24 fps interpolado (`--fps 60`) ou com `mistura` (nunca cru num vídeo de 60).
 - [ ] Fontes locais com `@font-face` (ex.: `fontes/Sora-700.ttf`); nada de Google Fonts. O `seek` espera as fontes e as `<img>` carregarem; imagem em CSS vai em `video({ precarregar: [...] })`.
 - [ ] Telas de app inteiras: dentro de `data-tela`, largura ≤ quadro, console sem `tentou ampliar/girar/cortar`.
 - [ ] Texto em minúsculas, legenda Sora 700 86 px com centro entre 0,55 e 0,75 da altura e acima dos 450 px da base (9:16), fora da informação da cena; uma palavra em laranja por cena.

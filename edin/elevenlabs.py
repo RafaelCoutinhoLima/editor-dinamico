@@ -60,6 +60,11 @@ SEM_CHAVE = f"""[edin] Falta a chave da API do ElevenLabs.
 
 
 # ---- API ---------------------------------------------------------------------------------------------------------
+def tem_chave() -> bool:
+    return bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()) or (KEY_FILE.exists() and
+                                                                      bool(KEY_FILE.read_text().strip()))
+
+
 def api_key() -> str:
     key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not key and KEY_FILE.exists():
@@ -194,9 +199,13 @@ def pick_model(wanted: str = DEFAULT_MODEL) -> str:
 
 # ---- roteiro e alinhamento ---------------------------------------------------------------------------------------
 def read_script(path: str) -> list:
-    """Falas do roteiro: parágrafos separados por linha em branco (quebras simples viram espaço)."""
+    """Falas do roteiro: parágrafos separados por linha em branco (quebras simples viram espaço).
+    Roteiro sem nenhuma linha em branco e com várias linhas (manifesto): uma fala por linha."""
     txt = Path(path).read_text(encoding="utf-8").replace("\r\n", "\n")
-    falas = [re.sub(r"\s+", " ", p).strip() for p in re.split(r"\n\s*\n", txt)]
+    paras = [p for p in re.split(r"\n\s*\n", txt) if p.strip()]
+    if len(paras) == 1 and len([ln for ln in txt.split("\n") if ln.strip()]) > 1:
+        paras = [ln for ln in txt.split("\n") if ln.strip()]
+    falas = [re.sub(r"\s+", " ", p).strip() for p in paras]
     falas = [f for f in falas if f]
     if not falas:
         raise SystemExit(f"[edin] {path} está vazio.")

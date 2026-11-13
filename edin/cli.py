@@ -12,13 +12,19 @@ Fluxo típico (vídeo falado):
 Narração (ElevenLabs, ELEVENLABS_API_KEY):
   edin tts roteiro.txt -o voz.mp3           -> voz.mp3 + alinhamento + tabela fala x tempo
   edin falas narracao.mp3 roteiro.txt       -> tabela fala x tempo de uma narração pronta
+  edin tts roteiro.txt --local -o voz.mp3   -> mesma saída com voz local grátis (Kokoro; sem chave cai aqui)
 
 Cena em código (HTML animado -> vídeo, ver docs/HTML.md):
   edin html cena.html                       -> videos/cena.mp4 (quadro a quadro, determinístico)
+  edin quadros clipes/x.mp4 --fps 60        -> clipes/x/00000.jpg... + quadros.js (EdinVideo.clipe no kit)
 
 Fotos realistas com profundidade (venv separado, ver docs/IMAGEM.md):
   edin imagem "prompt" -o foto.png          -> foto 1080x1920 (SDXL + Lightning 4 passos)
   edin profundidade foto.png                -> foto.depth.png + foto.fundo.png + foto.foto3d.js (kit HTML)
+
+Vídeo de IA a partir de uma foto (Wan2.2-TI2V-5B local, ver docs/VIDEO_IA.md):
+  edin animar foto.png "she walks up the stairs" -o clipe.mp4 --duracao 3   -> clipe 1080x1920 24 fps (~4,5 min)
+  edin animar ... --qualidade               -> Wan2.2 completo, 50 passos (~27 min por clipe de 3 s)
 
 Montagem no beat (sem fala):
   edin montage clip1.mp4 clip2.mp4 --music musica.mp3 --duration 30 -o montagem.plan.json
@@ -63,6 +69,11 @@ def cmd_doctor(_):
     el_key = bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()) or KEY_FILE.exists()
     print(f"{'OK ' if el_key else '-- '} narração ElevenLabs "
           f"{'(chave encontrada)' if el_key else f'(sem chave: ELEVENLABS_API_KEY ou {KEY_FILE})'}")
+    from .voz_local import estado as estado_voz
+
+    evz = estado_voz()
+    print(f"{'OK ' if evz.get('kokoro') else '-- '} narração local Kokoro "
+          f"{'(venv ' + evz['pasta'] + '; vozes ' + ', '.join(evz['vozes']) + ')' if evz.get('kokoro') else '(opcional: ./install_voz.sh ou ./install.sh --voz)'}")
     from .htmlrender import find_chrome
 
     chrome = find_chrome()
@@ -73,6 +84,15 @@ def cmd_doctor(_):
     mods = ", ".join(f"{n} {'OK' if m['ok'] else 'falta'}" for n, m in ei["modelos"].items())
     print(f"{'OK ' if ei['venv'] and all(m['ok'] for m in ei['modelos'].values()) else '-- '} edin imagem/profundidade "
           f"{'(venv ' + ei['pasta'] + '; ' + mods + ')' if ei['venv'] else '(opcional: ./install_imagem.sh, ver docs/IMAGEM.md)'}")
+    from .animar import estado as estado_video
+
+    ev = estado_video()
+    if not ev["venv"]:
+        print("--  edin animar (vídeo de IA) (opcional: ./install_video.sh, ver docs/VIDEO_IA.md)")
+    else:
+        print(f"{'OK ' if ev['fastwan'] else '-- '} edin animar (vídeo de IA, {ev['pasta']}): "
+              f"padrão fastwan {'OK' if ev['fastwan'] else 'falta (./install_video.sh --modelos)'}; "
+              f"--qualidade (Wan2.2 completo) {'OK' if ev['qualidade'] else 'falta (opcional, ./install_video.sh --modelos)'}")
     try:
         import ctranslate2
 
@@ -489,9 +509,19 @@ def cmd_voices(a):
 
 
 def cmd_tts(a):
-    from .elevenlabs import tts
+    from .elevenlabs import tem_chave, tts
 
     out = a.out or _stem(a.script) + ".mp3"
+    if not a.local and not tem_chave():
+        print("[edin] Aviso: sem chave do ElevenLabs (ELEVENLABS_API_KEY ou ~/.config/edin/elevenlabs.key). "
+              "Usando a narração LOCAL (Kokoro, grátis, na CPU). Para a voz do ElevenLabs, ponha a chave e rode "
+              "de novo.")
+        a.local = True
+    if a.local:
+        from .voz_local import DEFAULT_VOZ, tts_local
+
+        tts_local(a.script, out, a.voz or DEFAULT_VOZ, a.speed, a.pausa, a.tom, a.lufs, a.whisper)
+        return
     tts(a.script, out, a.voice, a.model, a.stability, a.similarity, a.style, a.speed,
         None if a.lang == "none" else a.lang, a.seed)
 
@@ -525,6 +555,16 @@ def _add_narration_parser(sp):
     s.add_argument("--lang", default="pt", help="language_code (padrão pt; none para não mandar)")
     s.add_argument("--seed", type=int, help="semente para repetir o mesmo resultado")
     s.add_argument("-o", "--out", help="saída .mp3 (padrão: <roteiro>.mp3)")
+    loc = s.add_argument_group("narração local (Kokoro na CPU, grátis; usada sozinha quando não há chave)")
+    loc.add_argument("--local", action="store_true", help="gera a voz na máquina em vez do ElevenLabs")
+    loc.add_argument("--voz", help="voz local: pm_alex (padrão, masculina grave), pm_santa, pf_dora; "
+                                   "ou pt_BR-faber-medium (Piper, ./install_voz.sh --piper)")
+    loc.add_argument("--pausa", type=float, default=0.35, help="silêncio entre falas em s (padrão 0.35)")
+    loc.add_argument("--tom", type=float, default=0.0, help="desloca o tom em semitons, formantes preservados "
+                                                            "(ex.: -1 deixa mais grave; padrão 0)")
+    loc.add_argument("--lufs", type=float, default=-15.0, help="loudness integrado do mp3 (padrão -15)")
+    loc.add_argument("--whisper", default="large-v3-turbo", help="modelo do faster-whisper que confere e marca "
+                                                                 "as palavras (padrão large-v3-turbo, na CPU)")
     s.set_defaults(fn=cmd_tts)
 
     s = sp.add_parser("falas", help="tabela fala x tempo de uma narração pronta (alinhamento ou silencedetect)")
@@ -667,9 +707,15 @@ def main(argv=None):
     from .imagem import add_parsers as _add_imagem_parsers
 
     _add_imagem_parsers(sp)
+    from .animar import add_parsers as _add_animar_parsers
+
+    _add_animar_parsers(sp)
+    from .quadros import add_parser as _add_quadros_parser
+
+    _add_quadros_parser(sp)
 
     a = p.parse_args(argv)
-    if a.cmd not in ("doctor", "sfx", "text", "voices", "imagem", "profundidade"):
+    if a.cmd not in ("doctor", "sfx", "text", "voices", "imagem", "profundidade", "animar", "quadros"):
         check_tools()
     a.fn(a)
 

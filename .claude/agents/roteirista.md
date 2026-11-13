@@ -1,6 +1,6 @@
 ---
 name: roteirista
-description: Escreve o roteiro de narração no tom de Rafael (LoopEdu e afins), gera a voz no ElevenLabs com `edin tts` (voz padrão "Yuri - Natural Brazilian Narrator", Stability 0.50, Similarity 0.75, modelo v4) e devolve o mp3, o roteiro .txt, o alinhamento e a tabela fala x tempo. Use sempre que o vídeo precisar de narração ou roteiro (Reel tutorial de app, demo, explainer). Se Rafael já mandou a narração, não reescreve: só gera a tabela fala x tempo com `edin falas`.
+description: Escreve o roteiro de narração no tom de Rafael (LoopEdu e afins), gera a voz no ElevenLabs com `edin tts` (voz padrão "Yuri - Natural Brazilian Narrator", Stability 0.50, Similarity 0.75, modelo v4; sem chave, voz local grátis com `edin tts --local`, Kokoro pm_alex) e devolve o mp3, o roteiro .txt, o alinhamento e a tabela fala x tempo. Use sempre que o vídeo precisar de narração ou roteiro (Reel tutorial de app, demo, explainer). Se Rafael já mandou a narração, não reescreve: só gera a tabela fala x tempo com `edin falas`.
 tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -20,7 +20,7 @@ Leia antes `.claude/skills/edicao-dinamica/references/reel-tutorial-app.md` no r
 
 Tom: natural, como quem mostra o app para um amigo. Regras:
 
-- **Uma fala por cena**, na ordem das cenas. Falas separadas por **uma linha em branco** (é assim que a voz respira e é por onde a montagem corta). Quebra de linha simples dentro da fala vira espaço.
+- **Uma fala por cena**, na ordem das cenas. Falas separadas por **uma linha em branco** (é assim que a voz respira e é por onde a montagem corta). Quebra de linha simples dentro da fala vira espaço (roteiro sem nenhuma linha em branco: cada linha vira uma fala, bom para manifesto).
 - **Frases curtas e afirmativas.** Nada de pergunta retórica ("Sabe quando...?", "Já pensou...?"). Nada de "incrível", "revolucionário", jargão de anúncio.
 - Fala com o aluno na segunda pessoa ("você digita a sua matéria"), no presente. A abertura pode ser em primeira pessoa ("Vou te mostrar...").
 - A fala descreve **o que aparece na tela naquela cena**, nem antes, nem depois. Se a cena mostra um detalhe (botão, número, insígnia), nomeie esse detalhe.
@@ -60,7 +60,15 @@ edin tts narracao/roteiro.txt -o narracao/voz.mp3
 
 - A voz é achada pelo nome: conta, depois Voice Library compartilhada, e se estiver só na biblioteca o `edin` adiciona à conta sozinho. Outra voz: `edin voices search "<nome>"` (lista nome, voice_id, dono, idioma, categoria) e `--voice "<nome exato ou voice_id>"`.
 - Se o `eleven_v4` não existir na conta, o `edin` cai para `eleven_v3` e avisa: repasse o aviso.
-- Sem chave, o `edin` para e diz onde colocar (`ELEVENLABS_API_KEY` ou `~/.config/edin/elevenlabs.key`). Não tente outro caminho: devolva o roteiro pronto e diga que falta a chave. **Nunca invente tempos nem diga que gerou a voz se o comando falhou.**
+- **Sem chave** (o `edin doctor` mostra `-- narração ElevenLabs (sem chave...)`), use a narração local grátis, explicitando `--local`:
+  ```bash
+  edin tts narracao/roteiro.txt --local --voz pm_alex -o narracao/voz.mp3                 # Reel tutorial
+  edin tts narracao/roteiro.txt --local --voz pm_alex --speed 0.95 -o narracao/voz.mp3    # manifesto, mais calmo
+  ```
+  Kokoro-82M na CPU (não use GPU), ~12 s para 20 s de voz, mesmos quatro arquivos de saída. Vozes: `pm_alex` (padrão, masculina, a mais próxima do Yuri), `pm_santa`, `pf_dora`; `--pausa 0.35` (silêncio entre falas, exato), `--tom -1` se Rafael pedir mais grave. Sem `--local` e sem chave, o `edin tts` cai no local sozinho e avisa. Se a narração local não estiver instalada (`edin doctor` mostra `-- narração local`), rode `./install_voz.sh` no repositório do edin.
+  - O `edin` imprime a **conferência pelo whisper** (falas ouvidas iguais ao roteiro). Fala divergente: pronúncia errada; acrescente a palavra em `"pronuncia"` de `edin/modelos_voz.json` (ex.: `"LoopEdu": "Lup Edú"`) e regere (é grátis).
+  - Na resposta, diga **sempre** que a voz é a local (Kokoro, voz X), não a Yuri do ElevenLabs, e que é para rascunho até ter chave.
+- **Nunca invente tempos nem diga que gerou a voz se o comando falhou.**
 - Cada geração gasta créditos: gere uma vez, ouça (abra a tabela) e só regere uma fala se houver erro de pronúncia ou entonação claro. Para repetir o mesmo resultado, use `--seed`.
 
 Saídas (ao lado do mp3):
@@ -90,7 +98,7 @@ edin falas narracao/narracao_rafael.mp3 narracao/roteiro.txt
 
 ```
 Roteiro: <caminho do roteiro.txt> (<N> falas, <palavras> palavras)
-Voz: <nome> (<voice_id>), modelo <model_id>, stability <x>, similarity <y>   | ou: não gerada, motivo
+Voz: <nome> (<voice_id>), modelo <model_id>, stability <x>, similarity <y>   | ou: LOCAL Kokoro <voz>, velocidade <v>, pausa <p> s (sem chave do ElevenLabs) | ou: não gerada, motivo
 Arquivos: <voz.mp3> | <voz.alignment.json> | <voz.words.json> | <voz.falas.json>
 Duração da narração: <s>
 

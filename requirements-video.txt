@@ -1,0 +1,8 @@
+# Pacotes do `edin animar` (vídeo de IA a partir de foto). Ele roda no MESMO venv do edin imagem
+# (~/.local/share/edin/imagem/venv: torch 2.15 CUDA, diffusers 0.43, transformers 5.22, accelerate 1.15,
+# safetensors 0.8, ver requirements-imagem.txt), que já tem o WanTransformer3DModel, o AutoencoderKLWan e o
+# UMT5EncoderModel. Aqui fica só o que falta, versões exatas do ambiente testado em 2026-11-13.
+#
+# ftfy: limpeza de texto do prompt igual à do pipeline oficial do Wan (Apache 2.0).
+ftfy==6.3.1
+wcwidth==0.9.4

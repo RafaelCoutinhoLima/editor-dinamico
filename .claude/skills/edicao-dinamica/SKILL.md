@@ -56,7 +56,7 @@ Agentes independentes podem rodar em paralelo (ex.: `roteirista` escrevendo enqu
 | Reel tutorial de app a partir de gravação de tela, com narração | **G. Reel tutorial de app** (`roteirista` + montagem) |
 | Reel narrativo sem voz (fotos/cenas + telas do app + texto na tela), inclusive com imagens faltando | **H.** [references/reel-narrativo-sem-voz.md](references/reel-narrativo-sem-voz.md): cenas que faltam feitas em código (SVG/Remotion), nunca Canva/IA |
 | Vídeo inteiro (ou cenas que faltam) feito em código a partir de HTML: cenas desenhadas, câmera com movimento de cinema, transições contínuas, milhares de quadros | **I. Vídeo contínuo de HTML** (`edin html` + kit `references/html-video/`) |
-| Vídeo manifesto de marca com pessoas (silhuetas, multidão, closes de mãos/olhos/pés), tensão, virada e convite em 30 a 45 s | **I** + [references/manifesto.md](references/manifesto.md) (atos com tempos, texto, pessoas do `edin-pessoas.js`, transições); modelo: [references/manifesto-loopedu-roteiro.md](references/manifesto-loopedu-roteiro.md) |
+| Vídeo manifesto de marca com pessoas (silhuetas, multidão, closes de mãos/olhos/pés), tensão, virada e convite em 30 a 45 s | **I** + [references/manifesto.md](references/manifesto.md) (atos com tempos, texto, pessoas do `edin-pessoas.js`, transições); modelo: [references/manifesto-loopedu-roteiro.md](references/manifesto-loopedu-roteiro.md). **Desde 13/11, manifesto com pessoas realistas e narração segue primeiro [references/referencia-atletia.md](references/referencia-atletia.md)** (rostos com expressão, clipes com ação, corte seco na fala, prompts do SDXL e do gerador de vídeo por tipo de plano, molde de 30/45/60 s) |
 | Vídeo 100% animado, sem filmagem (explainer, anúncio, lyric video) | Skill `cinematic-motion-director` (narração pelo agente `roteirista`) |
 
 ## A. Vídeo falado
@@ -201,6 +201,12 @@ Rafael (12/11): "quero que gere [pessoas] realísticas também". Duas fontes, mi
 |---|---|---|
 | Pessoa estilizada animada (silhueta em contraluz, ilustração chapada, traço), poses, multidão, closes de mão/olho/pé | `edin-pessoas.js` do kit | 12 poses (`em-pe, andando, correndo, sentado-estudando, cabeca-baixa, olhando-celular, punho-erguido, bracos-abertos, apontando, olhando-horizonte, comemorando, subindo`), `mistura`, `ciclo`, `multidao` (60 pessoas ≈ 18 quadros/s com 8 workers), `detalhe`; respira e pisca sempre. Seção "Pessoas" do LEIAME |
 | Pessoa REALISTA (fotografia) | `edin imagem "prompt" -o foto.png --size 1080x1920 --n 4` (SDXL + Lightning na RTX 4050, ~5 s por imagem em lote, local e grátis) e `edin profundidade foto.png` | Anime a foto com `edin-foto3d.js`: parallax real por profundidade com os presets de câmera do kit. `docs/IMAGEM.md` para prompts, limites e instalação (`./install.sh --imagem`) |
+
+**Movimento real e narração (13/11; Rafael reprovou o manifesto feito de fotos com parallax: "ficou ruim", a referência boa tem pessoas se mexendo de verdade):**
+- **Pessoa no quadro = clipe com movimento, não foto parada.** `edin animar foto.png "what the person DOES" -o clipe.mp4 --duracao 3` (FastWan 2.2 local, Apache 2.0, ~4,5 min por clipe de 3 s, 1080x1920 a 24 fps); `--qualidade` usa o Wan 2.2 completo (~27 min por clipe, preserva melhor rosto e cor; só 1 ou 2 planos-chave). Gere 2 a 3 seeds; o FastWan às vezes salta nos 3 primeiros quadros (corte-os) e troca cabelo/rosto. `docs/VIDEO_IA.md`.
+- No kit: `edin quadros clipe.mp4 --fps 60 --interp mci` e `EdinVideo.clipe(el, {...})` (determinístico, camada com `data-sobra="0.05"`). Foto com parallax só para aérea, detalhe ou plano de 1 s.
+- **Narração:** sem chave do ElevenLabs, `edin tts roteiro.txt --local` (Kokoro `pm_alex`, CPU, grátis; "LoopEdu" pronunciado "Lup Edú"); com chave, voz Yuri. Corte seco no ataque da palavra que abre cada frase; texto na tela = a fala em blocos de 2 a 4 palavras.
+- Linguagem de referência: [references/referencia-atletia.md](references/referencia-atletia.md) (outro nicho: copiar só a linguagem, nunca as cenas de esporte).
 
 Regras para fotos realistas:
 - **Qualidade máxima sempre (Rafael, 12/11): "não perca qualidade, só deixe mais otimizado e, caso necessário, mais lento".** Fotos finais com `--sem-lightning` (28 passos, CFG 5,5, com negativo contra mãos ruins; ~20 s por foto); Lightning só para esboço. Render final com `--fps 60 --motion-blur 16`.
