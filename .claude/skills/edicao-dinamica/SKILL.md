@@ -203,6 +203,8 @@ Rafael (12/11): "quero que gere [pessoas] realísticas também". Duas fontes, mi
 | Pessoa REALISTA (fotografia) | `edin imagem "prompt" -o foto.png --size 1080x1920 --n 4` (SDXL + Lightning na RTX 4050, ~5 s por imagem em lote, local e grátis) e `edin profundidade foto.png` | Anime a foto com `edin-foto3d.js`: parallax real por profundidade com os presets de câmera do kit. `docs/IMAGEM.md` para prompts, limites e instalação (`./install.sh --imagem`) |
 
 Regras para fotos realistas:
+- **Qualidade máxima sempre (Rafael, 12/11): "não perca qualidade, só deixe mais otimizado e, caso necessário, mais lento".** Fotos finais com `--sem-lightning` (28 passos, CFG 5,5, com negativo contra mãos ruins; ~20 s por foto); Lightning só para esboço. Render final com `--fps 60 --motion-blur 16`.
+- **Memória (a sessão caiu em 12/11 com SDXL + 8 Chromes em 14 GB de RAM):** `edin imagem` e `edin html` não rodam juntos (trava em `~/.cache/edin/pesado.lock`; o segundo espera); o render usa no máximo 6 Chromes, pela metade da RAM livre; nunca rode os dois em paralelo nem com outros apps pesados abertos.
 - Gere 4 por plano e **abra todas**; descarte mão deformada, pessoa duplicada, duas cabeças, rosto pequeno estranho em multidão (na 1ª rodada, 8 de 25 foram descartadas).
 - Rosto muda entre planos (consistência só por descrição + seed): prefira costas, perfil, contraluz, silhueta e mãos. Mesmo personagem = mesma descrição física e `--personagem`.
 - Câmera sobre foto: `dolly-in/out`, `crane`, `push` e arc pequeno (`orbita` ≤ 0,08). Arc grande revela atrás do sujeito uma mancha borrada (o fundo preenchido não inventa textura), pior em fundo nítido; em bokeh não aparece.

@@ -220,3 +220,12 @@ multidão saiu nítida com rostos pequenos. No segundo lote (estilos curtos, "se
 - **Negativo** não age no Lightning (CFG 0); texto e marca d'água dependem do prompt e da escolha.
 - **Respiração (`vida`)**: 0,6% de escala local é sutil a ponto de quase não se ver em silhueta de costas; mais
   que ~1,5% deforma a roupa contra o fundo.
+
+
+## Estabilidade e memória (correções de 2026-11-12)
+
+- **`CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED` em toda convolução:** o atalho `~/.local/bin/edin` põe no `LD_LIBRARY_PATH` o cuDNN do venv principal (faster-whisper, outra versão). O `edin imagem` agora tira o `LD_LIBRARY_PATH` do ambiente do worker; o venv de imagem usa o cuDNN dele. Sintoma: funcionava chamando o worker direto e falhava pelo comando `edin`.
+- **Qualidade máxima (`--sem-lightning`, 28 passos, CFG 5,5) cabe inteira na RTX 4050:** UNet a ~19 s por imagem (pico 5,6 GB). Se faltar VRAM, cai sozinho para offload por blocos (~57 s, mesma imagem).
+- **UNet e VAE em processos separados:** o VAE em fp32 decodifica num processo novo com a VRAM inteira livre (pico 4,9 GB, ~2 s por imagem); se ainda faltar, decodifica em blocos.
+- **Nunca junto com o render:** `edin imagem` e `edin html` usam a trava `~/.cache/edin/pesado.lock`; o segundo espera. Juntos (SDXL + 8 Chromes) derrubaram a sessão por falta de RAM.
+- Falha de uma etapa grava o log completo em `~/.cache/edin/imagem_erro.log` e o job em `imagem_erro_job_<etapa>.json` (rode `python -I edin/imagem_worker.py <etapa> <job>` com o python do venv de imagem para reproduzir).

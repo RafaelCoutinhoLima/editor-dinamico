@@ -433,9 +433,13 @@ def cmd_html(a):
         sys.exit(f"[edin] {a.audio} não existe")
     out = a.out or html_output(a.page, a.draft)
     _html_gpu(a)
+    from .utils import TravaPesada
+
     try:
-        html_to_video(a.page, out, (w, h), a.fps, a.duration, a.start, a.workers, a.motion_blur, a.shutter, a.audio,
-                      a.audio_start, a.silent_audio, a.frames_dir, a.crf, a.draft, a.mode, a.timeout, a.preset)
+        with TravaPesada("edin html"):
+            html_to_video(a.page, out, (w, h), a.fps, a.duration, a.start, a.workers, a.motion_blur, a.shutter,
+                          a.audio, a.audio_start, a.silent_audio, a.frames_dir, a.crf, a.draft, a.mode, a.timeout,
+                          a.preset)
     except PageError as e:
         sys.exit(f"\n[edin] ERRO na página: {e}")
     except (OSError, RuntimeError) as e:

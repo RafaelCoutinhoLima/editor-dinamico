@@ -82,14 +82,56 @@ def _pasta(nome: str) -> Path:
     return MODELOS / man[nome]["pasta"]
 
 
+def _espera_gpu_livre(limite_mb: int = 600, timeout: float = 30.0):
+    """Espera a VRAM ocupada cair (o processo anterior acabou de sair e o driver ainda devolve a memória).
+
+    Sem isso o cuDNN do processo seguinte falhava ao carregar kernels (SUBLIBRARY_LOADING_FAILED).
+    """
+    fim = time.time() + timeout
+    while time.time() < fim:
+        try:
+            out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                                 capture_output=True, text=True, timeout=10).stdout.split()
+            if out and int(out[0]) < limite_mb:
+                return
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            return
+        time.sleep(0.5)
+
+
 def _roda_worker(cmd: str, job: dict, on_evento=None) -> list[dict]:
+    """Roda uma etapa no venv de imagem. Se o cuDNN falhar ao carregar kernels (a GPU acabou de ser liberada
+    pelo processo anterior e a falha fica presa no processo), repete a etapa num processo novo."""
+    for tentativa in range(3):
+        try:
+            return _roda_worker_1(cmd, job, on_evento)
+        except _ErroCudnn:
+            print(f"[edin] {cmd}: cuDNN não carregou (GPU recém-liberada); repetindo num processo novo", flush=True)
+            time.sleep(5 + 5 * tentativa)
+    return _roda_worker_1(cmd, job, on_evento)
+
+
+class _ErroCudnn(Exception):
+    pass
+
+
+def _roda_worker_1(cmd: str, job: dict, on_evento=None) -> list[dict]:
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(job, f)
         jp = f.name
-    env = dict(os.environ, PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True", HF_HUB_OFFLINE="1",
+    env = dict(os.environ, HF_HUB_OFFLINE="1",
                TRANSFORMERS_VERBOSITY="error", DIFFUSERS_VERBOSITY="error")
     env.pop("PYTHONPATH", None)
+    # o atalho `edin` põe no LD_LIBRARY_PATH o cuDNN/cuBLAS do venv principal (faster-whisper, outra versão);
+    # herdado aqui, o PyTorch do venv de imagem carregava as sub-bibliotecas erradas do cuDNN
+    # (CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED em toda convolução). O venv de imagem traz as próprias.
+    env.pop("LD_LIBRARY_PATH", None)
     eventos = []
+    from .utils import TravaPesada
+
+    trava = TravaPesada(f"edin imagem ({cmd})").__enter__()
+    _espera_gpu_livre()
+    time.sleep(3)  # o driver ainda termina de soltar o contexto do processo anterior
     try:
         p = subprocess.Popen([str(VENV_PY), "-I", str(WORKER), cmd, jp], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              text=True, env=env)
@@ -109,11 +151,18 @@ def _roda_worker(cmd: str, job: dict, on_evento=None) -> list[dict]:
         p.wait()
         th.join(timeout=2)
         if p.returncode != 0:
-            tail = "".join(err[-25:])
+            log_erro = Path.home() / ".cache" / "edin" / "imagem_erro.log"
+            log_erro.parent.mkdir(parents=True, exist_ok=True)
+            log_erro.write_text(f"etapa: {cmd}\n" + "".join(err))
+            shutil.copy(jp, log_erro.with_name(f"imagem_erro_job_{cmd}.json"))
+            if "CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED" in "".join(err):
+                raise _ErroCudnn()
+            tail = "".join(err[-25:]) + f"\n[edin] log completo da etapa '{cmd}': {log_erro}"
             if "OutOfMemoryError" in tail or "out of memory" in tail:
                 tail += "\n[edin] faltou VRAM: feche outros programas que usam a GPU (nvidia-smi) e tente de novo."
             raise SystemExit(f"[edin] o worker de imagem falhou ({p.returncode}):\n{tail}")
     finally:
+        trava.__exit__(None, None, None)
         os.unlink(jp)
     return eventos
 
@@ -185,7 +234,7 @@ def gerar(itens: list[dict], tamanho=(1080, 1920), upscale="lanczos", lightning=
         job_itens.append({"prompt": it["prompt"], "negativo": it.get("negativo", NEGATIVO), "seed": it["seed"],
                           "w": nw, "h": nh, "passos": it.get("passos", 4 if lightning else 28),
                           "cfg": it.get("cfg", 0 if lightning else 5.5), "saida": str(tmpdir / f"{i:03d}.png")})
-    job = {"itens": job_itens, "sdxl": str(_pasta("sdxl")),
+    job = {"itens": job_itens, "sdxl": str(_pasta("sdxl")), "memoria": "auto",
            "lora": str(_pasta("lightning") / "sdxl_lightning_4step_lora.safetensors") if lightning else None}
     t0 = time.time()
     tempos = {}
@@ -201,8 +250,14 @@ def gerar(itens: list[dict], tamanho=(1080, 1920), upscale="lanczos", lightning=
         elif e["evento"] == "imagem":
             tempos.setdefault(e["i"], {})["vae_s"] = e["segundos"]
 
+    # UNet e VAE em processos separados: cada etapa começa com a VRAM de 6 GB inteira livre
+    job["latentes_em"] = str(tmpdir / "latentes.pt")
     evs = _roda_worker("gerar", job, ev)
     fim = next((e for e in evs if e["evento"] == "fim"), {})
+    evs2 = _roda_worker("decodificar", {"itens": job_itens, "sdxl": job["sdxl"], "latentes": job["latentes_em"]}, ev)
+    fim2 = next((e for e in evs2 if e["evento"] == "fim"), {})
+    fim = dict(fim, vae_s=fim2.get("vae_s"), vae_tiling=fim2.get("vae_tiling"),
+               vram_mb=dict(fim.get("vram_mb", {}), vae=fim2.get("vram_vae")))
     res = []
     for i, it in enumerate(itens):
         dst = Path(it["saida"])

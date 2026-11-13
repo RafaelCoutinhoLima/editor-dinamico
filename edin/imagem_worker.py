@@ -99,8 +99,12 @@ def gerar(job_path: str):
                                                  negative_prompt=it.get("negativo") or None)
             mv = lambda x: None if x is None else x.to("cpu")
             emb.append((mv(pe), mv(ne), mv(pp), mv(npp), ntok))
-    pipe.text_encoder.to("cpu")
-    pipe.text_encoder_2.to("cpu")
+    # os codificadores de texto não voltam a ser usados: soltar da RAM (~1,6 GB) antes de carregar a UNet
+    pipe.text_encoder = None
+    pipe.text_encoder_2 = None
+    import gc
+
+    gc.collect()
     torch.cuda.empty_cache()
     t_texto = time.time() - t1
     vram_texto = _vram()
@@ -115,7 +119,7 @@ def gerar(job_path: str):
         pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config, timestep_spacing="trailing")
     modo = job.get("memoria", "auto")
     if modo == "camadas":
-        pipe.unet.enable_group_offload(onload_device=cuda, offload_type="leaf_level", use_stream=True)
+        pipe.unet.enable_group_offload(onload_device=cuda, offload_type="block_level", num_blocks_per_group=1)
     else:
         pipe.unet.to(cuda)
     t_unet = time.time() - t2
@@ -135,19 +139,26 @@ def gerar(job_path: str):
     with torch.inference_mode():
         for i, it in enumerate(itens):
             ts = time.time()
-            try:
-                lat = denoise(it, emb[i])
-            except torch.cuda.OutOfMemoryError:
-                if modo == "camadas":
-                    raise
-                # não coube a UNet inteira (5,1 GB) + ativações: offload por camadas com stream (mesma imagem)
-                log("[edin imagem] VRAM insuficiente para a UNet inteira; usando offload por camadas")
-                pipe.unet.to("cpu")
-                torch.cuda.empty_cache()
-                pipe.unet.enable_group_offload(onload_device=cuda, offload_type="leaf_level", use_stream=True)
-                modo = "camadas"
-                ts = time.time()
-                lat = denoise(it, emb[i])
+            lat = None
+            for _tentativa in range(3):
+                try:
+                    lat = denoise(it, emb[i])
+                    break
+                except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+                    cudnn_err = "CUDNN" in str(e).upper()
+                    if not isinstance(e, torch.cuda.OutOfMemoryError) and not cudnn_err:
+                        raise
+                    torch.cuda.empty_cache()
+                    if modo != "camadas":
+                        # não coube a UNet inteira (5,1 GB) + ativações: offload por camadas com stream
+                        log("[edin imagem] VRAM insuficiente para a UNet inteira; usando offload por camadas")
+                        pipe.unet.to("cpu")
+                        torch.cuda.empty_cache()
+                        pipe.unet.enable_group_offload(onload_device=cuda, offload_type="block_level", num_blocks_per_group=1)
+                        modo = "camadas"
+                    else:
+                        raise
+                    ts = time.time()
             torch.cuda.synchronize()
             latentes.append(lat.to("cpu"))
             emit(evento="latente", i=i, segundos=round(time.time() - ts, 2), tokens=emb[i][4], memoria=modo)
@@ -155,7 +166,21 @@ def gerar(job_path: str):
     if modo != "camadas":
         pipe.unet.to("cpu")
     pipe.unet = None
+    if job.get("latentes_em"):
+        # o VAE roda em outro processo (decodificar), com a VRAM limpa: o offload por camadas da UNet
+        # deixava ~2,4 GB presos e o VAE em fp32 não cabia (2026-11-12)
+        torch.save([x.contiguous() for x in latentes], job["latentes_em"])
+        emit(evento="fim", carga_s=round(t_carga, 1), texto_s=round(t_texto, 1), unet_carga_s=round(t_unet, 1),
+             vram_mb={"texto": vram_texto, "unet": vram_unet}, memoria=modo,
+             gpu=torch.cuda.get_device_name(0), torch=torch.__version__)
+        return
+    import gc
+
+    gc.collect()
+    torch.cuda.synchronize()
     torch.cuda.empty_cache()
+    log(f"[edin imagem] VRAM antes do VAE: {torch.cuda.memory_allocated() / 2**20:.0f} MB alocados, "
+        f"{torch.cuda.memory_reserved() / 2**20:.0f} MB reservados, modo {modo}")
 
     # ---- 3) VAE em fp32 (o VAE do SDXL estoura em fp16: force_upcast)
     t3 = time.time()
@@ -167,13 +192,27 @@ def gerar(job_path: str):
         for i, it in enumerate(itens):
             ts = time.time()
             lat = latentes[i].to(cuda, torch.float32) / vae.config.scaling_factor
-            try:
-                img = vae.decode(lat).sample
-            except torch.cuda.OutOfMemoryError:
-                torch.cuda.empty_cache()
-                vae.enable_tiling()
-                tiling = True
-                img = vae.decode(lat).sample
+            img = None
+            for _tentativa in range(3):
+                try:
+                    img = vae.decode(lat).sample
+                    break
+                except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+                    # falta de VRAM chega como OOM ou como erro do cuDNN (SUBLIBRARY_LOADING_FAILED);
+                    # tiling e convolução sem cuDNN mantêm a mesma imagem
+                    cudnn_err = "CUDNN" in str(e).upper()
+                    if not isinstance(e, torch.cuda.OutOfMemoryError) and not cudnn_err:
+                        raise
+                    torch.cuda.empty_cache()
+                    if cudnn_err and torch.backends.cudnn.enabled:
+                        log("[edin imagem] VAE: cuDNN sem VRAM; seguindo sem cuDNN (mesma qualidade)")
+                        torch.backends.cudnn.enabled = False
+                    elif not tiling:
+                        log("[edin imagem] VAE: decodificando em blocos (tiling) por falta de VRAM")
+                        vae.enable_tiling()
+                        tiling = True
+                    else:
+                        raise
             pil = pipe.image_processor.postprocess(img, output_type="pil")[0]
             Path(it["saida"]).parent.mkdir(parents=True, exist_ok=True)
             pil.save(it["saida"])
@@ -182,6 +221,52 @@ def gerar(job_path: str):
     emit(evento="fim", carga_s=round(t_carga, 1), texto_s=round(t_texto, 1), unet_carga_s=round(t_unet, 1),
          vae_s=round(time.time() - t3, 1), vram_mb={"texto": vram_texto, "unet": vram_unet, "vae": vram_vae},
          vae_tiling=tiling, memoria=modo, gpu=torch.cuda.get_device_name(0), torch=torch.__version__)
+
+
+# ---------------------------------------------------------------------------------------------------- decodificar
+def decodificar(job_path: str):
+    """Latentes -> PNG com o VAE do SDXL em fp32, num processo só dele (VRAM inteira livre)."""
+    import torch
+    from diffusers import AutoencoderKL
+    from diffusers.image_processor import VaeImageProcessor
+
+    job = json.loads(Path(job_path).read_text())
+    cuda = torch.device("cuda")
+    latentes = torch.load(job["latentes"], weights_only=True)
+    t0 = time.time()
+    # pesos fp16 no disco (variante baixada), convertidos para fp32: o VAE do SDXL estoura em fp16
+    vae = AutoencoderKL.from_pretrained(job["sdxl"], subfolder="vae", variant="fp16", use_safetensors=True,
+                                        local_files_only=True).to(cuda, dtype=torch.float32).eval()
+    proc = VaeImageProcessor(vae_scale_factor=2 ** (len(vae.config.block_out_channels) - 1))
+    torch.cuda.reset_peak_memory_stats()
+    tiling = False
+    with torch.inference_mode():
+        for i, it in enumerate(job["itens"]):
+            ts = time.time()
+            lat = latentes[i].to(cuda, torch.float32) / vae.config.scaling_factor
+            img = None
+            for _tentativa in range(3):
+                try:
+                    img = vae.decode(lat).sample
+                    break
+                except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+                    cudnn_err = "CUDNN" in str(e).upper()
+                    if not isinstance(e, torch.cuda.OutOfMemoryError) and not cudnn_err:
+                        raise
+                    torch.cuda.empty_cache()
+                    if cudnn_err:
+                        raise  # o edin repete a etapa num processo novo (a falha do cuDNN fica presa no processo)
+                    if not tiling:
+                        log("[edin imagem] VAE: decodificando em blocos (tiling) por falta de VRAM")
+                        vae.enable_tiling()
+                        tiling = True
+                    else:
+                        raise
+            pil = proc.postprocess(img, output_type="pil")[0]
+            Path(it["saida"]).parent.mkdir(parents=True, exist_ok=True)
+            pil.save(it["saida"])
+            emit(evento="imagem", i=i, saida=it["saida"], segundos=round(time.time() - ts, 2))
+    emit(evento="fim", vae_s=round(time.time() - t0, 1), vram_vae=_vram(), vae_tiling=tiling)
 
 
 # ---------------------------------------------------------------------------------------------------- profundidade
@@ -242,6 +327,8 @@ if __name__ == "__main__":
         baixar(sys.argv[2], sys.argv[3])
     elif cmd == "gerar":
         gerar(sys.argv[2])
+    elif cmd == "decodificar":
+        decodificar(sys.argv[2])
     elif cmd == "profundidade":
         profundidade(sys.argv[2])
     else:

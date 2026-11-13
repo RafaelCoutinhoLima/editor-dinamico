@@ -143,18 +143,17 @@ def find_chrome() -> str | None:
     return None
 
 
-def default_workers(w: int, h: int) -> int:
-    """Metade dos núcleos, limitado pela RAM livre (~0,5 GB por Chrome em 1080x1920)."""
+def default_workers(w: int, h: int, gpu: bool = False) -> int:
+    """Workers pela RAM livre, com folga: cada Chrome em 1080x1920 ocupa ~0,5 a 0,8 GB (mais com WebGL/GPU).
+
+    Em 2026-11-12 a sessão caiu por falta de memória com 8 Chromes + o gerador de imagem; agora só metade
+    da RAM livre entra na conta, há teto de 6 workers e o `edin html` e o `edin imagem` não rodam juntos.
+    """
+    from .utils import mem_disponivel_mb
+
     cpu = os.cpu_count() or 2
-    avail_mb = 4096
-    try:
-        for line in open("/proc/meminfo"):
-            if line.startswith("MemAvailable:"):
-                avail_mb = int(line.split()[1]) // 1024
-    except OSError:
-        pass
-    per = 250 + w * h * 4 * 12 // (1 << 20)  # base do Chrome + texturas/buffers proporcionais à área
-    return max(1, min(cpu // 2, int(avail_mb * 0.7 / per)))
+    per = 450 + w * h * 4 * 12 // (1 << 20) + (350 if gpu else 0)
+    return max(1, min(cpu // 2, 6, int(mem_disponivel_mb() * 0.5 / per)))
 
 
 class Chrome:
@@ -503,7 +502,7 @@ def html_to_video(page: str, out: str, size: tuple[int, int] = (1080, 1920), fps
     scale = 0.5 if draft else 1.0
     ow, oh = int(round(w * scale)), int(round(h * scale))
     ow, oh = ow + ow % 2, oh + oh % 2
-    n_workers = workers or default_workers(w, h)
+    n_workers = workers or default_workers(w, h, gpu="--use-gl" in os.environ.get("EDIN_CHROME_FLAGS", "") or "angle" in os.environ.get("EDIN_CHROME_FLAGS", ""))
     url = src.as_uri() + f"?w={w}&h={h}&fps={quote(f'{fps:g}')}&render=1"
     if motion_blur > 1:  # a página sabe que cada seek é 1 de K subtempos do obturador (blur sintético cobre 1/K)
         url += f"&mb={int(motion_blur)}&obturador={quote(f'{shutter:g}')}"

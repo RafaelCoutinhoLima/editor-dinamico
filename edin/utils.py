@@ -113,3 +113,46 @@ def workdir_for(output: str) -> Path:
 
 def env_flag(name: str) -> bool:
     return os.environ.get(name, "").lower() in {"1", "true", "yes"}
+
+
+class TravaPesada:
+    """Serializa os trabalhos pesados do edin (gerador de imagem na GPU e render do `edin html`).
+
+    Juntos (SDXL com 6 GB de pesos + vários Chromes com WebGL) eles esgotaram a RAM de 14 GB e a VRAM de 6 GB
+    e derrubaram a sessão em 2026-11-12. Com a trava, o segundo espera o primeiro terminar.
+    """
+
+    def __init__(self, nome: str):
+        self.nome = nome
+        self.f = None
+
+    def __enter__(self):
+        import fcntl
+
+        d = Path.home() / ".cache" / "edin"
+        d.mkdir(parents=True, exist_ok=True)
+        self.f = open(d / "pesado.lock", "a+")
+        try:
+            fcntl.flock(self.f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print(f"[edin] {self.nome}: outro trabalho pesado do edin está rodando (render ou imagem); esperando...",
+                  flush=True)
+            fcntl.flock(self.f, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *exc):
+        import fcntl
+
+        fcntl.flock(self.f, fcntl.LOCK_UN)
+        self.f.close()
+        return False
+
+
+def mem_disponivel_mb() -> int:
+    try:
+        for line in open("/proc/meminfo"):
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except OSError:
+        pass
+    return 4096
