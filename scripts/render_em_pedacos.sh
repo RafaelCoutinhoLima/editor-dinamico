@@ -18,7 +18,7 @@ for ((i=0; i<n; i++)); do
   else
     echo "[pedaços] $((i+1))/$n já pronto"
   fi
-  echo "file '$f'" >> "$dir/lista.txt"
+  echo "file '$(realpath "$f")'" >> "$dir/lista.txt"
 done
 ffmpeg -v error -y -f concat -safe 0 -i "$dir/lista.txt" -f lavfi -t "$total" -i anullsrc=r=48000:cl=stereo \
   -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest -movflags +faststart "$out"
