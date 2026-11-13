@@ -1,0 +1,122 @@
+{
+ "pasta": "fotos/novas",
+ "size": "1080x1920",
+ "estilo": "campanha",
+ "upscale": "lanczos",
+ "personagens": {
+  "lu": {
+   "descricao": "young Brazilian woman, 18, brown skin, curly hair tied up, beige hoodie",
+   "seed": 4242
+  }
+ },
+ "planos": [
+  {
+   "id": "p01_janela",
+   "personagem": "lu",
+   "lente": "35",
+   "estilo": "noite",
+   "n": 4,
+   "negativo": "visible face, frontal face, looking at camera, portrait, deformed hands, extra fingers, bad anatomy, extra limbs, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind, sitting at a desk by a big window at night, studying, laptop glow, city lights outside"
+  },
+  {
+   "id": "p03_celular",
+   "personagem": "lu",
+   "lente": "85",
+   "estilo": "noite",
+   "n": 4,
+   "negativo": "visible face, detailed face, frontal face, looking at camera, lit face, deformed hands, extra fingers, bad anatomy, extra limbs, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "dark silhouette in side profile against a window at night, face in deep shadow, holding a phone, blue screen glow on the hands"
+  },
+  {
+   "id": "p06_cabeca",
+   "personagem": "lu",
+   "lente": "50",
+   "estilo": "noite",
+   "n": 4,
+   "negativo": "visible face, frontal face, looking at camera, portrait, deformed hands, extra fingers, bad anatomy, extra limbs, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind, head down on folded arms on a desk with books at night, exhausted, face hidden, cold blue lamp light"
+  },
+  {
+   "id": "p08_olho",
+   "lente": "macro",
+   "estilo": "noite",
+   "n": 4,
+   "seed": 8810,
+   "negativo": "frontal face, both eyes, looking at camera, eyebrow close-up, deformed, bad anatomy, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "extreme close-up of an eye in side profile silhouette, brown skin, face in deep shadow, thin cold blue rim light on the eyelashes, black background"
+  },
+  {
+   "id": "p09_alvorada",
+   "personagem": "lu",
+   "lente": "35",
+   "n": 4,
+   "negativo": "visible face, frontal face, side face, looking at camera, portrait, deformed hands, extra fingers, bad anatomy, extra limbs, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind, standing on a rooftop at dawn looking at the horizon, sun rising on the right, city below, backlit"
+  },
+  {
+   "id": "p12_rua",
+   "personagem": "lu",
+   "lente": "35",
+   "n": 4,
+   "negativo": "visible face, frontal face, looking at camera, deformed legs, extra legs, extra limbs, bad anatomy, duplicate person, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, oversaturated, lowres, jpeg artifacts",
+   "prompt": "backlit silhouette running to the right, side view, full body, sloped street in a Brazilian neighborhood at sunrise, warm haze"
+  },
+  {
+   "id": "p13_escada",
+   "personagem": "lu",
+   "lente": "35",
+   "n": 4,
+   "negativo": "visible face, frontal face, looking at camera, deformed legs, extra limbs, bad anatomy, duplicate person, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind, silhouette with a backpack climbing long outdoor concrete stairs toward the rising sun, sun flare"
+  },
+  {
+   "id": "p15_mao",
+   "lente": "50",
+   "n": 6,
+   "seed": 1510,
+   "prompt": "close-up silhouette of one raised open hand, five spread fingers, filling the frame, beige hoodie sleeve, against the bright morning sky, backlit, sun flare"
+  },
+  {
+   "id": "p16_patio",
+   "lente": "50",
+   "estilo": "documental",
+   "n": 4,
+   "seed": 3410,
+   "prompt": "blurry crowd of Brazilian high school students walking in a school courtyard, long exposure motion blur, out of focus, morning light"
+  },
+  {
+   "id": "p17_morro",
+   "lente": "24",
+   "n": 4,
+   "seed": 1710,
+   "negativo": "arms raised, arms outstretched, open arms, jumping, visible faces, looking at camera, deformed, bad anatomy, extra limbs, duplicate person, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind, small group of young Brazilian friends standing on a grassy hill at sunrise, huge sky, low horizon, sun low on the right, golden haze"
+  },
+  {
+   "id": "p03_celular2",
+   "personagem": "lu",
+   "lente": "50",
+   "estilo": "noite",
+   "n": 4,
+   "negativo": "visible face, face, profile, cheek, looking at camera, deformed hands, extra fingers, bad anatomy, extra limbs, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "seen from behind over her shoulder, sitting on a bed in a dark bedroom at night, looking down at a phone, blue screen glow"
+  },
+  {
+   "id": "p08_olho2",
+   "lente": "85",
+   "estilo": "noite",
+   "n": 4,
+   "seed": 8820,
+   "negativo": "frontal face, both eyes, looking at camera, makeup, eyeliner, blue eyes, lit face, deformed, bad anatomy, text, watermark, logo, letters, cartoon, illustration, 3d render, cgi, plastic skin, oversaturated, lowres, jpeg artifacts",
+   "prompt": "close-up side profile silhouette of a young woman's face in the dark, thin cold blue rim light on forehead, nose, lips and eyelashes, curly hair, black background"
+  },
+  {
+   "id": "p15_mao2",
+   "lente": "50",
+   "n": 8,
+   "seed": 1520,
+   "prompt": "close-up of one raised open hand, palm facing camera, five fingers spread, dark silhouette against the bright morning sky, beige sleeve, backlit, centered"
+  }
+ ]
+}

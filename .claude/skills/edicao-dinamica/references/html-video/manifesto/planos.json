@@ -1,0 +1,38 @@
+{
+  "pasta": "fotos/novas",
+  "size": "1080x1920",
+  "estilo": "campanha",
+  "upscale": "lanczos",
+  "personagens": {
+    "lu": {
+      "descricao": "young Brazilian woman, 18, brown skin, curly dark hair bun, grey hoodie",
+      "seed": 4242
+    }
+  },
+  "planos": [
+    {"id": "p02_mao", "lente": "50", "estilo": "noite", "n": 4, "seed": 2300,
+     "prompt": "close-up of one hand holding a pen writing in a notebook at night, grey hoodie sleeve, dark desk, cold blue laptop light"},
+    {"id": "p03_celular", "personagem": "lu", "lente": "85", "estilo": "noite", "n": 4, "seed": 3300,
+     "prompt": "side profile in a dark bedroom at night, face lit only by a phone screen, cold blue light, black background"},
+    {"id": "p04_pes", "lente": "35", "estilo": "noite", "n": 4, "seed": 4400,
+     "prompt": "close-up of feet in worn white sneakers under a desk at night, dark wooden floor, cold blue light, chair legs"},
+    {"id": "p05_sala", "lente": "35", "estilo": "noite", "n": 4, "seed": 5500,
+     "prompt": "blurry rows of students seen from behind at desks in a huge dark study hall, laptop screens glowing blue, heads down, out of focus"},
+    {"id": "p06_cabeca", "personagem": "lu", "lente": "50", "estilo": "noite", "n": 4, "seed": 6600,
+     "prompt": "head down resting on folded arms on a desk with books at night, exhausted, cold blue lamp light, seen from the side"},
+    {"id": "p07_respiro", "personagem": "lu", "lente": "24", "estilo": "noite", "n": 4, "seed": 7700,
+     "prompt": "seen from behind, a small lone figure standing in front of a huge window at night, dark room, distant city lights, wide shot"},
+    {"id": "p08_olho", "lente": "macro", "estilo": "noite", "n": 4, "seed": 8800,
+     "prompt": "extreme close-up of an eye in side profile, brown skin, dark curly hair, cold blue rim light, black background"},
+    {"id": "p09_alvorada", "personagem": "lu", "lente": "35", "n": 4, "seed": 9900,
+     "prompt": "seen from behind, standing on a rooftop at dawn looking at the horizon, sun rising on the right, city below, backlit"},
+    {"id": "p11_pes", "lente": "35", "n": 4, "seed": 1100,
+     "prompt": "low angle close-up of white sneakers walking on a sidewalk at sunrise, one foot mid-step, warm backlight, long shadows"},
+    {"id": "p12_rua", "lente": "35", "n": 4, "seed": 1200,
+     "prompt": "empty sloped street in a Brazilian neighborhood at sunrise, sun low on the right, backlit, warm haze, no people"},
+    {"id": "p15_mao", "lente": "50", "n": 4, "seed": 1500,
+     "prompt": "silhouette of one raised open hand against the bright morning sky, backlit, sun flare, fingers spread"},
+    {"id": "p17_campo", "lente": "24", "n": 4, "seed": 1700,
+     "prompt": "wide empty grassy hill at sunrise, open sky, sun low on the right, golden haze, no people"}
+  ]
+}

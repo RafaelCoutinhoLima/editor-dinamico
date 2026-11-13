@@ -1,0 +1,22 @@
+{
+  "pasta": "fotos",
+  "size": "1080x1920",
+  "estilo": "campanha",
+  "upscale": "lanczos",
+  "personagens": {
+    "lu": {
+      "descricao": "young Brazilian woman, 18, brown skin, curly dark hair bun, grey hoodie",
+      "seed": 4242
+    }
+  },
+  "planos": [
+    {"id": "01_janela", "personagem": "lu", "lente": "35", "estilo": "noite", "n": 4, "seed": 5100,
+     "prompt": "seen from behind, a student at a desk by a big window at night, face lit by a phone screen, city lights outside"},
+    {"id": "02_caderno", "lente": "50", "n": 4, "seed": 2200,
+     "prompt": "close-up of one hand writing in a notebook with a pencil, warm desk lamp, wooden desk"},
+    {"id": "03_escada", "personagem": "lu", "lente": "35", "n": 4, "seed": 6100,
+     "prompt": "seen from behind, silhouette of a student with a backpack climbing long outdoor concrete stairs toward the rising sun, sun flare"},
+    {"id": "04_multidao", "lente": "50", "estilo": "documental", "n": 4, "seed": 3400,
+     "prompt": "blurry crowd of Brazilian high school students walking in a school courtyard, long exposure motion blur, out of focus, morning light"}
+  ]
+}

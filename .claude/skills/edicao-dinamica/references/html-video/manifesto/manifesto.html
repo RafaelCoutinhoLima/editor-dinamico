@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>manifesto LoopEdu: onde você trava (41 s, 18 planos, sem narração)</title>
+<!--
+  MANIFESTO LOOPEDU "onde você trava": 41 s, 1080x1920, 18 planos, versão SEM narração (só texto na tela).
+  Roteiro: references/manifesto-loopedu-roteiro.md; regras: references/manifesto.md; kit: references/html-video/.
+
+  FOTOS QUE ESTA PÁGINA ESPERA (geradas na máquina, nunca baixadas): cada uma é um .foto3d.js do `edin profundidade`
+  (foto + fundo preenchido + profundidade embutidos) e, para o insert sem relevo, o .png. Rodada de 13/11 (planos_v2.json):
+    fotos/novas/p01_janela_s4245.foto3d.js    plano 1 e emenda do loop (lu de costas na mesa, janela à noite)
+    fotos/novas/p02_mao_s2302.foto3d.js       plano 2 (planos.json)
+    fotos/novas/p03_celular2_s4242.foto3d.js  plano 3 (lu na cama, o cabelo cobre o rosto)
+    fotos/novas/p04_pes_s4401.foto3d.js       plano 4 (planos.json)
+    fotos/novas/p05_sala_s5503.foto3d.js      plano 5 (planos.json)
+    fotos/novas/p06_cabeca_s4242.foto3d.js    plano 6 (lu de cabeça baixa, rosto escondido)
+    fotos/novas/p07_respiro_s7701.foto3d.js   plano 7 (planos.json; silhueta pequena)
+    fotos/novas/p08_olho2_s8820.foto3d.js     plano 8 (perfil em sombra; o reflexo laranja é desenhado no olho)
+    fotos/novas/p09_alvorada_s4245.foto3d.js  plano 9 (lu de costas no terraço, rosto coberto pelo cabelo)
+    fotos/novas/p11_pes_s1100.foto3d.js       plano 11 (planos.json)
+    fotos/novas/p12_rua_s4243.foto3d.js       plano 12 (lu em passada larga para a direita, perfil em contraluz)
+    fotos/novas/p13_escada_s4243.foto3d.js    plano 13 (lu de costas com a mochila na escadaria)
+    fotos/02_caderno_s2203.png                plano 14 (insert de 0,6 s: imagem plana, poupa um contexto WebGL)
+    fotos/novas/p15_mao2_s1523.foto3d.js      plano 15 (mão aberta, 5 dedos contados, 0,60 da largura)
+    fotos/novas/p16_patio_s3413.foto3d.js     plano 16 (multidão de costas, sem pessoa semitransparente)
+    fotos/novas/p17_morro_s1711.foto3d.js     plano 17 (grupo de costas no morro ao nascer do sol; céu livre para a legenda)
+  Planos 10 (tela do app) e 18 (o sol vira o anel da logo) são desenhados em código. A protagonista (lu) é sempre a
+  mesma descrição física, "young Brazilian woman, 18, brown skin, curly hair tied up, beige hoodie", seed base 4242
+  (personagem do planos_v2.json), e nunca mostra o rosto: costas, cabelo, sombra ou perfil em contraluz.
+
+  COMO GERAR AS FOTOS (qualidade máxima; nunca rode junto com um `edin html`, a trava ~/.cache/edin/pesado.lock serializa):
+    seguro 9000 edin imagem --lote planos_v2.json --sem-lightning --profundidade   # planos 1, 3, 6, 8, 9, 12, 13, 15, 16, 17
+    seguro 9000 edin imagem --lote planos.json --so p02_mao,p04_pes,p05_sala,p07_respiro,p11_pes --sem-lightning --profundidade
+    seguro 9000 edin imagem --lote fotos.lote.json --so 02_caderno --sem-lightning   # insert do plano 14 (PNG plano)
+  São 4 a 8 seeds por plano: abra todas (folha de contato) e descarte mão/dedo deformado (conte os dedos: na rodada
+  de 13/11, 3 de 14 mãos tinham 6 dedos), pessoa duplicada, rosto visível ou detalhado e texto. Com outra seed, troque
+  o nome aqui, no <script> e em FOTO abaixo (o nome registrado é o do arquivo sem extensão). Medidas que dependem da
+  foto (olho do plano 8, sol dos planos 9 e 17, mão dos planos 14 e 15, legenda do 17) estão em MEDIDAS e SOL17FIM:
+  confira de novo no rascunho se trocar a foto (o match da mão é conferido no quadro antes e depois de 30,8 s).
+
+  Rascunho: TMPDIR=$HOME/.cache/edin-tmp seguro 6000 edin html manifesto.html --draft --fps 60 --workers 4 -o rascunhos/manifesto_rascunho.mp4
+  Final:    TMPDIR=$HOME/.cache/edin-tmp seguro 6000 edin html manifesto.html --fps 60 --motion-blur 16 --workers 4 --silent-audio -o videos/2026-11-12_vertical.mp4
+  (15 fotos com relevo = 15 contextos WebGL por Chrome, planos 1 a 9, 11 a 13 e 15 a 17; o Chrome aceita 16.
+   Não acrescente outra foto3d sem tirar uma: o plano 14 e o quarto do plano 18 são <img> planas de propósito.)
+-->
+<style>
+  @font-face { font-family: Sora; src: url(fontes/Sora-700.ttf) format('truetype'); font-weight: 700; }
+  @font-face { font-family: Sora; src: url(fontes/Sora-600.ttf) format('truetype'); font-weight: 600; }
+  :root { --indigo: #4F46E5; --violeta: #7C3AED; --laranja: #F97316; --noite: #0f0c2e; }
+  .palco-base { font-family: Sora, system-ui, sans-serif; color: #fff; }
+  .abs { position: absolute; }
+  .in { position: absolute; inset: 0; }
+  .centro { position: absolute; transform: translate(-50%, -50%); }
+  .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* 10. tela do app */
+  .fundoApp { background: radial-gradient(ellipse 80% 55% at 70% 22%, #6a4fe0 0%, #3b2a9a 45%, #1d1660 100%); }
+  .tela { background: #f4f2fb; border-radius: calc(var(--u) * 30); overflow: hidden; color: #1e1b4b;
+    box-shadow: calc(var(--sx) * 40) calc(var(--sy) * 40) calc(var(--u) * 90) rgba(10,6,40,.55), 0 0 0 calc(var(--u) * 2) rgba(255,255,255,.18); }
+  .tela .barraTopo { height: calc(var(--u) * 60); background: #fff; display: flex; align-items: center; gap: calc(var(--u) * 12); padding-left: calc(var(--u) * 28); }
+  .tela .barraTopo i { width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: 50%; background: #d4d0ee; }
+  .tela .cab { display: flex; align-items: center; justify-content: space-between; margin: calc(var(--u) * 34) calc(var(--u) * 44) calc(var(--u) * 6);
+    font-size: calc(var(--u) * 72); font-weight: 700; line-height: 1.2; }
+  .tela .sub { margin: 0 calc(var(--u) * 44) calc(var(--u) * 28); font-size: calc(var(--u) * 66); font-weight: 600; color: #c2410c; }
+  .pontoApp { width: calc(var(--u) * 52); height: calc(var(--u) * 52); border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 38% 32%, #FDBA74, #F97316 55%, #C2410C); }
+  .linhaPlano { display: flex; align-items: center; gap: calc(var(--u) * 28); margin: 0 calc(var(--u) * 36) calc(var(--u) * 18);
+    background: #fff; border-radius: calc(var(--u) * 20); padding: calc(var(--u) * 22) calc(var(--u) * 30);
+    font-size: calc(var(--u) * 66); font-weight: 600; line-height: 1.2; box-shadow: calc(var(--sx) * 3) calc(var(--sy) * 3) calc(var(--u) * 8) rgba(40,30,120,.10); }
+  .linhaPlano .d { width: calc(var(--u) * 130); color: #5b57a0; font-weight: 700; flex: none; }
+  .linhaPlano.revisao { background: #fff1e4; color: #9a3412; }
+  /* legenda sobre fundo claro ou movimentado (planos 2, 11, 16): sombra curta e densa em volta da letra */
+  .edin-legenda.contraste { text-shadow: 0 0 2px rgba(0,0,0,.85), 0 2px 4px rgba(0,0,0,.8), 0 4px 22px rgba(0,0,0,.7); }
+  /* sobre fundo claro (bege, céu) o laranja de destaque escurece um pouco para não sumir */
+  .edin-legenda.claro .edin-destaque { color: #E25F0B !important; }
+  /* 17 e 18: o sol que vira o anel da logo */
+  .sol { position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, #fff6e2 0%, #ffe2b0 48%, #ffc27a 70%, rgba(255,170,100,0) 72%); }
+  /* 18. assinatura */
+  .fundo18 { background: radial-gradient(ellipse 75% 55% at 50% 36%, #3a2d9c 0%, #241c74 45%, #120e3a 100%); }
+  .marca { font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="palco" class="palco-base"></div>
+<script src="edin-video.js"></script>
+<script src="edin-cam.js"></script>
+<script src="edin-foto3d.js"></script>
+<script src="fotos/novas/p01_janela_s4245.foto3d.js"></script>
+<script src="fotos/novas/p02_mao_s2302.foto3d.js"></script>
+<script src="fotos/novas/p03_celular2_s4242.foto3d.js"></script>
+<script src="fotos/novas/p04_pes_s4401.foto3d.js"></script>
+<script src="fotos/novas/p05_sala_s5503.foto3d.js"></script>
+<script src="fotos/novas/p06_cabeca_s4242.foto3d.js"></script>
+<script src="fotos/novas/p07_respiro_s7701.foto3d.js"></script>
+<script src="fotos/novas/p08_olho2_s8820.foto3d.js"></script>
+<script src="fotos/novas/p09_alvorada_s4245.foto3d.js"></script>
+<script src="fotos/novas/p11_pes_s1100.foto3d.js"></script>
+<script src="fotos/novas/p12_rua_s4243.foto3d.js"></script>
+<script src="fotos/novas/p13_escada_s4243.foto3d.js"></script>
+<script src="fotos/novas/p15_mao2_s1523.foto3d.js"></script>
+<script src="fotos/novas/p16_patio_s3413.foto3d.js"></script>
+<script src="fotos/novas/p17_morro_s1711.foto3d.js"></script>
+<script>
+(function () {
+  const { px, interp, ease, clamp, lerp, legenda, halo, poeira } = EdinVideo;
+  const { preset, mix, neutro } = EdinCam;
+  const W = EdinVideo.w, H = EdinVideo.h, U = EdinVideo.u;
+  const Y = 0.68;                       // legenda: centro entre 0,55 e 0,75 da altura
+  const sm = (x) => ease.smoothstep(clamp(x));
+
+  const FOTO = {
+    janela: 'p01_janela_s4245', mao: 'p02_mao_s2302', celular: 'p03_celular2_s4242', pes: 'p04_pes_s4401',
+    sala: 'p05_sala_s5503', cabeca: 'p06_cabeca_s4242', respiro: 'p07_respiro_s7701', olho: 'p08_olho2_s8820',
+    alvorada: 'p09_alvorada_s4245', pesRua: 'p11_pes_s1100', rua: 'p12_rua_s4243', escada: 'p13_escada_s4243',
+    maoCeu: 'p15_mao2_s1523', multidao: 'p16_patio_s3413', morro: 'p17_morro_s1711',
+  };
+  const CADERNO_PNG = 'fotos/02_caderno_s2203.png';
+  // medidas tiradas das fotos escolhidas (fração do quadro)
+  const MEDIDAS = {
+    pupila: [0.30, 0.31],               // plano 8: o olho no perfil em sombra (atrás da ponte do nariz); o reflexo laranja nasce aqui e o zoom-through entra por ele
+    sol9: [0.90, 0.50],                 // plano 9: o brilho do sol no horizonte à direita, que vira o ponto do card no match cut
+    maoCaderno: [0.43, 0.55],           // plano 14: centro da mão que escreve (palma + dedos de x 0,21 a 0,65: largura 0,44)
+    maoCeu: [0.58, 0.55],               // plano 15: centro da mão aberta (5 dedos, de x 0,28 a 0,88: largura 0,60)
+    horizonte7: [0.80, 0.47],           // plano 7: o ponto laranja mínimo no horizonte
+    sol17: [0.55, 0.57],                // plano 17: o sol atrás do grupo (horizonte em 0,68)
+    leg17: 0.45,                        // plano 17: legenda sobre o céu, acima do brilho do sol
+  };
+
+  const v = EdinVideo.video({ fundo: '#0b0920', grao: 0.05, graoHz: 30, vinheta: 0.38, luz: { angulo: 120 } });
+
+  // ---------------------------------------------------------------- grade única: fria até a virada, quente depois
+  // Duas camadas soft-light (luz atrás à direita, sombras índigo). A troca acontece dentro do plano 9, em 1,7 s,
+  // e volta ao frio só no dissolve final para o quarto (o loop emenda com o quadro 0, que é frio).
+  const VIRA = [19.7, 21.4], VOLTA = [40.0, 40.8];
+  const quente = (t) => sm((t - VIRA[0]) / (VIRA[1] - VIRA[0])) * (1 - sm((t - VOLTA[0]) / (VOLTA[1] - VOLTA[0])));
+  const gradeCss = (l, s) => `linear-gradient(210deg, ${l} 0%, rgba(128,128,128,0) 55%, ${s} 100%)`;
+  v.camada({
+    montar(el) {
+      el.innerHTML = `<div class="in" style="mix-blend-mode:soft-light;background:${gradeCss('#8ea2ff', '#0f0c2e')}"></div>
+        <div class="in" style="mix-blend-mode:soft-light;background:${gradeCss('#ffb68a', '#4F46E5')}"></div>`;
+      [this.fria, this.morna] = el.children;
+    },
+    atualizar(el, t) {
+      const q = quente(t);
+      this.fria.style.opacity = (0.34 * (1 - q)).toFixed(4);
+      this.morna.style.opacity = (0.28 * q).toFixed(4);
+    },
+  });
+
+  // ---------------------------------------------------------------- cena de foto com relevo (edin-foto3d)
+  function bokeh(el, q) {
+    return poeira(el, { semente: q ? 77 : 33, n: 6, z: 1.7, desfoque: 12, tamanho: [60, 130], opacidade: [0.03, 0.08],
+      cor: q ? '255,214,170' : '190,205,255' });
+  }
+  function cenaFoto(cfg) {
+    v.cena({
+      id: cfg.id, duracao: cfg.duracao, entrada: cfg.entrada, camera: cfg.camera,
+      montar(el, ctx) {
+        el.innerHTML = '<div data-z="1" data-foto3d></div>';
+        this.f = EdinFoto3D.criar(el.querySelector('[data-foto3d]'), Object.assign({ foto: cfg.foto, abertura: 0, grao: 0 }, cfg.op || {}), ctx);
+        if (cfg.bokeh !== false) this.po = bokeh(el, cfg.quente);
+        if (cfg.match) {
+          const m = cfg.match;
+          el.insertAdjacentHTML('beforeend', `<div data-z="${m.z != null ? m.z : 1}" data-decorativo><div data-match="${m.nome}" style="position:absolute;left:${m.x * 100}%;top:${m.y * 100}%;
+            width:${px(m.r * 2)};height:${px(m.r * 2)};transform:translate(-50%,-50%)"></div></div>`);
+        }
+        if (cfg.montarExtra) cfg.montarExtra.call(this, el, ctx);
+        this.legs = (cfg.legs || []).map((l) => ({ l, o: legenda(el, { texto: l.texto, y: l.y != null ? l.y : Y, tamanho: l.tamanho || 86, classe: l.classe || '' }) }));
+        // a legenda é em minúsculas; o nome da marca mantém a caixa (LoopEdu)
+        for (const { l, o } of this.legs) if (l.marca) o.el.querySelectorAll('.edin-destaque').forEach((s) => { s.style.textTransform = 'none'; });
+      },
+      atualizar(el, t, p, ctx) {
+        if (this.po) this.po.atualizar(ctx.tg);
+        for (const { l, o } of this.legs) o.atualizar(t, l.ini, l.fim, l.fade || 0.2);
+        if (cfg.atualizarExtra) cfg.atualizarExtra.call(this, el, t, p, ctx);
+      },
+    });
+  }
+  // movimentos que o catálogo do kit não tem como preset (valores do higgsfield-camera.md)
+  const truck = (pct, easing = 'suave') => (p, T, D) => { const s = neutro(); s.tx = pct * ease[easing](p); s.ids = [pct > 0 ? 'truck-left' : 'truck-right']; return s; };
+  const heroCam = (k = 1) => (p) => { const s = neutro(); const e = ease.suave(p); s.rx = -10 * k * (1 - e); s.ty = 8 * k * (1 - e); s.ids = ['hero-cam']; return s; };
+  const actionRun = (k = 1) => (p, T) => { const s = neutro(); s.S = 1 + 0.1 * k * ease.suave(p); s.ty = 1.0 * k * Math.sin(2 * Math.PI * 2.5 * T); s.ids = ['action-run']; return s; };
+  const dollyLin = (ate, alvo) => (p) => { const s = neutro(); s.S = lerp(1, ate, p); if (alvo) { s.alvo = alvo; s._alvo = true; } s.ids = ['dolly-in']; return s; };
+
+  // ================================================================ ATO 0 e 1: TENSÃO (frio, sem laranja)
+  // 1. 0,0 a 2,4: a protagonista na mesa, à noite (capa: texto visível no quadro 0, câmera neutra no t = 0)
+  cenaFoto({
+    id: 'p01_janela', duracao: 2.4, foto: FOTO.janela,
+    camera: mix([
+      preset('super-dolly-in', { inicio: 0.08, duracao: 0.9, intensidade: 0.45, alvo: [0.45, 0.55] }),
+      dollyLin(1.08, [0.45, 0.55]),
+      preset('deriva', { semente: 3, zeroNoInicio: true }),
+    ]),
+    legs: [{ texto: 'mais uma hora.', ini: 0, fim: 2.25 }],
+  });
+  // 2. 2,4 a 4,6: a mão que escreve e reescreve (truck-left lento)
+  cenaFoto({
+    id: 'p02_mao', duracao: 2.2, foto: FOTO.mao, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
+    camera: mix([truck(9), preset('deriva', { semente: 5 })]),
+    legs: [{ texto: 'mais um resumo.', ini: 0.15, fim: 2.05, y: 0.6, classe: 'contraste' }],
+    // véu radial suave atrás do texto (o papel do caderno é claro): acompanha a opacidade da legenda
+    montarExtra(el) {
+      el.insertAdjacentHTML('beforeend', `<div data-z="1" data-decorativo><div class="in veu" style="opacity:0;
+        background:radial-gradient(ellipse 60% 9% at 50% 60%, rgba(8,6,25,.35), transparent)"></div></div>`);
+      this.veu = el.querySelector('.veu');
+    },
+    atualizarExtra() { this.veu.style.opacity = this.legs[0].o.el.style.opacity; },
+  });
+  // 3. 4,6 a 6,8: perfil iluminado só pelo celular (recuo lento + câmera na mão leve)
+  cenaFoto({
+    id: 'p03_celular', duracao: 2.2, foto: FOTO.celular, entrada: { tipo: 'dissolve', duracao: 0.15 },  op: { abertura: 3 },
+    camera: mix([preset('dolly-out', { intensidade: 0.8, alvo: [0.42, 0.45] }), preset('handheld', { intensidade: 0.35, semente: 7 }), preset('deriva', { semente: 6 })]),
+    legs: [{ texto: 'mais um vídeo no 2x.', ini: 0.15, fim: 2.05, y: 0.6 }],
+  });
+  // 4. 6,8 a 9,0: pés embaixo da mesa (desce devagar até eles)
+  cenaFoto({
+    id: 'p04_pes', duracao: 2.2, foto: FOTO.pes,
+    camera: mix([preset('crane-down', { intensidade: 0.35 }), preset('deriva', { semente: 8, intensidade: 1.2 })]),
+    legs: [{ texto: 'e a nota não mexe.', ini: 0.15, fim: 1.95 }],
+  });
+  // 5. 9,0 a 11,8: a sala enorme, todos iguais (crane-up revela a escala)
+  cenaFoto({
+    id: 'p05_sala', duracao: 2.8, foto: FOTO.sala, entrada: { tipo: 'dissolve', duracao: 0.3 },
+    camera: mix([preset('crane-up', { intensidade: 0.5 }), preset('deriva', { semente: 9 })]),
+    legs: [{ texto: 'todo mundo estudando tudo.', ini: 0.3, fim: 2.7 }],
+  });
+  // 6. 11,8 a 14,2: a protagonista de cabeça baixa (dolly-in que encontra ela)
+  cenaFoto({
+    id: 'p06_cabeca', duracao: 2.4, foto: FOTO.cabeca, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
+    camera: mix([preset('dolly-in', { intensidade: 1.0, alvo: [0.45, 0.32] }), preset('deriva', { semente: 10 })]),
+    legs: [{ texto: 'do mesmo jeito.', ini: 0.15, fim: 2.15 }],   // some em 13,95: antes da janela do dissolve (14,0)
+  });
+
+  // ================================================================ ATO 2: RESPIRO (sem texto)
+  // 7. 14,2 a 15,0: pequena diante da janela, quase escuro; um ponto laranja mínimo no horizonte
+  cenaFoto({
+    id: 'p07_respiro', duracao: 0.8, foto: FOTO.respiro, entrada: { tipo: 'dissolve', duracao: 0.4 }, bokeh: false,
+    camera: mix([dollyLin(1.025, [0.45, 0.5]), preset('deriva', { semente: 12, intensidade: 0.3 })]),
+    montarExtra(el) {
+      const [x, y] = MEDIDAS.horizonte7;
+      el.insertAdjacentHTML('beforeend', `<div data-z="0.5" data-decorativo><div class="in escuro" style="background:#05040f"></div>
+        <div class="centro" style="left:${x * 100}%;top:${y * 100}%;width:${px(12)};height:${px(12)};border-radius:50%;background:#F97316;box-shadow:${halo(14, 0.22)}"></div></div>`);
+      this.escuro = el.querySelector('.escuro');
+    },
+    atualizarExtra() { this.escuro.style.opacity = '0.38'; },
+  });
+
+  // ================================================================ ATO 3: VIRADA
+  // 8. 15,0 a 19,2: o olho; o ponto laranja refletido cresce. A frase-chave entra inteira depois de ~1 s sem texto
+  //    (o texto anterior some em 13,95; esta entra em 14,9 junto com o dissolve).
+  const RREF = [9, 22];                 // raio do reflexo (px de design) no começo e no fim do plano
+  cenaFoto({
+    id: 'p08_olho', duracao: 4.2, foto: FOTO.olho, entrada: { tipo: 'dissolve', duracao: 0.3 },
+    camera: mix([dollyLin(1.16, MEDIDAS.pupila), preset('deriva', { semente: 14, intensidade: 1.2 })]),
+    legs: [
+      { texto: 'não é falta de esforço.', ini: -0.1, fim: 1.9, fade: 0.25 },
+      { texto: 'é não saber onde *trava*.', ini: 1.95, fim: 3.75 },
+    ],
+    montarExtra(el) {
+      const [x, y] = MEDIDAS.pupila;
+      el.insertAdjacentHTML('beforeend', `<div data-z="1" data-decorativo><div class="centro reflexo" style="left:${(x + 0.012) * 100}%;top:${(y - 0.006) * 100}%;
+        border-radius:50%;background:radial-gradient(circle at 40% 35%, #ffd2a6, #F97316 55%, #c2410c);mix-blend-mode:screen"></div></div>`);
+      this.ref = el.querySelector('.reflexo');
+    },
+    atualizarExtra(el, t) {
+      const r = lerp(RREF[0], RREF[1], ease.inOutCubic(clamp((t - 0.3) / 3.6)));
+      this.ref.style.width = this.ref.style.height = px(r * 2);
+      this.ref.style.opacity = (0.35 + 0.65 * sm((t - 0.2) / 1.2)).toFixed(3);
+      this.ref.style.boxShadow = halo(r * 1.6, 0.22);
+    },
+  });
+  // 9. 19,2 a 22,4: nasce de dentro do reflexo (zoom-through); alvorada, sol à direita; a grade vira quente aqui
+  cenaFoto({
+    id: 'p09_alvorada', duracao: 3.2, foto: FOTO.alvorada, quente: true,
+    entrada: { tipo: 'zoom-through', alvo: [MEDIDAS.pupila[0] + 0.012, MEDIDAS.pupila[1] - 0.006], raio: RREF[1], duracao: 0.9 },
+    op: { flare: { x: MEDIDAS.sol9[0], y: MEDIDAS.sol9[1], intensidade: 0.3, cor: '#ffc27a' }, rim: { de: 'direita', intensidade: 0.35, cor: '#ffcf9a' } },
+    camera: mix([preset('dolly-in', { intensidade: 0.55, alvo: [0.8, 0.48] }), preset('deriva', { semente: 16 })]),
+    match: { nome: 'ponto', x: MEDIDAS.sol9[0], y: MEDIDAS.sol9[1], r: 30, z: 0.3 },
+    legs: [{ texto: 'o *LoopEdu* acha esse ponto.', ini: 0.95, fim: 3.1, marca: true }],
+  });
+
+  // ================================================================ ATO 4: SUBIDA (quente; a marca entra como ato)
+  // 10. 22,4 a 25,0: a única tela do app. O sol vira o ponto do card (match cut); a câmera só translada
+  v.cena({
+    id: 'p10_app', duracao: 2.6,
+    entrada: { tipo: 'match-cut', elemento: 'ponto', duracao: 0.5, dissolve: 0.17, escalaMax: 1.2 },
+    camera: mix([(p) => { const s = neutro(); s.ty = -9 * ease.suave(p); s.ids = ['crane-down']; return s; }, preset('deriva', { semente: 21, intensidade: 0.9 })]),
+    montar(el) {
+      const linhas = [['qua', 'questões', ''], ['qui', 'exercícios', ''], ['sex', 'revisão', 'revisao']];
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.3"><div class="in fundoApp"></div></div>
+        <div data-tela data-z="0.5">
+          <div class="abs tela" style="left:50%;top:12%;width:${px(960)};transform:translateX(-50%)">
+            <div class="barraTopo"><i></i><i></i><i></i></div>
+            <div class="cab"><span>ponto de atenção</span><b class="pontoApp" data-match="ponto"></b></div>
+            <div class="sub">frações</div>
+            ${linhas.map(([d, x, c]) => `<div class="linhaPlano ${c}"><span class="d">${d}</span><span>${x}</span></div>`).join('')}
+            <div style="height:${px(20)}"></div>
+          </div>
+        </div>`;
+      this.ponto = el.querySelector('.pontoApp');
+      this.linhas = [...el.querySelectorAll('.linhaPlano')];
+      this.tela = el.querySelector('.tela');
+      // só os textos (o ponto laranja fica de fora: é o elemento do match cut)
+      this.textosCard = [...el.querySelectorAll('.tela .cab > span, .tela .sub')];
+      this.rev = el.querySelector('.linhaPlano.revisao');
+      this.po = bokeh(el, true);
+      this.leg = legenda(el, { texto: 'e monta sua *revisão* da semana.', y: 0.7 });
+    },
+    atualizar(el, t, p, ctx) {
+      const pulso = 0.8 + 0.2 * Math.sin(t * 2 * Math.PI * 1.1);
+      this.ponto.style.boxShadow = halo(30, 0.25 * pulso);
+      // os blocos de revisão pousam nos dias, um por vez
+      this.linhas.forEach((l, i) => {
+        const q = ease.outCubic(clamp((t - 0.45 - i * 0.22) / 0.45));
+        l.style.opacity = sm((t - 0.45 - i * 0.22) / 0.2).toFixed(3);
+        l.style.transform = `translateY(${px(-36 * (1 - q))}) scale(${lerp(1.04, 1, q).toFixed(4)})`;
+      });
+      // entrada: os textos do card só aparecem depois do match cut (a foto do plano 9 ainda some até ~0,3 s)
+      const entra = sm((t - 0.25) / 0.2);
+      for (const e of this.textosCard) e.style.opacity = entra.toFixed(3);
+      // saída: o card inteiro (fundo branco incluído) some antes do dissolve para o plano 11, sem retângulo fantasma
+      const fora = 1 - sm((t - 2.3) / 0.2);
+      this.tela.style.opacity = fora.toFixed(3);
+      const hl = ease.out(clamp((t - 1.35) / 0.35));
+      this.rev.style.boxShadow = `0 0 0 ${px(4)} rgba(249,115,22,${(hl * pulso).toFixed(3)}), ${halo(26, 0.22 * hl)}`;
+      this.po.atualizar(ctx.tg);
+      this.leg.atualizar(t, 0.2, 2.5);
+    },
+  });
+  // 11. 25,0 a 26,8: pés andando na calçada ao sol (rima com o plano 4)
+  cenaFoto({
+    id: 'p11_pes', duracao: 1.8, foto: FOTO.pesRua, quente: true, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
+    op: { flare: { x: 0.57, y: 0.02, intensidade: 0.25 } },
+    camera: mix([actionRun(1), preset('handheld', { intensidade: 0.9, semente: 23 }), preset('deriva', { semente: 24 })]),
+    legs: [{ texto: 'menos horas no *escuro*.', ini: -0.05, fim: 1.72, classe: 'contraste claro' }],
+  });
+  // 12. 26,8 a 28,4: a protagonista correndo para a direita em contraluz, rua ao nascer do sol (foto: ela já está na rua)
+  cenaFoto({
+    id: 'p12_rua', duracao: 1.6, foto: FOTO.rua, quente: true, entrada: { tipo: 'dissolve', duracao: 0.15 },
+    op: { flare: { x: 0.92, y: 0.1, intensidade: 0.3 } },
+    // truck curto: com 7% o fundo preenchido aparecia como contorno duplo atrás das costas dela
+    camera: mix([truck(-3, 'linear'), actionRun(0.5), preset('deriva', { semente: 26 })]),
+  });
+  // 13. 28,4 a 30,2: sobe a escadaria contra o sol (hero cam)
+  cenaFoto({
+    id: 'p13_escada', duracao: 1.8, foto: FOTO.escada, quente: true,
+    op: { rim: { de: 'cima', intensidade: 0.45, cor: '#ffcf9a' }, flare: { x: 0.6, y: 0.03, intensidade: 0.35, cor: '#ffc27a' } },
+    camera: mix([heroCam(1), preset('deriva', { semente: 28 })]),
+    legs: [{ texto: 'mais tempo lá *fora*.', ini: 0.1, fim: 1.72 }],
+  });
+  // 14. 30,2 a 30,8: insert, a mão para de escrever (imagem plana, a mão já no lugar da mão do plano 15)
+  const MC = MEDIDAS.maoCaderno, MCEU = MEDIDAS.maoCeu, SC14 = 1.40;   // escala da foto do caderno para a mão dele casar com a do plano 15 (medida no comentário do plano 15)
+  v.cena({
+    id: 'p14_caderno', duracao: 0.6, entrada: { tipo: 'dissolve', duracao: 0.15 }, 
+    camera: mix([dollyLin(1.02, MCEU), preset('deriva', { semente: 30, intensidade: 0.6 })]),
+    montar(el) {
+      el.innerHTML = `<div data-z="1"><img class="foto" src="${CADERNO_PNG}" style="transform-origin:${MC[0] * 100}% ${MC[1] * 100}%;
+          transform:translate(${((MCEU[0] - MC[0]) * 100).toFixed(2)}%, ${((MCEU[1] - MC[1]) * 100).toFixed(2)}%) scale(${SC14})"></div>
+        <div data-z="1" data-decorativo><div data-match="mao" class="centro" style="left:${MCEU[0] * 100}%;top:${MCEU[1] * 100}%;width:${px(300)};height:${px(300)}"></div></div>`;
+    },
+  });
+  // 15. 30,8 a 31,6: a mesma mão, aberta contra o céu (match cut na mão)
+  cenaFoto({
+    id: 'p15_mao', duracao: 0.8, foto: FOTO.maoCeu, quente: true,
+    // corte seco na mão: no rascunho a mão do caderno mede 0,66 da largura com centro (0,55; 0,53) e a do céu 0,61
+    // com centro (0,58; 0,53): centro dentro de 2% e escala +8% (regra: ±2% e ±10%). Sem dissolve: a forma muda
+    // (caneta para mão aberta) e qualquer mistura deixava a caneta fantasma sobre a palma.
+    entrada: { tipo: 'match-cut', elemento: 'mao', duracao: 0 },
+    op: { flare: { x: 0.62, y: 0.2, intensidade: 0.3 } },
+    camera: mix([dollyLin(1.035, MCEU), preset('deriva', { semente: 31, intensidade: 0.6 })]),
+    match: { nome: 'mao', x: MCEU[0], y: MCEU[1], r: 150 },
+  });
+
+  // ================================================================ ATO 5: CONVITE (rally)
+  // 16. 31,6 a 34,4: gente ao ar livre, ninguém estudando (o contrário do óbvio); arc pequeno sobre a foto
+  cenaFoto({
+    id: 'p16_patio', duracao: 2.8, foto: FOTO.multidao, quente: true, entrada: { tipo: 'dissolve', duracao: 0.3 },
+    op: { orbita: 0.08 },
+    camera: mix([preset('arc-right', { intensidade: 0.9, alvo: [0.5, 0.55] }), preset('dolly-in', { intensidade: 0.3 }), preset('deriva', { semente: 33 })]),
+    legs: [{ texto: 'estude *melhor*.', ini: 0.35, fim: 2.6, tamanho: 110, y: 0.72, classe: 'contraste claro' }],
+  });
+  // 17. 34,4 a 37,2: o grupo de costas no morro ao nascer do sol (foto); a câmera recua devagar. Legenda sobre o céu.
+  const RSOL = 64;                      // raio do disco do sol que o plano 18 encolhe até o anel
+  cenaFoto({
+    id: 'p17_morro', duracao: 2.8, foto: FOTO.morro, quente: true, entrada: { tipo: 'dissolve', duracao: 0.4 },
+    op: { flare: { x: MEDIDAS.sol17[0], y: MEDIDAS.sol17[1], intensidade: 0.3, cor: '#ffc27a' } },
+    camera: mix([preset('aerial-pullback', { intensidade: 0.35, alvo: [0.55, 0.6], easing: 'suave' }), preset('deriva', { semente: 37, intensidade: 1.0 })]),
+    legs: [{ texto: 'viva por *inteiro*.', ini: 0.45, fim: 2.5, tamanho: 110, y: MEDIDAS.leg17, classe: 'contraste' }],
+  });
+
+  // ================================================================ ATO 6: ASSINATURA e loop
+  // 18. 37,2 a 41,0: o sol encolhe e vira o anel laranja da logo, que fecha; LoopEdu e o slogan.
+  //     No fim escurece e o quarto do plano 1 volta (último quadro = quadro 0).
+  const CY18 = 0.34, R18 = 150, LOGO = 308 / 360;
+  const SOL17FIM = [0.54, 0.52];       // onde o sol da foto do plano 17 está no corte (medido no rascunho em 36,9 s, atrás do grupo)
+  v.cena({
+    id: 'p18_assinatura', duracao: 3.8, entrada: { tipo: 'dissolve', duracao: 0.5 },
+    camera: mix([
+      (p, T) => {   // pullback curto que volta ao neutro exato em 3,0 s
+        const s = neutro();
+        const pull = ease.outCubic(clamp(T / 2.2)), volta = 1 - ease.inOutCubic(clamp((T - 2.0) / 1.0));
+        s.S = 1 + 0.06 * (1 - pull) * volta; s.rx = 6 * pull * volta; s.ty = -2 * pull * volta;
+        s.alvo = [0.5, CY18]; s._alvo = true; s.ids = ['aerial-pullback'];
+        return s;
+      },
+      preset('deriva', { semente: 41, intensidade: 0.8, saida: 1.2 }),
+    ]),
+    montar(el) {
+      const C = 2 * Math.PI * R18;
+      el.innerHTML = `
+        <div data-z="0.25" data-sobra="0.2"><div class="in fundo18"></div></div>
+        <div data-z="1" class="anelCamada"><div class="in">
+          <div class="sol solA" style="left:${SOL17FIM[0] * 100}%;top:${SOL17FIM[1] * 100}%;width:${px(RSOL * 2)};height:${px(RSOL * 2)}"></div>
+          <svg class="abs" style="left:50%;top:${CY18 * 100}%;width:${px(R18 * 2 + 80)};height:${px(R18 * 2 + 80)};transform:translate(-50%,-50%);overflow:visible" viewBox="${-R18 - 40} ${-R18 - 40} ${R18 * 2 + 80} ${R18 * 2 + 80}">
+            <circle class="anel" cx="0" cy="0" r="${R18}" fill="none" stroke="#F97316" stroke-width="30" stroke-linecap="round"
+              stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${C.toFixed(2)}" transform="rotate(-90)" style="filter:drop-shadow(${halo(20, 0.25)})"/>
+          </svg>
+          <div class="centro marca" style="left:50%;top:${(CY18 + 0.15) * 100}%;font-size:${px(104)}">LoopEdu</div>
+        </div></div>
+        <div data-z="1" data-decorativo class="quarto"><div class="in"><img class="foto" src="${EDIN_FOTOS[FOTO.janela].cor}"></div></div>`;
+      this.C = C;
+      this.anel = el.querySelector('.anel');
+      this.solA = el.querySelector('.solA');
+      this.marca = el.querySelector('.marca');
+      this.anelCamada = el.querySelector('.anelCamada > .in');
+      this.quarto = el.querySelector('.quarto > .in');
+      this.slogan = legenda(el, { texto: 'estude melhor.\nviva por *inteiro*.', y: 0.66 });
+      this.volta = legenda(el, { texto: 'mais uma hora.', y: Y });
+    },
+    atualizar(el, t) {
+      // sol (na posição do plano 17) desce até o centro do anel e encolhe; o anel nasce dele
+      const k = ease.inOutCubic(clamp(t / 0.55));
+      const sy = lerp(SOL17FIM[1], CY18, k);
+      this.solA.style.top = `${sy * 100}%`;
+      const rs = lerp(RSOL, 40, k);
+      this.solA.style.width = this.solA.style.height = px(rs * 2);
+      this.solA.style.opacity = (1 - sm((t - 0.25) / 0.35)).toFixed(4);
+      // anel: abre em 308 graus (como a logo) e fecha (37,4 a 38,6)
+      const desenho = interp(t, [0.2, 0.8], [0, LOGO], ease.inOut);
+      const fecha = lerp(desenho, 1, ease.inOut(clamp((t - 0.85) / 0.55)));
+      this.anel.setAttribute('stroke-dashoffset', (this.C * (1 - fecha)).toFixed(2));
+      this.anel.style.opacity = fecha > 0.002 ? '1' : '0';
+      const m = ease.out(clamp((t - 0.6) / 0.4));
+      this.marca.style.opacity = m.toFixed(3);
+      this.marca.style.transform = `translate(-50%, calc(-50% + ${px((1 - m) * 18)}))`;
+      // anel, marca e slogan saem em 40,0 a 40,3 enquanto o quarto já volta (40,0 a 40,6): nenhum quadro só roxo.
+      // A frase de abertura entra em 40,55 a 40,95 e o último quadro é o quadro 0.
+      const sai = 1 - sm((t - 2.8) / 0.3);
+      this.anelCamada.style.opacity = sai.toFixed(4);
+      this.slogan.atualizar(t, 1.15, 3.1, 0.3);
+      this.quarto.style.opacity = sm((t - 2.8) / 0.6).toFixed(4);
+      this.volta.atualizar(t, 3.35, 99, 0.4);
+    },
+  });
+
+  v.iniciar();
+})();
+</script>
+</body>
+</html>
