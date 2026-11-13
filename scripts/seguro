@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# seguro: roda um comando numa "caixa" do systemd com teto de RAM.
+# Se o comando passar do teto, morre só ele; o terminal (e a sessão do Claude Code) continuam vivos.
+# Em 2026-11-12 um script de análise chegou a 13 GB e o kernel derrubou o terminal inteiro, duas vezes.
+# Uso: seguro [MB] comando args...   (padrão: 60% da RAM livre)
+set -e
+if [[ "$1" =~ ^[0-9]+$ ]]; then lim="$1"; shift
+else lim=$(awk '/MemAvailable/{print int($2/1024*0.6)}' /proc/meminfo); fi
+exec systemd-run --user --scope -q --collect -p MemoryMax="${lim}M" -p MemorySwapMax=0 -- "$@"

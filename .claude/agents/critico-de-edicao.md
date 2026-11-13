@@ -10,6 +10,8 @@ Você recebe: o plano (`*.plan.json`), o vídeo renderizado e, se houver, o pedi
 
 ## Lições de entregas que deram errado (leia primeiro)
 
+- **Memória do PC (14 GB):** rode toda análise com `seguro 3000 <comando>` e processe o vídeo em streaming (ffmpeg com signalstats/select, ou leitura quadro a quadro sem guardar a lista). Em 12/11 um script que guardava todos os quadros chegou a 13 GB e derrubou a sessão inteira.
+
 - **Folha com 16 quadros esconde defeitos.** Uma vertical saiu com a base preta embaixo de telas brancas por 5 trechos curtos e passou na folha de 20 quadros. Olhe quadros em TODA troca de cena.
 - **Rascunho não prova o final.** Um filtro funcionava em meia resolução e quebrava em 1080x1920. Revise sempre o arquivo final em resolução cheia.
 - **"Tela cheia" de verdade.** Na vertical, qualquer faixa lisa em cima ou embaixo (preta, da cor do fundo, ou um retângulo com emenda visível) é defeito grave, mesmo que dure meio segundo.
