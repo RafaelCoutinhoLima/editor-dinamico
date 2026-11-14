@@ -2,12 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>manifesto LoopEdu v2: narrado, clipes com gente de verdade (43,6 s)</title>
+<title>manifesto LoopEdu v2: narrado, clipes com gente de verdade (41,5 s)</title>
 <!--
   MANIFESTO LOOPEDU v2 (13/11): a linguagem da referência Atletia (references/referencia-atletia.md) trazida para
-  estudantes brasileiros. 1080x1920, 43,56 s, narração local (voz/voz.mp3, Kokoro pm_alex 0,95), 19 planos.
+  estudantes brasileiros. 1080x1920, 41,5 s, narração local (voz/voz.mp3, Kokoro pm_alex 0,95), 19 planos.
   Cortes secos no ataque da palavra que abre cada frase (voz/voz.words.json); texto = a própria fala em blocos de
-  2 a 4 palavras, Sora 600 68 px, centro do quadro; 1 palavra laranja a cada ~3 blocos.
+  2 a 4 palavras, Sora 600 100 px (maiúscula ~70 px), centro do quadro; 1 palavra laranja a cada ~3 blocos.
 
   Atos (molde 45 s):
     A0 dor (0 a 10,4)        p01 a p05: a bia de madrugada, noite com luz lateral dura; p01 em P&B com glitch de fatias
@@ -23,10 +23,10 @@
   (a rajada e o glitch usam a foto parada, que é o quadro 0 do clipe).
 
   Material escolhido (fotos/ -> clipes/ pelo clipes.json, FastWan 3 passos, 2 seeds por plano; abertos e conferidos):
-    p01 madrugada   p01_madrugada_s6150 -> p01_madrugada_s100     p09 aponta      p09_aponta_s6181  -> p09_aponta_s100
+    p01 madrugada   p01_madrugada_s5150 -> p01c_madrugada_s301     p09 aponta      p09_aponta_s6181  -> p09_aponta_s100
     p02a marca      p02_marca_s6163     -> p02_marca_s101         p10 colega      p12_ensina_s5152  -> p10_colega_s101
     p02b bocejo     p02_bocejo_s6151    -> p02_bocejo_s101        p11 entende     p11_entende_s5152 -> p11_entende_s101 (vel 0,55)
-    p03 nota        p03_nota_s5151      -> p03_nota_s101 (0,75)   p12 ensina      p12_ensina_s5151  -> p12_ensina_s100
+    p03 nota        p03_nota_s5153      -> p03c_nota_s301 (0,5)   p12 ensina      p12_ensina_s5151  -> p12_ensina_s100
     p04 esforço     p04_dorme_s6150     -> p04_dorme_s101         p13 trio        p13_trio_s5152    -> p13_trio_s100
     p05 lente       p05_lente_s5150     -> p05b_lente_s200        p14 turma       p14_turma_s1416   -> p14_turma_s100
     p07 tela        p07_tela_s5151      -> p07_tela_s100          p15 fecha       p15_fecha_s5151   -> p15_fecha_s100
@@ -34,7 +34,7 @@
   Todo clipe entra em 0,3 s (CLIPE_INI): os 6 primeiros quadros do FastWan passam da cor da foto para a do modelo.
 
   Rascunho: TMPDIR=$HOME/.cache/edin-tmp seguro 6000 edin html manifesto.html --draft --fps 60 --workers 4 --audio voz/voz.mp3 -o rascunhos/rascunho.mp4
-  Final:    TMPDIR=$HOME/.cache/edin-tmp scripts/render_em_pedacos.sh manifesto.html videos/2026-11-13_vertical.mp4 43.56 7 -- --fps 60 --motion-blur 16 --workers 4 --audio voz/voz.mp3
+  Final:    TMPDIR=$HOME/.cache/edin-tmp scripts/render_em_pedacos.sh manifesto.html videos/2026-11-13_vertical.mp4 41.5 7 -- --fps 60 --motion-blur 16 --workers 4 --audio voz/voz.mp3
 -->
 <style>
   @font-face { font-family: Sora; src: url(fontes/Sora-700.ttf) format('truetype'); font-weight: 700; }
@@ -46,8 +46,8 @@
   .centro { position: absolute; transform: translate(-50%, -50%); }
   .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   /* texto = a fala, em blocos */
-  .fala { position: absolute; left: 50%; width: 88%; transform: translate(-50%, -50%); text-align: center; z-index: 50;
-    font: 600 calc(var(--u) * 68) / 1.12 Sora, system-ui, sans-serif; letter-spacing: -0.01em; color: #fff;
+  .fala { position: absolute; left: 50%; width: 92%; transform: translate(-50%, -50%); text-align: center; z-index: 50;
+    font: 600 calc(var(--u) * 100) / 1.1 Sora, system-ui, sans-serif; letter-spacing: -0.01em; color: #fff;
     text-shadow: 0 0 calc(var(--u) * 2) rgba(0,0,0,.75), 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0,0,0,.6), 0 0 calc(var(--u) * 42) rgba(0,0,0,.45); }
   .fala .l { display: block; opacity: 0; position: relative; }
   /* véu suave atrás de cada linha: lê sobre contraluz e sol sem virar caixa */
@@ -96,17 +96,17 @@
   const { preset, mix, neutro } = EdinCam;
   const W = EdinVideo.w, H = EdinVideo.h, FPS = EdinVideo.fps;
   const sm = (x) => ease.smoothstep(clamp(x));
-  const FIM = 43.56;
+  const FIM = 41.5;                           // a voz acaba em 40,70; a cartela segura 0,8 s e corta
   const ANTES = 0.02;                         // o corte cai 0,02 s antes do ataque da palavra (referência: mediana -0,03)
 
   // ---------------------------------------------------------------- material escolhido (fotos e clipes)
   // nome do arquivo sem extensão; o clipe é clipes/<nome>.mp4 com a pasta de quadros do `edin quadros`
   const FOTO = {
-    p01: 'clipes/p01_madrugada_s100/00018.jpg',   // quadro do clipe em 0,3 s (o 1º que aparece)
+    p01: 'clipes/p01c_madrugada_s301/00018.jpg',   // quadro do clipe em 0,3 s (o 1º que aparece)
     p05: 'clipes/p05b_lente_s200/00142.jpg',       // quadro do clipe no fim do plano 5 (a rajada continua dele)
   };
   const CLIPE = {
-    p01: 'p01_madrugada_s100', p02a: 'p02_marca_s101', p02b: 'p02_bocejo_s101', p03: 'p03_nota_s101', p04: 'p04_dorme_s101',
+    p01: 'p01c_madrugada_s301', p02a: 'p02_marca_s101', p02b: 'p02_bocejo_s101', p03: 'p03c_nota_s301', p04: 'p04_dorme_s101',
     p05: 'p05b_lente_s200', p07: 'p07_tela_s100', p09: 'p09_aponta_s100', p10: 'p10_colega_s101', p11: 'p11_entende_s101',
     p12: 'p12_ensina_s100', p13: 'p13_trio_s100', p14: 'p14_turma_s100', p15: 'p15_fecha_s100', p16: 'p16_fora_s101',
   };
@@ -145,7 +145,7 @@
     { id: 'p01', ini: 0.00, tipo: 'clipe', pb: true, glitch: true, y: 0.62, cam: ['static', 1], filtro: 'contrast(1.18)' },
     { id: 'p02a', ini: 2.02, tipo: 'clipe', y: 0.56, cam: ['dolly-in', 0.35], filtro: 'contrast(1.12) saturate(1.15)' },
     { id: 'p02b', ini: 2.90, tipo: 'clipe', y: 0.62, cam: ['static', 1], filtro: 'contrast(1.12) saturate(1.15)' },
-    { id: 'p03', ini: 4.16, tipo: 'clipe', vel: 0.75, y: 0.62, cam: ['dolly-in', 0.3], filtro: 'contrast(1.38) brightness(1.16) saturate(1.22)' },
+    { id: 'p03', ini: 4.16, tipo: 'clipe', vel: 0.5, y: 0.62, cam: ['dolly-in', 0.3], filtro: 'contrast(1.38) brightness(1.16) saturate(1.22)' },
     { id: 'p04', ini: 6.30, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.12) saturate(1.15)' },
     { id: 'p05', ini: 8.32, tipo: 'clipe', y: 0.64, cam: ['dolly-in', 0.5], filtro: 'contrast(1.42) brightness(1.0) saturate(1.1)' },
     { id: 'rajada', ini: 10.40, tipo: 'rajada' },
@@ -267,12 +267,12 @@
     el.className = 'hud in';
     const barras = [0.82, 0.64, 0.31, 0.74, 0.58];
     el.innerHTML = `
-      <div class="painel" style="left:7%;top:7%;width:${px(560)};height:${px(400)}">
+      <div class="painel" style="left:7%;top:calc(7% + var(--u) * 200);width:${px(560)};height:${px(400)}">
         <div class="abs" data-decorativo style="left:${px(30)};top:${px(22)};font-size:${px(30)};letter-spacing:.12em;opacity:.8">DESEMPENHO · SEMANA</div>
         ${barras.map((b, i) => `<div class="abs barra" style="left:${px(40 + i * 100)};bottom:${px(40)};width:${px(56)};height:${px(260 * b)};
           background:${i === 2 ? '#F97316' : 'rgba(95,227,255,.85)'};transform-origin:50% 100%;border-radius:${px(6)}"></div>`).join('')}
       </div>
-      <div class="painel" style="right:7%;top:9%;width:${px(330)};height:${px(330)};border-radius:50%">
+      <div class="painel" style="right:7%;top:calc(9% + var(--u) * 200);width:${px(330)};height:${px(330)};border-radius:50%">
         <svg class="abs" viewBox="-100 -100 200 200" style="inset:0;width:100%;height:100%">
           <circle r="78" fill="none" stroke="rgba(95,227,255,.25)" stroke-width="10"/>
           <circle class="arco" r="78" fill="none" stroke="#5FE3FF" stroke-width="10" stroke-linecap="round" transform="rotate(-90)"
@@ -317,8 +317,10 @@
           g.className = 'in glitch';
           g.style.filter = 'grayscale(1) contrast(1.35)';
           const n = 9;
-          g.innerHTML = Array.from({ length: n }, (_, i) => `<div class="fatia" style="left:${(i * 100 / n).toFixed(3)}%;width:${(100 / n + 0.05).toFixed(3)}%">
-            <img src="${FOTO.p01}" style="left:${(-i * 100).toFixed(1)}%;width:${n * 100}%"></div>`).join('');
+          // cada fatia mostra exatamente a sua faixa da imagem (px inteiros, sem emenda repetida)
+          const lw = (i) => Math.round(i * W / n);
+          g.innerHTML = Array.from({ length: n }, (_, i) => `<div class="fatia" style="left:${lw(i)}px;width:${lw(i + 1) - lw(i)}px">
+            <img src="${FOTO.p01}" style="left:${-lw(i)}px;width:${W}px"></div>`).join('');
           camada.appendChild(g);
           this.glitch = g; this.fatias = [...g.children];
         }
@@ -330,7 +332,8 @@
         this.c.atualizar(t, ctx);
         if (this.glitch) {
           // troca a cada 3 quadros a 60 (valor discreto pelo tempo do quadro); some até 0,5 s
-          const q = Math.floor(ctx.tql * 20), amp = 1 - clamp(ctx.tql / 0.5);
+          // os primeiros 0,3 s (capa) ficam limpos; o glitch vai de 0,3 a 0,75 s
+          const q = Math.floor(ctx.tql * 20), amp = ctx.tql < 0.3 ? 0 : 1 - clamp((ctx.tql - 0.3) / 0.45);
           this.glitch.style.display = amp > 0 ? '' : 'none';
           this.fatias.forEach((f, i) => {
             const d = (hash(i * 31 + q, 17) - 0.5) * 2 * 6 * amp * (hash(i + q * 7, 5) > 0.35 ? 1 : 0);
@@ -472,13 +475,12 @@
             <div class="centro marca nome" style="left:50%;top:48.5%;font-size:${px(118)};color:#1e1b4b">LoopEdu</div>
           </div>
           <div class="fala escuro" style="top:60%"><span class="l s1">Estude melhor.</span><span class="l s2">Viva por <em>inteiro</em>.</span></div>
-          <div class="in preto" style="background:#000;opacity:0"></div>`;
+`;
         this.C = C;
         this.branco = el.querySelector('.branco');
         this.anel = el.querySelector('.anel');
         this.nome = el.querySelector('.nome');
         this.s1 = el.querySelector('.s1'); this.s2 = el.querySelector('.s2');
-        this.preto = el.querySelector('.preto');
       },
       atualizar(el, t, pp, ctx) {
         // o branco nasce do ponto (0,8 s): sem clarão (salto de brilho por quadro abaixo de ~20)
@@ -495,7 +497,6 @@
         this.nome.style.transform = `translate(-50%,-50%) scale(${(m <= 0 ? 0.9 : lerp(0.9, 1, ease.outExpo(m)) * pop).toFixed(4)})`;
         this.s1.style.opacity = ctx.tql >= tSlogan1 - 0.03 ? '1' : '0';
         this.s2.style.opacity = ctx.tql >= tSlogan2 - 0.03 ? '1' : '0';
-        this.preto.style.opacity = sm((t - (p.dur - 0.45)) / 0.4).toFixed(4);
       },
     });
   }

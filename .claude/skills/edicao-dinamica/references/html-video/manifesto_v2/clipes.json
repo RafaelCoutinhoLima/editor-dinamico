@@ -101,6 +101,22 @@
       "n": 2,
       "seed": 200,
       "prompt": "the young woman in the hood looks straight into the camera without blinking, serious, her eyes fixed on the lens, almost still, very slow push in, hard side light, dark background"
+    },
+    {
+      "id": "p01c_madrugada",
+      "foto": "fotos/p01_madrugada_s5150.png",
+      "duracao": 2.6,
+      "n": 2,
+      "seed": 300,
+      "prompt": "the exhausted young woman slowly closes her eyes and lowers her head, breathing out tired, curls falling on her face, slow dolly in, warm lamp light from the side, dark room"
+    },
+    {
+      "id": "p03c_nota",
+      "foto": "fotos/p03_nota_s5153.png",
+      "duracao": 2.6,
+      "n": 2,
+      "seed": 300,
+      "prompt": "the young woman in the hood looks down, her face slowly falls into disappointment, she exhales and lowers her eyes, slow push in, dim light, dark room"
     }
   ]
 }
