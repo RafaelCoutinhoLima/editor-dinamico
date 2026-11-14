@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>manifesto LoopEdu v2: narrado, clipes com gente de verdade (43,6 s)</title>
+<!--
+  MANIFESTO LOOPEDU v2 (13/11): a linguagem da referência Atletia (references/referencia-atletia.md) trazida para
+  estudantes brasileiros. 1080x1920, 43,56 s, narração local (voz/voz.mp3, Kokoro pm_alex 0,95), 19 planos.
+  Cortes secos no ataque da palavra que abre cada frase (voz/voz.words.json); texto = a própria fala em blocos de
+  2 a 4 palavras, Sora 600 68 px, centro do quadro; 1 palavra laranja a cada ~3 blocos.
+
+  Atos (molde 45 s):
+    A0 dor (0 a 10,4)        p01 a p05: a bia de madrugada, noite com luz lateral dura; p01 em P&B com glitch de fatias
+    A1 rajada + impacto      10,4 a 12,6: rosto x celular com a marca, cada volta mais perto, 6 quadros de glitch; logo
+    A2 solução (IA)          p07 rede de linhas entre matérias (acha onde trava), p08 a única tela do app (revisão)
+    A4 série paralela        p09 (HUD de desempenho) / p10 colega explica / p11 "você entende" (rack focus, o close mais quente)
+    A5 prova humana          p12 a p14: ensinar, trio rindo, turma saindo da escola (planos de 2,8 a 3 s)
+    A6 escuro x lá fora      p15 fecha o notebook sorrindo, p16 braços erguidos na quadra ao pôr do sol
+    A7 assinatura            cartela branca: a logo nasce de um ponto, "Estude melhor. Viva por inteiro."
+
+  Clipes: clipes/<nome>.mp4 do `edin animar` (lote clipes.json), extraídos com `edin quadros <clipe>.mp4 --fps 60
+  --interp mci` (pasta ao lado do mp4). Fotos: fotos/<nome>.png do `edin imagem --lote planos.json --sem-lightning`
+  (a rajada e o glitch usam a foto parada, que é o quadro 0 do clipe).
+
+  Material escolhido (fotos/ -> clipes/ pelo clipes.json, FastWan 3 passos, 2 seeds por plano; abertos e conferidos):
+    p01 madrugada   p01_madrugada_s6150 -> p01_madrugada_s100     p09 aponta      p09_aponta_s6181  -> p09_aponta_s100
+    p02a marca      p02_marca_s6163     -> p02_marca_s101         p10 colega      p12_ensina_s5152  -> p10_colega_s101
+    p02b bocejo     p02_bocejo_s6151    -> p02_bocejo_s101        p11 entende     p11_entende_s5152 -> p11_entende_s101 (vel 0,55)
+    p03 nota        p03_nota_s5151      -> p03_nota_s101 (0,75)   p12 ensina      p12_ensina_s5151  -> p12_ensina_s100
+    p04 esforço     p04_dorme_s6150     -> p04_dorme_s101         p13 trio        p13_trio_s5152    -> p13_trio_s100
+    p05 lente       p05_lente_s5150     -> p05b_lente_s200        p14 turma       p14_turma_s1416   -> p14_turma_s100
+    p07 tela        p07_tela_s5151      -> p07_tela_s100          p15 fecha       p15_fecha_s5151   -> p15_fecha_s100
+                                                                  p16 fora        p16_fora_s5153    -> p16_fora_s101
+  Todo clipe entra em 0,3 s (CLIPE_INI): os 6 primeiros quadros do FastWan passam da cor da foto para a do modelo.
+
+  Rascunho: TMPDIR=$HOME/.cache/edin-tmp seguro 6000 edin html manifesto.html --draft --fps 60 --workers 4 --audio voz/voz.mp3 -o rascunhos/rascunho.mp4
+  Final:    TMPDIR=$HOME/.cache/edin-tmp scripts/render_em_pedacos.sh manifesto.html videos/2026-11-13_vertical.mp4 43.56 7 -- --fps 60 --motion-blur 16 --workers 4 --audio voz/voz.mp3
+-->
+<style>
+  @font-face { font-family: Sora; src: url(fontes/Sora-700.ttf) format('truetype'); font-weight: 700; }
+  @font-face { font-family: Sora; src: url(fontes/Sora-600.ttf) format('truetype'); font-weight: 600; }
+  :root { --indigo: #4F46E5; --laranja: #F97316; --noite: #0f0c2e; }
+  .palco-base { font-family: Sora, system-ui, sans-serif; color: #fff; }
+  .abs { position: absolute; }
+  .in { position: absolute; inset: 0; }
+  .centro { position: absolute; transform: translate(-50%, -50%); }
+  .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* texto = a fala, em blocos */
+  .fala { position: absolute; left: 50%; width: 88%; transform: translate(-50%, -50%); text-align: center; z-index: 50;
+    font: 600 calc(var(--u) * 68) / 1.12 Sora, system-ui, sans-serif; letter-spacing: -0.01em; color: #fff;
+    text-shadow: 0 0 calc(var(--u) * 2) rgba(0,0,0,.75), 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0,0,0,.6), 0 0 calc(var(--u) * 42) rgba(0,0,0,.45); }
+  .fala .l { display: block; opacity: 0; position: relative; }
+  /* véu suave atrás de cada linha: lê sobre contraluz e sol sem virar caixa */
+  .fala .l::before { content: ''; position: absolute; left: 50%; top: 50%; width: 120%; height: 190%; transform: translate(-50%, -50%); z-index: -1;
+    background: radial-gradient(closest-side, rgba(0,0,0,.42), rgba(0,0,0,.18) 60%, rgba(0,0,0,0)); }
+  .fala.escuro .l::before { display: none; }
+  .fala em { font-style: normal; color: #FF7A1A; text-shadow: 0 0 calc(var(--u) * 3) rgba(0,0,0,.9), 0 calc(var(--u) * 2) calc(var(--u) * 10) rgba(0,0,0,.75); }
+  .fala.escuro em { text-shadow: none; }
+  .fala.escuro { color: #1e1b4b; text-shadow: none; }
+  /* rajada / glitch */
+  .fatia { position: absolute; top: 0; bottom: 0; overflow: hidden; }
+  .fatia img, .banda img { position: absolute; top: 0; height: 100%; object-fit: cover; }
+  .banda { position: absolute; left: 0; right: 0; overflow: hidden; }
+  /* celular com a marca (rajada e impacto) */
+  .cel { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 560); height: calc(var(--u) * 1080);
+    transform: translate(-50%, -50%); border-radius: calc(var(--u) * 70); background: #0d0a26;
+    box-shadow: 0 0 0 calc(var(--u) * 14) #17132f, 0 0 0 calc(var(--u) * 16) rgba(255,255,255,.12), 0 calc(var(--u) * 40) calc(var(--u) * 120) rgba(0,0,0,.7); overflow: hidden; }
+  .cel .tela { position: absolute; inset: calc(var(--u) * 10); border-radius: calc(var(--u) * 60);
+    background: radial-gradient(ellipse 90% 60% at 50% 40%, #4b3bd6 0%, #2a1f8f 55%, #140f4a 100%); }
+  .marca { font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+  /* app */
+  .fundoApp { background: radial-gradient(ellipse 80% 55% at 70% 22%, #6a4fe0 0%, #3b2a9a 45%, #1d1660 100%); }
+  .card { background: #f4f2fb; border-radius: calc(var(--u) * 34); overflow: hidden; color: #1e1b4b;
+    box-shadow: calc(var(--sx) * 40) calc(var(--sy) * 40) calc(var(--u) * 90) rgba(10,6,40,.55), 0 0 0 calc(var(--u) * 2) rgba(255,255,255,.18); }
+  .card .cab { margin: calc(var(--u) * 44) calc(var(--u) * 44) calc(var(--u) * 26); font-size: calc(var(--u) * 70); font-weight: 700; line-height: 1.15; }
+  .linha { display: flex; align-items: center; gap: calc(var(--u) * 26); margin: 0 calc(var(--u) * 34) calc(var(--u) * 18);
+    background: #fff; border-radius: calc(var(--u) * 22); padding: calc(var(--u) * 24) calc(var(--u) * 30);
+    font-size: calc(var(--u) * 66); font-weight: 600; line-height: 1.2; box-shadow: calc(var(--sx) * 3) calc(var(--sy) * 3) calc(var(--u) * 8) rgba(40,30,120,.10); }
+  .linha .d { width: calc(var(--u) * 130); color: #5b57a0; font-weight: 700; flex: none; }
+  .linha.trava { background: #fff1e4; color: #9a3412; }
+  .ponto { width: calc(var(--u) * 46); height: calc(var(--u) * 46); border-radius: 50%; flex: none; margin-left: auto;
+    background: radial-gradient(circle at 38% 32%, #FDBA74, #F97316 55%, #C2410C); }
+  /* HUD */
+  .hud { position: absolute; color: #bdf3ff; font-family: Sora, system-ui, sans-serif; }
+  .hud .painel { position: absolute; border: calc(var(--u) * 2) solid rgba(95,227,255,.75); border-radius: calc(var(--u) * 18);
+    background: rgba(6,24,40,.42); }
+</style>
+</head>
+<body>
+<div id="palco" class="palco-base"></div>
+<script src="edin-video.js"></script>
+<script src="edin-cam.js"></script>
+<script>
+(function () {
+  const { px, interp, ease, clamp, lerp, halo, hash } = EdinVideo;
+  const { preset, mix, neutro } = EdinCam;
+  const W = EdinVideo.w, H = EdinVideo.h, FPS = EdinVideo.fps;
+  const sm = (x) => ease.smoothstep(clamp(x));
+  const FIM = 43.56;
+  const ANTES = 0.02;                         // o corte cai 0,02 s antes do ataque da palavra (referência: mediana -0,03)
+
+  // ---------------------------------------------------------------- material escolhido (fotos e clipes)
+  // nome do arquivo sem extensão; o clipe é clipes/<nome>.mp4 com a pasta de quadros do `edin quadros`
+  const FOTO = {
+    p01: 'clipes/p01_madrugada_s100/00018.jpg',   // quadro do clipe em 0,3 s (o 1º que aparece)
+    p05: 'clipes/p05b_lente_s200/00142.jpg',       // quadro do clipe no fim do plano 5 (a rajada continua dele)
+  };
+  const CLIPE = {
+    p01: 'p01_madrugada_s100', p02a: 'p02_marca_s101', p02b: 'p02_bocejo_s101', p03: 'p03_nota_s101', p04: 'p04_dorme_s101',
+    p05: 'p05b_lente_s200', p07: 'p07_tela_s100', p09: 'p09_aponta_s100', p10: 'p10_colega_s101', p11: 'p11_entende_s101',
+    p12: 'p12_ensina_s100', p13: 'p13_trio_s100', p14: 'p14_turma_s100', p15: 'p15_fecha_s100', p16: 'p16_fora_s101',
+  };
+  // os 6 primeiros quadros de cada clipe do FastWan são a passagem da cor da foto para a do modelo: começa em 0,3 s
+  const CLIPE_INI = 0.3;
+  // medidas das fotos escolhidas (fração do quadro)
+  const M = {
+    olhos05: [0.52, 0.25],      // p05: entre os olhos (a rajada amplia em volta daqui)
+    celular07: [0.08, 0.80],    // p07: o celular na mão, embaixo à esquerda (a rede de linhas nasce daqui)
+  };
+
+  // ---------------------------------------------------------------- a fala em blocos (início da 1ª palavra, voz.words.json)
+  const BLOCOS = [
+    [0.18, 'Mais uma madrugada.'],
+    [2.02, 'Mais um resumo'], [2.90, 'que não fica.'],
+    [4.16, 'E a nota'], [4.66, 'não sai do lugar.'],
+    [6.30, 'Não é falta'], [7.00, 'de esforço.'],
+    [8.32, 'É não saber'], [8.98, 'onde você *trava*.'],
+    [12.64, 'O *LoopEdu* acha'], [13.72, 'onde você trava,'],
+    [15.33, 'e monta a sua'], [16.14, '*revisão* da semana.'],
+    [17.77, 'O LoopEdu aponta.'],
+    [19.59, 'O colega explica.'],
+    [21.27, 'Você *entende*.'],
+    [23.74, 'Quem entende,'], [24.60, '*ensina*.'],
+    [26.53, 'Quem ensina,'], [27.28, 'não esquece.'],
+    [29.41, 'E a turma inteira'], [30.32, 'sobe *junto*.'],
+    [32.43, 'Menos horas'], [33.12, 'no escuro.'],
+    [34.30, 'Mais tempo'], [34.96, 'lá *fora*.'],
+  ];
+  const marcado = (s) => s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // ---------------------------------------------------------------- planos (início = ataque da 1ª palavra da frase)
+  // cam: movimento do kit por cima do clipe (o clipe já traz o próprio; "um movimento por plano")
+  // filtro: grade do plano (preto <= 20, branco >= 220, saturação >= 85), medida no rascunho
+  const PLANOS = [
+    { id: 'p01', ini: 0.00, tipo: 'clipe', pb: true, glitch: true, y: 0.62, cam: ['static', 1], filtro: 'contrast(1.18)' },
+    { id: 'p02a', ini: 2.02, tipo: 'clipe', y: 0.56, cam: ['dolly-in', 0.35], filtro: 'contrast(1.12) saturate(1.15)' },
+    { id: 'p02b', ini: 2.90, tipo: 'clipe', y: 0.62, cam: ['static', 1], filtro: 'contrast(1.12) saturate(1.15)' },
+    { id: 'p03', ini: 4.16, tipo: 'clipe', vel: 0.75, y: 0.62, cam: ['dolly-in', 0.3], filtro: 'contrast(1.38) brightness(1.16) saturate(1.22)' },
+    { id: 'p04', ini: 6.30, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.12) saturate(1.15)' },
+    { id: 'p05', ini: 8.32, tipo: 'clipe', y: 0.64, cam: ['dolly-in', 0.5], filtro: 'contrast(1.42) brightness(1.0) saturate(1.1)' },
+    { id: 'rajada', ini: 10.40, tipo: 'rajada' },
+    { id: 'impacto', ini: 11.90, tipo: 'impacto' },
+    { id: 'p07', ini: 12.64, tipo: 'clipe', efeito: 'rede', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.12) saturate(1.15)' },
+    { id: 'p08', ini: 15.33, tipo: 'app' },
+    { id: 'p09', ini: 17.77, tipo: 'clipe', efeito: 'hud', y: 0.6, cam: ['static', 1], filtro: 'grayscale(0.55) contrast(1.2) brightness(0.95)' },
+    { id: 'p10', ini: 19.59, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.1) saturate(1.2)' },
+    { id: 'p11', ini: 21.27, tipo: 'clipe', rack: true, vel: 0.55, y: 0.6, cam: ['dolly-in', 0.25], filtro: 'contrast(1.12) saturate(1.3)' },
+    { id: 'p12', ini: 23.74, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.1) saturate(1.2)' },
+    { id: 'p13', ini: 26.53, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.1) saturate(1.2)' },
+    { id: 'p14', ini: 29.41, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.1) saturate(1.2)' },
+    { id: 'p15', ini: 32.43, tipo: 'clipe', y: 0.62, cam: ['dolly-in', 0.3], filtro: 'contrast(1.2) brightness(1.04) saturate(1.15)' },
+    { id: 'p16', ini: 34.30, tipo: 'clipe', y: 0.56, cam: ['static', 1], filtro: 'contrast(1.1) saturate(1.2)' },
+    { id: 'cartela', ini: 37.11, tipo: 'cartela' },
+  ];
+  PLANOS.forEach((p, i) => {
+    const a = i === 0 ? 0 : p.ini - ANTES;
+    const b = i + 1 < PLANOS.length ? PLANOS[i + 1].ini - ANTES : FIM;
+    p.a = a; p.dur = b - a;
+    p.blocos = BLOCOS.filter(([t]) => t >= a && t < b);
+  });
+
+  const v = EdinVideo.video({ fundo: '#07060f', grao: 0.05, graoHz: 30, vinheta: 0.3, luz: { angulo: 60 } });
+
+  // ---------------------------------------------------------------- texto da fala (acumula linhas, sai no corte)
+  function fala(el, plano, classe = '') {
+    if (!plano.blocos.length) return null;
+    const box = document.createElement('div');
+    box.className = `fala ${classe}`;
+    box.style.top = `${(plano.y || 0.58) * 100}%`;
+    box.innerHTML = plano.blocos.map(([, s]) => `<span class="l">${marcado(s)}</span>`).join('');
+    el.appendChild(box);
+    const linhas = [...box.children];
+    return {
+      box,
+      // tg: tempo global do quadro (discreto: a linha aparece seca, igual em todos os subtempos)
+      atualizar(tq) {
+        plano.blocos.forEach(([t0], i) => { linhas[i].style.opacity = tq >= t0 - 0.03 ? '1' : '0'; });
+      },
+    };
+  }
+  function camera(p) {
+    const [id, k] = p.cam || ['static', 1];
+    return mix([preset(id, { intensidade: k, easing: 'linear' }), preset('deriva', { semente: 7 + p.ini * 3, intensidade: 0.8 })]);
+  }
+
+  // ---------------------------------------------------------------- efeitos (só onde a fala é sobre dados/IA)
+  // rede de linhas entre matérias: nasce do celular, cresce para fora, um nó vira o ponto laranja (onde trava)
+  function rede(camada, origem, plano) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('class', 'abs');
+    svg.style.cssText = `left:0;top:0;width:100%;height:100%;mix-blend-mode:screen;overflow:visible;filter:drop-shadow(0 0 ${(6 * EdinVideo.u).toFixed(1)}px rgba(120,230,255,.8))`;
+    const rnd = (i, s) => hash(i, s);
+    const nos = [];
+    const O = [origem[0] * W, origem[1] * H];
+    // nós em posições fixas no espaço negativo (fora do rosto e do bloco de texto no centro)
+    const NOS = [[0.08, 0.62], [0.15, 0.47], [0.07, 0.33], [0.20, 0.21], [0.10, 0.09], [0.32, 0.05], [0.54, 0.03],
+      [0.76, 0.05], [0.93, 0.13], [0.95, 0.30], [0.90, 0.47], [0.28, 0.68], [0.16, 0.76]];
+    NOS.forEach(([x, y]) => nos.push([x * W, y * H]));
+    const ALVO = 3;               // o nó que vira laranja (no cabelo escuro, longe da luz laranja do fundo)
+    const ligs = [];
+    nos.forEach((n, i) => {
+      if (n[0] < 0.4 * W) ligs.push([O, n, 0.10 + 0.5 * (Math.hypot(n[0] - O[0], n[1] - O[1]) / H)]);
+      if (i > 0) ligs.push([nos[i - 1], n, 0.55 + 0.4 * rnd(i, 9)]);
+      if (i > 2 && rnd(i, 11) > 0.55) ligs.push([nos[i - 3], n, 0.75 + 0.3 * rnd(i, 13)]);
+    });
+    const linhas = ligs.map(([p, q, atraso]) => {
+      const l = document.createElementNS(ns, 'line');
+      l.setAttribute('x1', p[0]); l.setAttribute('y1', p[1]); l.setAttribute('x2', q[0]); l.setAttribute('y2', q[1]);
+      l.setAttribute('stroke', '#8eeeff'); l.setAttribute('stroke-width', 3.4 * EdinVideo.u); l.setAttribute('stroke-linecap', 'round');
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      l.setAttribute('stroke-dasharray', `${len} ${len}`);
+      svg.appendChild(l);
+      return { l, len, atraso, alvo: q === nos[ALVO] || p === nos[ALVO] };
+    });
+    const pontos = nos.map((n, i) => {
+      const c = document.createElementNS(ns, 'circle');
+      c.setAttribute('cx', n[0]); c.setAttribute('cy', n[1]); c.setAttribute('r', (i === ALVO ? 18 : 9) * EdinVideo.u);
+      c.setAttribute('fill', '#c9f6ff');
+      svg.appendChild(c);
+      return c;
+    });
+    const anel = document.createElementNS(ns, 'circle');
+    anel.setAttribute('cx', nos[ALVO][0]); anel.setAttribute('cy', nos[ALVO][1]);
+    anel.setAttribute('fill', 'none'); anel.setAttribute('stroke', '#F97316'); anel.setAttribute('stroke-width', 5 * EdinVideo.u);
+    svg.appendChild(anel);
+    camada.appendChild(svg);
+    const tAcha = 13.72 - plano.a;      // "onde" (a rede escolhe o nó)
+    return {
+      atualizar(t) {
+        linhas.forEach(({ l, len, atraso, alvo }) => {
+          const k = ease.outCubic(clamp((t - 0.15 - atraso) / 0.7));
+          l.setAttribute('stroke-dashoffset', (len * (1 - k)).toFixed(1));
+          const foco = clamp((t - tAcha) / 0.3);
+          l.setAttribute('stroke-opacity', (alvo ? lerp(0.85, 1, foco) : lerp(0.85, 0.4, foco)).toFixed(3));
+          if (alvo) l.setAttribute('stroke', foco > 0.5 ? '#ffb27a' : '#7fe8ff');
+        });
+        pontos.forEach((c, i) => {
+          const d = Math.hypot(nos[i][0] - O[0], nos[i][1] - O[1]) / H;
+          const k = sm((t - 0.3 - 0.5 * d - 0.3) / 0.2);
+          const foco = clamp((t - tAcha) / 0.3);
+          c.setAttribute('opacity', (k * (i === ALVO ? 1 : lerp(0.9, 0.45, foco))).toFixed(3));
+          if (i === ALVO) c.setAttribute('fill', foco > 0.5 ? '#F97316' : '#c9f6ff');
+        });
+        const f = clamp((t - tAcha) / 0.3);
+        const pul = ((t - tAcha) % 0.8 + 0.8) % 0.8 / 0.8;
+        anel.setAttribute('r', ((16 + 46 * ease.out(pul)) * EdinVideo.u).toFixed(1));
+        anel.setAttribute('stroke-opacity', (f * (1 - pul)).toFixed(3));
+      },
+    };
+  }
+
+  // HUD: painel de desempenho da semana (barras por matéria, uma laranja = onde trava; anel contando)
+  function hud(camada, plano) {
+    const el = document.createElement('div');
+    el.className = 'hud in';
+    const barras = [0.82, 0.64, 0.31, 0.74, 0.58];
+    el.innerHTML = `
+      <div class="painel" style="left:7%;top:7%;width:${px(560)};height:${px(400)}">
+        <div class="abs" data-decorativo style="left:${px(30)};top:${px(22)};font-size:${px(30)};letter-spacing:.12em;opacity:.8">DESEMPENHO · SEMANA</div>
+        ${barras.map((b, i) => `<div class="abs barra" style="left:${px(40 + i * 100)};bottom:${px(40)};width:${px(56)};height:${px(260 * b)};
+          background:${i === 2 ? '#F97316' : 'rgba(95,227,255,.85)'};transform-origin:50% 100%;border-radius:${px(6)}"></div>`).join('')}
+      </div>
+      <div class="painel" style="right:7%;top:9%;width:${px(330)};height:${px(330)};border-radius:50%">
+        <svg class="abs" viewBox="-100 -100 200 200" style="inset:0;width:100%;height:100%">
+          <circle r="78" fill="none" stroke="rgba(95,227,255,.25)" stroke-width="10"/>
+          <circle class="arco" r="78" fill="none" stroke="#5FE3FF" stroke-width="10" stroke-linecap="round" transform="rotate(-90)"
+            stroke-dasharray="${(2 * Math.PI * 78).toFixed(1)}" stroke-dashoffset="${(2 * Math.PI * 78).toFixed(1)}"/>
+        </svg>
+        <div class="centro num" data-decorativo style="left:50%;top:50%;font-size:${px(78)};font-weight:700;color:#e8fcff">0%</div>
+      </div>`;
+    camada.appendChild(el);
+    const bs = [...el.querySelectorAll('.barra')], arco = el.querySelector('.arco'), num = el.querySelector('.num');
+    const C = 2 * Math.PI * 78;
+    return {
+      atualizar(t, tql) {
+        const a = sm(t / 0.2);
+        el.style.opacity = (0.92 * a).toFixed(3);
+        bs.forEach((b, i) => { b.style.transform = `scaleY(${ease.outCubic(clamp((t - 0.1 - i * 0.07) / 0.4)).toFixed(4)})`; });
+        const k = ease.outCubic(clamp((t - 0.15) / 0.9));
+        arco.setAttribute('stroke-dashoffset', (C * (1 - 0.72 * k)).toFixed(1));
+        const kq = ease.outCubic(clamp((tql - 0.15) / 0.9));
+        num.textContent = `${Math.round(72 * kq)}%`;
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------- cena de clipe
+  function cenaClipe(p) {
+    v.cena({
+      id: p.id, duracao: p.dur, entrada: 'corte', camera: camera(p),
+      montar(el, ctx) {
+        el.innerHTML = `<div data-z="1" data-sobra="0.05"><div class="in grade"><div class="in clipe"></div></div></div>`;
+        this.grade = el.querySelector('.grade');
+        this.grade.style.filter = (p.pb ? 'grayscale(1) ' : '') + (p.filtro || '');
+        if (p.desce) {
+          // o rosto do close extremo fica mais baixo; o topo afunda no preto (luz dura, fundo preto)
+          this.grade.style.transform = `translateY(${p.desce * 100}%)`;
+          this.grade.insertAdjacentHTML('beforeend', `<div class="abs" style="left:0;right:0;top:-${p.desce * 100 + 1}%;height:${(p.desce + 0.12) * 100}%;background:linear-gradient(#000 0%, #000 ${(p.desce / (p.desce + 0.12) * 100).toFixed(1)}%, rgba(0,0,0,0) 100%)"></div>`);
+        }
+        this.c = EdinVideo.clipe(el.querySelector('.clipe'), { src: `clipes/${CLIPE[p.id]}.mp4`, foco: p.foco || [0.5, 0.5], inicio: p.clipIni ?? CLIPE_INI, velocidade: p.vel ?? 1 });
+        const camada = el.querySelector('[data-z]');
+        if (p.glitch) {
+          // fatias verticais da foto (quadro 0 do clipe) deslocadas; só nos primeiros 0,5 s
+          const g = document.createElement('div');
+          g.className = 'in glitch';
+          g.style.filter = 'grayscale(1) contrast(1.35)';
+          const n = 9;
+          g.innerHTML = Array.from({ length: n }, (_, i) => `<div class="fatia" style="left:${(i * 100 / n).toFixed(3)}%;width:${(100 / n + 0.05).toFixed(3)}%">
+            <img src="${FOTO.p01}" style="left:${(-i * 100).toFixed(1)}%;width:${n * 100}%"></div>`).join('');
+          camada.appendChild(g);
+          this.glitch = g; this.fatias = [...g.children];
+        }
+        if (p.efeito === 'rede') this.fx = rede(camada, M.celular07, p);
+        if (p.efeito === 'hud') this.fx = hud(camada, p);
+        this.txt = fala(el, p);
+      },
+      atualizar(el, t, pp, ctx) {
+        this.c.atualizar(t, ctx);
+        if (this.glitch) {
+          // troca a cada 3 quadros a 60 (valor discreto pelo tempo do quadro); some até 0,5 s
+          const q = Math.floor(ctx.tql * 20), amp = 1 - clamp(ctx.tql / 0.5);
+          this.glitch.style.display = amp > 0 ? '' : 'none';
+          this.fatias.forEach((f, i) => {
+            const d = (hash(i * 31 + q, 17) - 0.5) * 2 * 6 * amp * (hash(i + q * 7, 5) > 0.35 ? 1 : 0);
+            f.style.transform = `translateY(${d.toFixed(2)}%)`;
+          });
+        }
+        if (p.rack) {
+          // abre desfocado, segura 0,35 s e o foco chega em 0,9 s; a 1ª linha desfoca junto
+          const b = 26 * (1 - ease.inOutCubic(clamp((t - 0.35) / 0.55)));
+          this.grade.style.filter = `blur(${(b * EdinVideo.u).toFixed(2)}px) ${p.filtro || ''}`;
+          if (this.txt) this.txt.box.style.filter = `blur(${(b * 0.5 * EdinVideo.u).toFixed(2)}px)`;
+        }
+        if (this.fx) this.fx.atualizar(t, ctx.tql);
+        if (this.txt) this.txt.atualizar(ctx.tq);
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- rajada: rosto x celular, cada volta mais perto
+  // durações em quadros de 60 fps (em segundos: /60), depois 6 quadros de glitch
+  const RAJ = [16, 12, 10, 10, 8, 6, 6, 4, 4, 4, 2, 2], GLITCH = 6;
+  function logoHTML(r = 120, tam = 110, cor = '#fff') {
+    const C = 2 * Math.PI * r;
+    return `<svg class="abs logoAnel" viewBox="${-r - 30} ${-r - 30} ${2 * r + 60} ${2 * r + 60}" style="left:50%;top:40%;width:${px(2 * r + 60)};height:${px(2 * r + 60)};transform:translate(-50%,-50%);overflow:visible">
+        <circle cx="0" cy="0" r="${r}" fill="none" stroke="#F97316" stroke-width="${r * 0.2}" stroke-linecap="round"
+          stroke-dasharray="${(C * 308 / 360).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90)"/></svg>
+      <div class="centro marca" style="left:50%;top:62%;font-size:${px(tam)};color:${cor}">LoopEdu</div>`;
+  }
+  function cenaRajada(p) {
+    v.cena({
+      id: p.id, duracao: p.dur, entrada: 'corte',
+      montar(el) {
+        el.innerHTML = `
+          <div class="in rosto" style="overflow:hidden;background:#000;filter:contrast(1.3) brightness(0.92) saturate(1.1)"><img class="foto" src="${FOTO.p05}" style="transform-origin:${M.olhos05[0] * 100}% ${M.olhos05[1] * 100}%"></div>
+          <div class="in celular" style="background:radial-gradient(ellipse 70% 50% at 50% 50%, #1a1446 0%, #07060f 75%)"><div class="cel"><div class="tela">${logoHTML(70, 64)}</div></div></div>
+          <div class="in gl" style="display:none;filter:grayscale(1) contrast(3.2)">${Array.from({ length: 10 }, (_, i) =>
+            `<div class="banda" style="top:${i * 10}%;height:10.2%"><img class="foto" src="${FOTO.p05}" style="top:${-i * 100}%;height:1000%;width:100%;left:0"></div>`).join('')}
+            <div class="in r" style="mix-blend-mode:screen;opacity:.55;background:#ff2a4a"></div></div>`;
+        this.rosto = el.querySelector('.rosto'); this.img = this.rosto.firstElementChild;
+        this.cel = el.querySelector('.celular'); this.celBox = this.cel.firstElementChild;
+        this.gl = el.querySelector('.gl'); this.bandas = [...this.gl.querySelectorAll('.banda')];
+        this.fim = []; let s = 0; for (const n of RAJ) { s += n / 60; this.fim.push(s); }
+      },
+      atualizar(el, t, pp, ctx) {
+        const tq = ctx.tql;
+        let i = this.fim.findIndex((f) => tq < f - 1e-6);
+        const gl = i < 0;
+        if (gl) i = RAJ.length - 1;
+        const volta = Math.floor(i / 2);
+        const rosto = i % 2 === 0;
+        this.rosto.style.display = rosto && !gl ? '' : 'none';
+        this.cel.style.display = !rosto && !gl ? '' : 'none';
+        this.img.style.transform = `scale(${(1.12 + 0.11 * volta).toFixed(3)})`;
+        this.celBox.style.transform = `translate(-50%,-50%) scale(${(0.78 + 0.1 * volta).toFixed(3)})`;
+        this.gl.style.display = gl ? '' : 'none';
+        if (gl) {
+          const q = Math.floor(tq * 60);
+          this.bandas.forEach((b, k) => {
+            const d = (hash(k * 13 + q, 3) - 0.5) * 30;
+            b.style.transform = `translateX(${d.toFixed(2)}%) scale(${(1.12 + 0.11 * 6).toFixed(3)})`;
+          });
+        }
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- impacto: a marca no celular (0,74 s)
+  function cenaImpacto(p) {
+    v.cena({
+      id: p.id, duracao: p.dur, entrada: 'corte',
+      camera: (q, T) => { const s = neutro(); s.S = 1 + 0.10 * ease.inCubic(clamp(T / p.dur)); s.ids = ['through-object']; return s; },
+      montar(el) {
+        el.innerHTML = `<div data-z="0.3" data-sobra="0.2"><div class="in" style="background:radial-gradient(ellipse 70% 50% at 50% 50%, #241a66 0%, #0a0820 70%)"></div></div>
+          <div data-z="1"><div class="in pop"><div class="cel"><div class="tela">${logoHTML(70, 64)}</div></div></div></div>`;
+        this.pop = el.querySelector('.pop');
+        this.anel = el.querySelector('.logoAnel');
+      },
+      atualizar(el, t) {
+        // pop com overshoot (a marca bate), tremor de 2 quadros
+        const k = ease.outExpo(clamp(t / 0.22));
+        const s = lerp(1.22, 1, k) + 0.025 * Math.sin(clamp(t / 0.3) * Math.PI);
+        const tre = t < 0.07 ? (hash(Math.floor(t * 60), 4) - 0.5) * 18 * EdinVideo.u : 0;
+        this.pop.style.transform = `translate(${tre.toFixed(1)}px, 0) scale(${s.toFixed(4)})`;
+        this.anel.style.filter = `drop-shadow(${halo(26, 0.17 * (1 - clamp(t / 0.6)) + 0.08)})`;
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- a única tela do app: revisão da semana
+  function cenaApp(p) {
+    v.cena({
+      id: p.id, duracao: p.dur, entrada: 'corte',
+      camera: mix([(q) => { const s = neutro(); s.ty = -7 * ease.suave(q); s.ids = ['crane-down']; return s; }, preset('deriva', { semente: 21, intensidade: 0.8 })]),
+      montar(el) {
+        const linhas = [['seg', 'frações', 'trava'], ['qua', 'questões', ''], ['sex', 'revisão', '']];
+        el.innerHTML = `
+          <div data-z="0.25" data-sobra="0.3"><div class="in fundoApp"></div></div>
+          <div data-tela data-z="0.6">
+            <div class="abs card" style="left:50%;top:17%;width:${px(940)};transform:translateX(-50%)">
+              <div class="cab">sua revisão da semana</div>
+              ${linhas.map(([d, x, c]) => `<div class="linha ${c}"><span class="d">${d}</span><span>${x}</span>${c ? '<b class="ponto"></b>' : ''}</div>`).join('')}
+              <div style="height:${px(22)}"></div>
+            </div>
+          </div>`;
+        this.linhas = [...el.querySelectorAll('.linha')];
+        this.ponto = el.querySelector('.ponto');
+        this.trava = el.querySelector('.linha.trava');
+        this.txt = fala(el, Object.assign({}, p, { y: 0.62 }));
+      },
+      atualizar(el, t, pp, ctx) {
+        this.linhas.forEach((l, i) => {
+          const q = ease.outCubic(clamp((t - 0.25 - i * 0.2) / 0.4));
+          l.style.opacity = sm((t - 0.25 - i * 0.2) / 0.16).toFixed(3);
+          l.style.transform = `translateY(${px(-34 * (1 - q))})`;
+        });
+        const pul = 0.8 + 0.2 * Math.sin(t * 2 * Math.PI * 1.1);
+        this.ponto.style.boxShadow = halo(26, 0.2 * pul);
+        const hl = ease.out(clamp((t - 0.85) / 0.3));
+        this.trava.style.boxShadow = `0 0 0 ${px(4)} rgba(249,115,22,${(hl * pul).toFixed(3)})`;
+        if (this.txt) this.txt.atualizar(ctx.tq);
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- cartela final branca
+  function cenaCartela(p) {
+    const tSlogan1 = 38.63 - p.a, tSlogan2 = 39.70 - p.a, R = 120;
+    v.cena({
+      id: p.id, duracao: p.dur, entrada: 'corte',
+      montar(el) {
+        const C = 2 * Math.PI * R;
+        el.innerHTML = `
+          <div class="in" style="background:#0b0920"></div>
+          <div class="in branco" style="background:#fbfaff;clip-path:circle(0% at 50% 40%)"></div>
+          <div class="in logo">
+            <svg class="abs" viewBox="${-R - 40} ${-R - 40} ${2 * R + 80} ${2 * R + 80}" style="left:50%;top:36%;width:${px(2 * R + 80)};height:${px(2 * R + 80)};transform:translate(-50%,-50%);overflow:visible">
+              <circle class="anel" cx="0" cy="0" r="${R}" fill="none" stroke="#F97316" stroke-width="28" stroke-linecap="round"
+                stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${C.toFixed(2)}" transform="rotate(-90)"/></svg>
+            <div class="centro marca nome" style="left:50%;top:48.5%;font-size:${px(118)};color:#1e1b4b">LoopEdu</div>
+          </div>
+          <div class="fala escuro" style="top:60%"><span class="l s1">Estude melhor.</span><span class="l s2">Viva por <em>inteiro</em>.</span></div>
+          <div class="in preto" style="background:#000;opacity:0"></div>`;
+        this.C = C;
+        this.branco = el.querySelector('.branco');
+        this.anel = el.querySelector('.anel');
+        this.nome = el.querySelector('.nome');
+        this.s1 = el.querySelector('.s1'); this.s2 = el.querySelector('.s2');
+        this.preto = el.querySelector('.preto');
+      },
+      atualizar(el, t, pp, ctx) {
+        // o branco nasce do ponto (0,8 s): sem clarão (salto de brilho por quadro abaixo de ~20)
+        const r = 125 * ease.inOutCubic(clamp(t / 0.8));
+        this.branco.style.clipPath = `circle(${r.toFixed(3)}% at 50% 40%)`;
+        // anel: desenha 308 graus e fecha (logo), com pop de 8%
+        const d = interp(t, [0.15, 0.7], [0, 308 / 360], ease.inOut);
+        const fecha = lerp(d, 1, ease.inOut(clamp((t - 0.75) / 0.5)));
+        this.anel.setAttribute('stroke-dashoffset', (this.C * (1 - fecha)).toFixed(2));
+        this.anel.style.opacity = fecha > 0.002 ? '1' : '0';
+        const m = clamp((t - 0.3) / 0.5);
+        const pop = m <= 0 ? 0 : 1 + 0.08 * Math.sin(Math.PI * clamp(m * 1.3)) * (1 - m);
+        this.nome.style.opacity = sm(m * 2.5).toFixed(3);
+        this.nome.style.transform = `translate(-50%,-50%) scale(${(m <= 0 ? 0.9 : lerp(0.9, 1, ease.outExpo(m)) * pop).toFixed(4)})`;
+        this.s1.style.opacity = ctx.tql >= tSlogan1 - 0.03 ? '1' : '0';
+        this.s2.style.opacity = ctx.tql >= tSlogan2 - 0.03 ? '1' : '0';
+        this.preto.style.opacity = sm((t - (p.dur - 0.45)) / 0.4).toFixed(4);
+      },
+    });
+  }
+
+  for (const p of PLANOS) {
+    if (p.tipo === 'clipe') cenaClipe(p);
+    else if (p.tipo === 'rajada') cenaRajada(p);
+    else if (p.tipo === 'impacto') cenaImpacto(p);
+    else if (p.tipo === 'app') cenaApp(p);
+    else if (p.tipo === 'cartela') cenaCartela(p);
+  }
+  v.iniciar();
+})();
+</script>
+</body>
+</html>

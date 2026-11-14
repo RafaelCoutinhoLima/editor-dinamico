@@ -1,0 +1,106 @@
+{
+  "pasta": "clipes",
+  "motor": "fastwan",
+  "n": 2,
+  "seed": 100,
+  "clipes": [
+    {
+      "id": "p01_madrugada",
+      "foto": "fotos/p01_madrugada_s6150.png",
+      "duracao": 2.5,
+      "prompt": "the tired young woman slowly rubs her temple with her fingers and closes her eyes for a moment, then exhales, slow dolly in, hard side light from the desk lamp, dark room"
+    },
+    {
+      "id": "p02_marca",
+      "foto": "fotos/p02_marca_s6163.png",
+      "duracao": 1.5,
+      "prompt": "the hand slowly drags the orange highlighter across the handwritten line, static camera, hard warm lamp light"
+    },
+    {
+      "id": "p02_bocejo",
+      "foto": "fotos/p02_bocejo_s6151.png",
+      "duracao": 1.8,
+      "prompt": "the exhausted young woman yawns widely with her eyes closed, her hand against her cheek, her shoulders drop, static camera, warm desk lamp light"
+    },
+    {
+      "id": "p03_nota",
+      "foto": "fotos/p03_nota_s5151.png",
+      "duracao": 2.6,
+      "prompt": "the young woman stares down, her face slowly falls into disappointment, she exhales and closes her eyes for a moment, slow push in, dark room"
+    },
+    {
+      "id": "p04_dorme",
+      "foto": "fotos/p04_dorme_s6150.png",
+      "duracao": 2.5,
+      "prompt": "the young woman keeps writing quickly in her notebook, focused and tired, her pencil moving, static camera, warm desk lamp light"
+    },
+    {
+      "id": "p05_lente",
+      "foto": "fotos/p05_lente_s5151.png",
+      "duracao": 2.6,
+      "prompt": "the young woman looks straight into the camera without blinking, a slight frown, very slow dolly in toward her eyes, hard side light"
+    },
+    {
+      "id": "p07_tela",
+      "foto": "fotos/p07_tela_s5151.png",
+      "duracao": 3.2,
+      "prompt": "the young woman looks down at her phone and a small surprised smile slowly appears on her face, static camera, night"
+    },
+    {
+      "id": "p09_aponta",
+      "foto": "fotos/p09_aponta_s6181.png",
+      "duracao": 2.3,
+      "prompt": "the finger points at the laptop screen and taps it twice, static camera, bright window light"
+    },
+    {
+      "id": "p10_colega",
+      "foto": "fotos/p12_ensina_s5152.png",
+      "duracao": 2.2,
+      "prompt": "the girl with long locs leans in and explains, smiling, while the other girl writes in the notebook and nods, both smiling, static camera, golden backlight"
+    },
+    {
+      "id": "p11_entende",
+      "foto": "fotos/p11_entende_s5152.png",
+      "duracao": 3.0,
+      "prompt": "her smile grows into a soft laugh and she tilts her head slightly, slow dolly in, golden hour backlight, sun bokeh"
+    },
+    {
+      "id": "p12_ensina",
+      "foto": "fotos/p12_ensina_s5151.png",
+      "duracao": 3.3,
+      "prompt": "the two girls laugh together while writing in the notebook, the girl on the right leans closer laughing, static camera, golden backlight"
+    },
+    {
+      "id": "p13_trio",
+      "foto": "fotos/p13_trio_s5152.png",
+      "duracao": 3.4,
+      "prompt": "the three girls on the stairs laugh together looking at the tablet, one leans toward her friend laughing, static camera, sunlight"
+    },
+    {
+      "id": "p14_turma",
+      "foto": "fotos/p14_turma_s1416.png",
+      "duracao": 3.5,
+      "prompt": "the group of teenagers walks toward the camera laughing and talking, the camera moves slowly backward in front of them, golden backlight"
+    },
+    {
+      "id": "p15_fecha",
+      "foto": "fotos/p15_fecha_s5151.png",
+      "duracao": 2.4,
+      "prompt": "the young woman smiles softly while typing, then stops and looks up relaxed, static camera, warm night lights"
+    },
+    {
+      "id": "p16_fora",
+      "foto": "fotos/p16_fora_s5153.png",
+      "duracao": 3.3,
+      "prompt": "the young woman laughs and pumps both arms in the air, her curly hair bouncing, handheld camera, golden hour backlight, sun flare"
+    },
+    {
+      "id": "p05b_lente",
+      "foto": "fotos/p05_lente_s5150.png",
+      "duracao": 2.6,
+      "n": 2,
+      "seed": 200,
+      "prompt": "the young woman in the hood looks straight into the camera without blinking, serious, her eyes fixed on the lens, almost still, very slow push in, hard side light, dark background"
+    }
+  ]
+}

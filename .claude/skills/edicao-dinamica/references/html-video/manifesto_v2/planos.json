@@ -1,0 +1,120 @@
+{
+  "_comentario": "Manifesto LoopEdu v2 (13/11), linguagem da referência Atletia trazida para estudantes. Protagonista 'bia' fixa (descrição + seed 5150), moletom índigo da marca. Luz explícita em todo prompt: noite (luz lateral dura, tela) até a virada, contraluz dourado depois. Rode: seguro 9000 edin imagem --lote planos.json --sem-lightning",
+  "pasta": "fotos",
+  "size": "1080x1920",
+  "upscale": "lanczos",
+  "n": 4,
+  "estilo": "film still, Portra 400, grain, high contrast",
+  "negativo": "deformed hands, extra fingers, missing fingers, fused fingers, mutated hands, bad anatomy, distorted face, asymmetric eyes, cross-eyed, extra limbs, duplicate person, text, watermark, logo, letters, caption, cartoon, illustration, 3d render, cgi, plastic skin, airbrushed, hazy, foggy, washed out, flat lighting, low contrast, muted colors, purple tint, model pose, stock photo, lowres, jpeg artifacts",
+  "personagens": {
+    "bia": {
+      "descricao": "Brazilian woman, 18, brown skin, freckles, curly black hair in a high puff",
+      "seed": 5150
+    }
+  },
+  "planos": [
+    {
+      "id": "p01_madrugada",
+      "personagem": "bia",
+      "lente": "85",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "photo, close-up of a tired young woman in a navy indigo hoodie rubbing one eye at a desk at night, hard side light from a desk lamp, half of the face in shadow, dark bedroom",
+      "seed": 6150
+    },
+    {
+      "id": "p02_marca",
+      "lente": "50",
+      "seed": 6160,
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "photo, close-up of one hand in a navy sleeve dragging an orange highlighter across handwritten notes at night, hard warm desk lamp light from the side, dark desk, shallow depth of field"
+    },
+    {
+      "id": "p02_bocejo",
+      "personagem": "bia",
+      "lente": "50",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "photo, medium close-up of an exhausted young woman in a navy indigo hoodie yawning with her hand over her mouth at a desk with piled books, dark bedroom at night, hard warm lamp light from the side",
+      "seed": 6150
+    },
+    {
+      "id": "p03_nota",
+      "personagem": "bia",
+      "lente": "85",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "close-up of a frustrated young woman staring down at her phone, face lit only by the cold phone light, pitch dark room, deep shadows"
+    },
+    {
+      "id": "p04_dorme",
+      "personagem": "bia",
+      "lente": "35",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "photo, medium shot of a young woman in a navy indigo hoodie asleep with her cheek on open notebooks at a desk, eyes closed, warm desk lamp hard light, dark bedroom",
+      "seed": 6150
+    },
+    {
+      "id": "p05_lente",
+      "personagem": "bia",
+      "lente": "85",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "close-up of a serious young woman looking straight into the camera, hard light from the left, half of the face in deep shadow, black background, skin pores"
+    },
+    {
+      "id": "p07_tela",
+      "personagem": "bia",
+      "lente": "85",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "close-up of a young woman looking down at her phone with a small surprised half smile, face lit by the screen, dark room, hard side light"
+    },
+    {
+      "id": "p09_aponta",
+      "lente": "50",
+      "seed": 6180,
+      "estilo": "candid documentary photo, 35mm film, film grain",
+      "prompt": "photo, close-up of an index finger pointing at a laptop with a blank white screen, navy sleeve, open notebook with math, coffee mug, bright window light, shallow depth of field"
+    },
+    {
+      "id": "p10_colega",
+      "personagem": "bia",
+      "lente": "35",
+      "prompt": "photo, medium shot of a young Black man with round glasses sitting beside her at a library table, pointing at her notebook and explaining, she listens and smiles, golden window backlight",
+      "seed": 6170
+    },
+    {
+      "id": "p11_entende",
+      "personagem": "bia",
+      "lente": "85",
+      "prompt": "close-up of a young woman with a genuine wide smile, bright eyes, golden hour backlight, warm rim light on her curls, sun bokeh behind"
+    },
+    {
+      "id": "p12_ensina",
+      "personagem": "bia",
+      "lente": "35",
+      "prompt": "medium shot of a young woman explaining her notebook to a girl with braids sitting beside her, both laughing, school library table, golden hour backlight, warm rim light"
+    },
+    {
+      "id": "p13_trio",
+      "personagem": "bia",
+      "lente": "35",
+      "prompt": "three students laughing together on concrete school stairs, high five, notebooks on laps, Brazilian public school courtyard, late afternoon sun, golden backlight"
+    },
+    {
+      "id": "p14_turma",
+      "lente": "35",
+      "seed": 1414,
+      "prompt": "group of diverse Brazilian teenagers with backpacks walking toward the camera out of a school gate, laughing, golden hour backlight, low angle, sun flare between buildings"
+    },
+    {
+      "id": "p15_fecha",
+      "personagem": "bia",
+      "lente": "85",
+      "estilo": "night film still, Vision3 500T, grain",
+      "prompt": "close-up of a relaxed young woman smiling as she closes her laptop, warm desk lamp hard side light, dark bedroom, calm happy face"
+    },
+    {
+      "id": "p16_fora",
+      "personagem": "bia",
+      "lente": "35",
+      "prompt": "medium shot of a young woman laughing with both arms raised among friends on a neighborhood football court at sunset, golden hour backlight, sun flare, low angle"
+    }
+  ]
+}
